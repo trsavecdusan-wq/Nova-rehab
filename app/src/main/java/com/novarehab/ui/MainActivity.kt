@@ -17,7 +17,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
@@ -26,7 +25,6 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         prefs = PrefsManager(this)
 
         setupRadioButtons()
@@ -36,16 +34,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupRadioButtons() {
         val stations = prefs.getRadioStations()
-
         val radioButtons = listOf(
-            binding.btnRadio1,
-            binding.btnRadio2,
-            binding.btnRadio3,
-            binding.btnRadio4,
-            binding.btnRadio5,
-            binding.btnRadio6
+            binding.btnRadio1, binding.btnRadio2, binding.btnRadio3,
+            binding.btnRadio4, binding.btnRadio5, binding.btnRadio6
         )
-
         radioButtons.forEachIndexed { index, button ->
             if (index < stations.size) {
                 val station = stations[index]
@@ -56,7 +48,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
         binding.btnRadioStop.setOnClickListener {
             stopRadio()
             updateRadioButtonStates(-1)
@@ -67,14 +58,10 @@ class MainActivity : AppCompatActivity() {
         binding.btnGallery.setOnClickListener {
             startActivity(Intent(this, GalleryActivity::class.java))
         }
-
         binding.btnMirror.setOnClickListener {
             startActivity(Intent(this, MirrorActivity::class.java))
         }
-
-        binding.btnSettings.setOnClickListener {
-            showPinDialog()
-        }
+        binding.btnSettings.setOnClickListener { showPinDialog() }
     }
 
     private fun playStation(url: String, name: String) {
@@ -98,12 +85,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateRadioButtonStates(activeIndex: Int) {
         val radioButtons = listOf(
-            binding.btnRadio1,
-            binding.btnRadio2,
-            binding.btnRadio3,
-            binding.btnRadio4,
-            binding.btnRadio5,
-            binding.btnRadio6
+            binding.btnRadio1, binding.btnRadio2, binding.btnRadio3,
+            binding.btnRadio4, binding.btnRadio5, binding.btnRadio6
         )
         radioButtons.forEachIndexed { index, button ->
             button.isSelected = (index == activeIndex)
@@ -118,15 +101,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startUpdateService() {
-        val intent = Intent(this, UpdateService::class.java)
-        startService(intent)
+        startService(Intent(this, UpdateService::class.java))
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) {
-            hideSystemUI()
-        }
+        if (hasFocus) hideSystemUI()
     }
 
     private fun hideSystemUI() {

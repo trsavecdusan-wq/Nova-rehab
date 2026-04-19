@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="NASTAVITVE" android:textColor="#e94560" android:textSize="20sp"
+            android:textStyle="bold" android:layout_marginBottom="16dp"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Radio postaje" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 1 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation1Name" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="2dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 1 - URL:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation1Url" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="8dp"
+            android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 2 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation2Name" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="2dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 2 - URL:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation2Url" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="8dp"
+            android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 3 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation3Name" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="2dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 3 - URL:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation3Url" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="8dp"
+            android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 4 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation4Name" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="2dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 4 - URL:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation4Url" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="8dp"
+            android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 5 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation5Name" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="2dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 5 - URL:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation5Url" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="8dp"
+            android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 6 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation6Name" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="2dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Postaja 6 - URL:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etStation6Url" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="16dp"
+            android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Synology Server" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="IP naslov:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etServerIp" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="4dp"
+            android:hint="192.168.1.100" android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Port:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etServerPort" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="16dp"
+            android:inputType="number"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Email za porocila:" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp"/>
+        <EditText android:id="@+id/etReportEmail" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="16dp"
+            android:inputType="textEmailAddress"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Nova PIN koda (4 stevilke):" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp"/>
+        <EditText android:id="@+id/etNewPin" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="16dp"
+            android:inputType="numberPassword" android:maxLength="4"
+            android:hint="Pusti prazno"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/btnSave" android:layout_width="0dp"
+                android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="SHRANI" android:backgroundTint="#e94560"
+                android:textColor="#ffffff" android:layout_marginEnd="8dp"/>
+            <Button android:id="@+id/btnBack" android:layout_width="0dp"
+                android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="NAZAJ" android:backgroundTint="#333333"
+                android:textColor="#ffffff"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

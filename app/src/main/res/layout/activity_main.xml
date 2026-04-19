@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#1a1a2e"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="#16213e"
+            android:padding="8dp"
+            android:layout_marginEnd="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RADIO"
+                android:textColor="#e94560"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+
+                <Button android:id="@+id/btnRadio1" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:text="Postaja 1" android:textSize="10sp"
+                    android:layout_marginEnd="2dp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
+                <Button android:id="@+id/btnRadio2" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:text="Postaja 2" android:textSize="10sp"
+                    android:layout_marginEnd="2dp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
+                <Button android:id="@+id/btnRadio3" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:text="Postaja 3" android:textSize="10sp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button android:id="@+id/btnRadio4" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:text="Postaja 4" android:textSize="10sp"
+                    android:layout_marginEnd="2dp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
+                <Button android:id="@+id/btnRadio5" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:text="Postaja 5" android:textSize="10sp"
+                    android:layout_marginEnd="2dp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
+                <Button android:id="@+id/btnRadio6" android:layout_width="0dp"
+                    android:layout_height="48dp" android:layout_weight="1"
+                    android:text="USB" android:textSize="10sp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNowPlaying"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#e94560"
+                android:textSize="11sp"
+                android:visibility="gone"
+                android:layout_marginTop="4dp"/>
+
+            <Button
+                android:id="@+id/btnRadioStop"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="STOP"
+                android:textSize="11sp"
+                android:backgroundTint="#e94560"
+                android:textColor="#ffffff"
+                android:layout_marginTop="4dp"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#16213e"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:layout_marginStart="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HITROST"
+                android:textColor="#e94560"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#ffffff"
+                android:textSize="48sp"
+                android:textStyle="bold"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="km/h"
+                android:textColor="#aaaaaa"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="4dp">
+
+        <Button android:id="@+id/btnGallery" android:layout_width="0dp"
+            android:layout_height="match_parent" android:layout_weight="1"
+            android:text="GALERIJA" android:textSize="14sp" android:textColor="#ffffff"
+            android:layout_marginEnd="4dp" android:backgroundTint="#16213e"/>
+
+        <Button android:id="@+id/btnMirror" android:layout_width="0dp"
+            android:layout_height="match_parent" android:layout_weight="1"
+            android:text="OGLEDALO" android:textSize="14sp" android:textColor="#ffffff"
+            android:layout_marginEnd="4dp" android:backgroundTint="#16213e"/>
+
+        <Button android:id="@+id/btnSettings" android:layout_width="0dp"
+            android:layout_height="match_parent" android:layout_weight="1"
+            android:text="NASTAVITVE" android:textSize="14sp" android:textColor="#ffffff"
+            android:backgroundTint="#16213e"/>
+
+    </LinearLayout>
+
+</LinearLayout>
