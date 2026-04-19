@@ -22,11 +22,13 @@ jobs:
       - name: Nastavi Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Dovoli izvajanje Gradle
-        run: chmod +x gradlew
+      - name: Nastavi Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
       - name: Zgradi APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug
 
       - name: Naloži APK
         uses: actions/upload-artifact@v4
