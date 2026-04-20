@@ -1,10 +1,15 @@
 package com.novarehab.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.novarehab.databinding.ActivityMainBinding
 import com.novarehab.service.RadioService
 import com.novarehab.service.UpdateService
@@ -14,6 +19,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PrefsManager
+    private val PERMISSIONS_REQUEST = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,9 +33,31 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         prefs = PrefsManager(this)
 
+        requestAllPermissions()
         setupRadioButtons()
         setupBottomButtons()
         startUpdateService()
+    }
+
+    private fun requestAllPermissions() {
+        val permissions = mutableListOf<String>()
+        
+        permissions.add(Manifest.permission.CAMERA)
+        permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+
+        val toRequest = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }.toTypedArray()
+
+        if (toRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, toRequest, PERMISSIONS_REQUEST)
+        }
     }
 
     private fun setupRadioButtons() {
@@ -71,7 +99,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(RadioService.EXTRA_NAME, name)
         }
         startForegroundService(intent)
-        binding.tvNowPlaying.text = "▶ $name"
+        binding.tvNowPlaying.text = "PREDVAJA: $name"
         binding.tvNowPlaying.visibility = View.VISIBLE
     }
 
