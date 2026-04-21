@@ -1,10 +1,26 @@
-<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="#e94560"
-        android:pathData="M12,3C7.03,3 3,7.03 3,12s4.03,9 9,9 9,-4.03 9,-9S16.97,3 12,3zM12,19c-3.87,0 -7,-3.13 -7,-7s3.13,-7 7,-7 7,3.13 7,7 -3.13,7 -7,7z"/>
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+  <!-- Radio telo -->
+  <path android:fillColor="#e94560"
+    android:pathData="M6,18 L42,18 L42,38 Q42,42 38,42 L10,42 Q6,42 6,38 Z"/>
+  <!-- Antena -->
+  <path android:fillColor="#e94560" android:strokeColor="#e94560" android:strokeWidth="2.5"
+    android:pathData="M18,18 L28,6"/>
+  <!-- Zvočnik -->
+  <path android:fillColor="#1a1a2e"
+    android:pathData="M10,22 L10,38 L24,38 L24,22 Z"/>
+  <!-- Speaker lines -->
+  <path android:fillColor="#e94560" android:strokeColor="#e94560" android:strokeWidth="1.5"
+    android:pathData="M13,26 L21,26 M13,30 L21,30 M13,34 L21,34"/>
+  <!-- Gumb/dial -->
+  <path android:fillColor="#1a1a2e"
+    android:pathData="M32,25 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0"/>
+  <path android:fillColor="#e94560"
+    android:pathData="M32,25 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0"/>
+  <!-- Drugi gumb -->
+  <path android:fillColor="#1a1a2e"
+    android:pathData="M38,35 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0"/>
 </vector>

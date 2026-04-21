@@ -105,6 +105,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etServerPort.setText(prefs.getServerPort())
         binding.etNewPin.setText("")
         binding.etReportEmail.setText(prefs.getReportEmail())
+        binding.etPatientName.setText(prefs.getPatientName())
         binding.etHomeAddress.setText(prefs.getHomeAddress())
         binding.etKioskMinutes.setText(prefs.getKioskReturnMinutes().toString())
     }
@@ -175,6 +176,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveServerIp(binding.etServerIp.text.toString().trim())
         prefs.saveServerPort(binding.etServerPort.text.toString().trim())
         prefs.saveReportEmail(binding.etReportEmail.text.toString().trim())
+        prefs.savePatientName(binding.etPatientName.text.toString().trim())
         prefs.saveHomeAddress(binding.etHomeAddress.text.toString().trim())
         val kioskMin = binding.etKioskMinutes.text.toString().trim().toLongOrNull() ?: 5L
         prefs.saveKioskReturnMinutes(kioskMin)

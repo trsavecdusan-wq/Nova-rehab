@@ -256,6 +256,15 @@
             android:inputType="numberPassword" android:maxLength="4"
             android:hint="Pusti prazno ce ne menjas"/>
 
+        <!-- IME PACIENTA -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Ime pacienta:" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp"/>
+        <EditText android:id="@+id/etPatientName" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="16dp"
+            android:hint="npr. Ana"/>
+
         <!-- NAVIGACIJA -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Navigacija" android:textColor="#ffffff" android:textSize="16sp"

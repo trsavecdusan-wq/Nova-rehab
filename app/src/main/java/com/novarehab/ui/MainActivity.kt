@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
@@ -15,9 +14,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.GridLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -27,7 +24,8 @@ import com.novarehab.databinding.ActivityMainBinding
 import com.novarehab.service.RadioService
 import com.novarehab.service.UpdateService
 import com.novarehab.utils.PrefsManager
-import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -41,15 +39,19 @@ class MainActivity : AppCompatActivity() {
     private val kioskHandler = Handler(Looper.getMainLooper())
     private var kioskRunnable: Runnable? = null
 
+    private val clockHandler = Handler(Looper.getMainLooper())
+    private var clockRunnable: Runnable? = null
+
     private var tts: TextToSpeech? = null
     private var ttsReady = false
 
     private lateinit var speedGestureDetector: GestureDetector
+    var activeLang = "sl"
 
-    private val commItems = listOf(
-        Triple("pomoc",     R.drawable.comm_pomoc,     Pair("Potrebujem pomoč, prosim pridite", "Мені потрібна допомога")),
-        Triple("piti",      R.drawable.comm_piti,      Pair("Žejna sem", "Я хочу пити")),
-        Triple("jesti",     R.drawable.comm_jesti,     Pair("Lačna sem", "Я голодна")),
+    private val allCommItems = listOf(
+        Triple("pomoc",     R.drawable.comm_pomoc,     Pair("Potrebujem pomoč, prosim pridite", "Мені потрібна допомога, будь ласка")),
+        Triple("piti",      R.drawable.comm_piti,      Pair("Žejna sem, prinesite mi piti", "Я хочу пити")),
+        Triple("jesti",     R.drawable.comm_jesti,     Pair("Lačna sem, bi rada jedla", "Я голодна, хочу їсти")),
         Triple("bolecina",  R.drawable.comm_bolecina,  Pair("Imam bolečine", "У мене болить")),
         Triple("kopalnica", R.drawable.comm_kopalnica, Pair("Potrebujem v kopalnico", "Мені потрібно в туалет")),
         Triple("dobro",     R.drawable.comm_dobro,     Pair("Dobro se počutim", "Я почуваюся добре")),
@@ -57,18 +59,26 @@ class MainActivity : AppCompatActivity() {
         Triple("utrujena",  R.drawable.comm_utrujena,  Pair("Utrujena sem", "Я втомилась")),
         Triple("mraz",      R.drawable.comm_mraz,      Pair("Mrzlica mi je", "Мені холодно")),
         Triple("vroce",     R.drawable.comm_vroce,     Pair("Vroče mi je", "Мені жарко")),
-        Triple("hvala",     R.drawable.comm_hvala,     Pair("Hvala lepa", "Дякую")),
-        Triple("pridi_sem", R.drawable.comm_pridi_sem, Pair("Prosim pridi sem", "Будь ласка, підійдіть"))
+        Triple("hvala",     R.drawable.comm_hvala,     Pair("Hvala lepa", "Дякую щиро")),
+        Triple("pridi_sem", R.drawable.comm_pridi_sem, Pair("Prosim pridi sem k meni", "Будь ласка, підійдіть до мене")),
+        Triple("pocakaj",   R.drawable.comm_pocakaj,   Pair("Počakaj prosim", "Зачекай будь ласка")),
+        Triple("zdravilo",  R.drawable.comm_zdravilo,  Pair("Čas je za zdravilo", "Час приймати ліки")),
+        Triple("telefon",   R.drawable.comm_telefon,   Pair("Prinesite mi telefon", "Принесіть телефон")),
+        Triple("tv",        R.drawable.comm_tv,        Pair("Vklopite televizijo", "Увімкніть телевізор")),
+        Triple("postelja",  R.drawable.comm_postelja,  Pair("Rada bi ležala", "Хочу лягти")),
+        Triple("okno",      R.drawable.comm_okno,      Pair("Odprite okno", "Відкрийте вікно")),
+        Triple("vesela",    R.drawable.comm_vesela,    Pair("Vesela sem", "Я рада")),
+        Triple("zalostna",  R.drawable.comm_zalostna,  Pair("Žalostna sem", "Мені сумно")),
+        Triple("jezna",     R.drawable.comm_jezna,     Pair("Jezna sem", "Я сердита")),
+        Triple("strah",     R.drawable.comm_strah,     Pair("Prestrašena sem", "Мені страшно")),
+        Triple("tesnoba",   R.drawable.comm_tesnoba,   Pair("Tesnobno se počutim", "Мені тривожно")),
+        Triple("objemi",    R.drawable.comm_objemi,    Pair("Bi me objel?", "Обійми мене"))
     )
-
-    // Aktivni jezik za komunikacijo - se bo samodejno preklapljal
-    var activeLang = "sl"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = PrefsManager(this)
@@ -76,9 +86,11 @@ class MainActivity : AppCompatActivity() {
         requestAllPermissions()
         setupRadio()
         setupSpeed()
-        setupCommGrid()
+        setupCommPager()
         setupVideoCallButton()
-        setupVolumeControls()
+        setupVolumeSeekBar()
+        setupClock()
+        updatePatientName()
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
@@ -98,14 +110,14 @@ class MainActivity : AppCompatActivity() {
             binding.btnRadio4, binding.btnRadio5, binding.btnRadio6
         )
         radioButtons.forEachIndexed { index, button ->
-            if (index < stations.size) {
-                button.text = stations[index].name
-                button.setOnClickListener {
-                    if (currentStation == index && radioPlaying) stopRadio()
-                    else playStation(index)
-                }
+            val name = stations.getOrNull(index)?.name ?: "P${index+1}"
+            button.text = name.take(8)
+            button.setOnClickListener {
+                if (currentStation == index && radioPlaying) stopRadio()
+                else playStation(index)
             }
         }
+        // Radio ikona kot START/STOP
         binding.btnRadioToggle.setOnClickListener {
             if (radioPlaying) stopRadio()
             else playStation(if (currentStation >= 0) currentStation else 0)
@@ -120,10 +132,6 @@ class MainActivity : AppCompatActivity() {
         val stations = prefs.getRadioStations()
         if (index >= stations.size) return
         val station = stations[index]
-        if (station.url == "usb://local") {
-            Toast.makeText(this, "USB predvajanje ni podprto", Toast.LENGTH_SHORT).show()
-            return
-        }
         startForegroundService(Intent(this, RadioService::class.java).apply {
             action = RadioService.ACTION_PLAY
             putExtra(RadioService.EXTRA_URL, station.url)
@@ -141,12 +149,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateRadioUI() {
-        binding.btnRadioToggle.apply {
-            text = if (radioPlaying) "⏹" else "▶"
-            backgroundTintList = android.content.res.ColorStateList.valueOf(
-                if (radioPlaying) 0xFFb71c1c.toInt() else 0xFF1b5e20.toInt()
-            )
-        }
+        // Radio ikona menja barvo: zelena=predvaja, temna=stop
+        binding.btnRadioToggle.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            if (radioPlaying) 0xFFe94560.toInt() else 0xFF1b5e20.toInt()
+        )
         val radioButtons = listOf(
             binding.btnRadio1, binding.btnRadio2, binding.btnRadio3,
             binding.btnRadio4, binding.btnRadio5, binding.btnRadio6
@@ -161,21 +167,23 @@ class MainActivity : AppCompatActivity() {
     // ── HITROST ───────────────────────────────────────────────────────────────
 
     private fun setupSpeed() {
+        // Dvojni klik na hitrost = navigacija
         speedGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 openNavigation()
                 return true
             }
+            override fun onDown(e: MotionEvent) = true
         })
+        binding.tvSpeed.isClickable = true
+        binding.tvSpeed.isFocusable = true
         binding.tvSpeed.setOnTouchListener { _, event ->
             speedGestureDetector.onTouchEvent(event)
-            false
+            true
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED) {
-            startGps()
-        }
+            == PackageManager.PERMISSION_GRANTED) startGps()
     }
 
     private fun startGps() {
@@ -183,10 +191,10 @@ class MainActivity : AppCompatActivity() {
             val lm = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-                lm.requestLocationUpdates(
-                    android.location.LocationManager.GPS_PROVIDER, 1000L, 0f
-                ) { loc ->
-                    binding.tvSpeed.text = (loc.speed * 3.6).toInt().toString()
+                lm.requestLocationUpdates(android.location.LocationManager.GPS_PROVIDER, 1000L, 0.5f) { loc ->
+                    // Pokaži 0 če hitrost < 1 km/h (šum GPS)
+                    val kmh = (loc.speed * 3.6).toInt()
+                    binding.tvSpeed.text = if (kmh < 2) "0" else kmh.toString()
                 }
             }
         } catch (e: Exception) {}
@@ -199,8 +207,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
         try {
-            val uri = android.net.Uri.parse("google.navigation:q=${android.net.Uri.encode(home)}")
-            startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
+            startActivity(Intent(Intent.ACTION_VIEW,
+                android.net.Uri.parse("google.navigation:q=${android.net.Uri.encode(home)}")).apply {
                 setPackage("com.google.android.apps.maps")
             })
         } catch (e: Exception) {
@@ -209,84 +217,70 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ── KOMUNIKACIJSKE IKONE ──────────────────────────────────────────────────
+    // ── KOMUNIKACIJA — VIEWPAGER (swipe) ─────────────────────────────────────
 
-    private fun setupCommGrid() {
-        val grid = binding.gridCommMain
-        grid.removeAllViews()
-        commItems.forEach { (id, iconRes, speeches) ->
-            val cell = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = android.view.Gravity.CENTER
-                setBackgroundColor(0xFF16213e.toInt())
-                val lp = GridLayout.LayoutParams().apply {
-                    width = 0; height = 0
-                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                    rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                    setMargins(3, 3, 3, 3)
-                }
-                layoutParams = lp
-                val img = ImageView(this@MainActivity).apply {
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    val imgLp = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, 0).apply { weight = 1f; setMargins(6,6,6,2) }
-                    layoutParams = imgLp
-                    val customFile = File(getExternalFilesDir(null), "icons/$id.png")
-                    if (customFile.exists()) setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
-                    else setImageResource(iconRes)
-                }
-                addView(img)
-                isClickable = true
-                isFocusable = true
-                setOnClickListener {
-                    val speech = if (activeLang == "uk") speeches.second else speeches.first
-                    speakComm(speech)
-                }
-            }
-            grid.addView(cell)
-        }
+    private fun setupCommPager() {
+        val adapter = CommPageAdapter(
+            context = this,
+            items = allCommItems,
+            getLang = { activeLang },
+            onSpeak = { text -> speakComm(text) }
+        )
+        binding.viewPagerComm.adapter = adapter
     }
 
     fun speakComm(text: String) {
-        if (!ttsReady) return
+        if (!ttsReady || text.isEmpty()) return
         val locale = if (activeLang == "uk") Locale("uk", "UA") else Locale("sl", "SI")
-        tts?.setLanguage(locale)
+        val result = tts?.setLanguage(locale)
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts?.setLanguage(Locale.getDefault())
+        }
         if (radioPlaying) {
             startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
         }
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "comm")
+        tts?.stop()
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "comm_${System.currentTimeMillis()}")
         Handler(Looper.getMainLooper()).postDelayed({
             if (radioPlaying) {
                 startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
             }
-        }, (text.length * 80 + 1500).toLong())
+        }, (text.length * 90 + 2000).toLong())
     }
 
-    // ── GLASNOST ──────────────────────────────────────────────────────────────
+    // ── GLASNOST — SEEKBAR ────────────────────────────────────────────────────
 
-    private fun setupVolumeControls() {
+    private fun setupVolumeSeekBar() {
         val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        binding.seekVolume.max = max
+        binding.seekVolume.progress = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+        binding.seekVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) audio.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+    }
 
-        fun updateBar() {
-            val cur = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-            val bar = findViewById<View>(R.id.volumeBar) ?: return
-            val pct = cur.toFloat() / max.toFloat()
-            val parent = bar.parent as? LinearLayout ?: return
-            (bar.layoutParams as LinearLayout.LayoutParams).weight = pct
-            (parent.getChildAt(1).layoutParams as LinearLayout.LayoutParams).weight = 1f - pct
-            bar.requestLayout()
-        }
+    // ── URA + IME PACIENTA ────────────────────────────────────────────────────
 
-        binding.btnVolUp.setOnClickListener {
-            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
-            updateBar()
+    private fun setupClock() {
+        val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+        clockRunnable = object : Runnable {
+            override fun run() {
+                binding.tvClock.text = fmt.format(Date())
+                clockHandler.postDelayed(this, 30000L)
+            }
         }
-        binding.btnVolDown.setOnClickListener {
-            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
-            updateBar()
-        }
-        updateBar()
+        clockHandler.post(clockRunnable!!)
+    }
+
+    private fun updatePatientName() {
+        val name = prefs.getPatientName()
+        binding.tvPatientName.text = name
+        binding.tvPatientName.visibility = if (name.isEmpty()) View.GONE else View.VISIBLE
     }
 
     // ── VIDEO KLIC ────────────────────────────────────────────────────────────
@@ -349,7 +343,8 @@ class MainActivity : AppCompatActivity() {
     // ── PERMISSIONS ───────────────────────────────────────────────────────────
 
     private fun requestAllPermissions() {
-        val perms = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.ACCESS_FINE_LOCATION)
+        val perms = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.RECORD_AUDIO)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             perms.add(Manifest.permission.READ_MEDIA_IMAGES)
         else
@@ -362,14 +357,21 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 100 && grantResults.contains(PackageManager.PERMISSION_GRANTED)) {
-            startGps()
-        }
+        if (requestCode == 100) startGps()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updatePatientName()
+        // Posodobi glasnost seekbar
+        val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        binding.seekVolume.progress = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
 
     override fun onDestroy() {
         tts?.stop(); tts?.shutdown()
         kioskRunnable?.let { kioskHandler.removeCallbacks(it) }
+        clockRunnable?.let { clockHandler.removeCallbacks(it) }
         super.onDestroy()
     }
 }

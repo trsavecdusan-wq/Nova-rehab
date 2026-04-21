@@ -24,6 +24,9 @@ class PrefsManager(context: Context) {
     fun getReportEmail(): String = prefs.getString("report_email", "") ?: ""
     fun saveReportEmail(email: String) = prefs.edit().putString("report_email", email).apply()
 
+    fun getPatientName(): String = prefs.getString("patient_name", "") ?: ""
+    fun savePatientName(name: String) = prefs.edit().putString("patient_name", name).apply()
+
     fun getHomeAddress(): String = prefs.getString("home_address", "") ?: ""
     fun saveHomeAddress(address: String) = prefs.edit().putString("home_address", address).apply()
 
