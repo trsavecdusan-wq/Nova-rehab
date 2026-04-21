@@ -24,15 +24,22 @@ class PrefsManager(context: Context) {
     fun getReportEmail(): String = prefs.getString("report_email", "") ?: ""
     fun saveReportEmail(email: String) = prefs.edit().putString("report_email", email).apply()
 
+    fun getHomeAddress(): String = prefs.getString("home_address", "") ?: ""
+    fun saveHomeAddress(address: String) = prefs.edit().putString("home_address", address).apply()
+
+    fun getKioskReturnMinutes(): Long = prefs.getLong("kiosk_return_minutes", 5L)
+    fun saveKioskReturnMinutes(minutes: Long) = prefs.edit().putLong("kiosk_return_minutes", minutes).apply()
+
+    fun isNavigationEnabled(): Boolean = prefs.getBoolean("navigation_enabled", true)
+    fun saveNavigationEnabled(enabled: Boolean) = prefs.edit().putBoolean("navigation_enabled", enabled).apply()
+
     fun getRadioStations(): List<RadioStation> {
         val json = prefs.getString("radio_stations", null)
         if (json != null) {
             return try {
                 val type = object : TypeToken<List<RadioStation>>() {}.type
                 gson.fromJson(json, type)
-            } catch (e: Exception) {
-                defaultStations()
-            }
+            } catch (e: Exception) { defaultStations() }
         }
         return defaultStations()
     }
@@ -54,9 +61,7 @@ class PrefsManager(context: Context) {
             return try {
                 val type = object : TypeToken<List<Contact>>() {}.type
                 gson.fromJson(json, type)
-            } catch (e: Exception) {
-                defaultContacts()
-            }
+            } catch (e: Exception) { defaultContacts() }
         }
         return defaultContacts()
     }
@@ -65,34 +70,21 @@ class PrefsManager(context: Context) {
         prefs.edit().putString("contacts", gson.toJson(contacts)).apply()
     }
 
-    private fun defaultContacts(): List<Contact> {
-        return listOf(
-            Contact("Mama", "", "👩"),
-            Contact("Oče", "", "👨"),
-            Contact("Sestra", "", "👧"),
-            Contact("Brat", "", "🧑"),
-            Contact("Zdravnik", "", "👨‍⚕️"),
-            Contact("Skrbnik", "", "🧑‍💼")
-        )
-    }
+    private fun defaultContacts(): List<Contact> = listOf(
+        Contact("Mama", "", "👩", "sl"),
+        Contact("Oče", "", "👨", "sl"),
+        Contact("Sestra", "", "👧", "sl"),
+        Contact("Brat", "", "🧑", "sl"),
+        Contact("Zdravnik", "", "👨‍⚕️", "sl"),
+        Contact("Skrbnik", "", "🧑‍💼", "sl")
+    )
 
-    private fun defaultStations(): List<RadioStation> {
-        return listOf(
-            RadioStation("UA Kultura", "https://stream.rcs.revma.com/an1ugyygzk8uv"),
-            RadioStation("Rocks UA", "https://pub0302.101.ru:8443/stream/pro/aac/128/101"),
-            RadioStation("Radio Promin", "https://stream.rcs.revma.com/ypqvyy2ynk8uv"),
-            RadioStation("Радіо Люкс", "https://online.radiolux.ua/radiolux"),
-            RadioStation("Radio 1 SLO", "https://icecast2.rtvslo.si/ars1_aac"),
-            RadioStation("URC Radio", "https://stream.urcradio.com/stream")
-        )
-    }
+    private fun defaultStations(): List<RadioStation> = listOf(
+        RadioStation("UA Kultura",  "https://stream.rcs.revma.com/an1ugyygzk8uv"),
+        RadioStation("Rocks UA",    "https://pub0302.101.ru:8443/stream/pro/aac/128/101"),
+        RadioStation("Radio Promin","https://stream.rcs.revma.com/ypqvyy2ynk8uv"),
+        RadioStation("Радіо Люкс", "https://online.radiolux.ua/radiolux"),
+        RadioStation("Radio 1 SLO", "https://icecast2.rtvslo.si/ars1_aac"),
+        RadioStation("URC Radio",   "https://stream.urcradio.com/stream")
+    )
 }
-
-    fun getHomeAddress(): String = prefs.getString("home_address", "") ?: ""
-    fun saveHomeAddress(address: String) = prefs.edit().putString("home_address", address).apply()
-
-    fun getKioskReturnMinutes(): Long = prefs.getLong("kiosk_return_minutes", 5L)
-    fun saveKioskReturnMinutes(minutes: Long) = prefs.edit().putLong("kiosk_return_minutes", minutes).apply()
-
-    fun isNavigationEnabled(): Boolean = prefs.getBoolean("navigation_enabled", true)
-    fun saveNavigationEnabled(enabled: Boolean) = prefs.edit().putBoolean("navigation_enabled", enabled).apply()
