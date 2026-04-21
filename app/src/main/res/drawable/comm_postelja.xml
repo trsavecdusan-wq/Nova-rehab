@@ -1,14 +1,9 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="96dp"
-    android:height="96dp"
-    android:viewportWidth="96"
-    android:viewportHeight="96">
-  <!-- Ozadje -->
-  <path android:fillColor="#3E2723" android:pathData="M8,8 L88,8 L88,88 L8,88 Z"/>
-  
-  <path android:fillColor="#A1887F" android:pathData="M16,52 L80,52 L80,72 L16,72 Z"/>
-  <path android:fillColor="#8D6E63" android:pathData="M16,36 L40,36 L40,52 L16,52 Z"/>
-  <path android:fillColor="#FFCC80" android:pathData="M20,26 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0"/>
-  <path android:fillColor="#795548" android:pathData="M16,52 L16,76 L24,76 L24,72 L72,72 L72,76 L80,76 L80,52 Z"/>
-
+    android:width="96dp" android:height="96dp"
+    android:viewportWidth="96" android:viewportHeight="96">
+  <path android:fillColor="#4E342E" android:pathData="M48,4 a44,44 0 1,0 0,88 a44,44 0 1,0 0,-88"/>
+  <path android:fillColor="#A1887F" android:pathData="M10,52 L86,52 L86,72 L10,72 Z"/>
+  <path android:fillColor="#795548" android:pathData="M10,36 L38,36 L38,52 L10,52 Z"/>
+  <path android:fillColor="#FFCC80" android:pathData="M20,22 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0"/>
+  <path android:fillColor="#6D4C41" android:pathData="M10,52 L10,78 L18,78 L18,72 L78,72 L78,78 L86,78 L86,52 Z"/>
 </vector>

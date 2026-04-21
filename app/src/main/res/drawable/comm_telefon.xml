@@ -1,13 +1,8 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="96dp"
-    android:height="96dp"
-    android:viewportWidth="96"
-    android:viewportHeight="96">
-  <!-- Ozadje -->
-  <path android:fillColor="#1A237E" android:pathData="M8,8 L88,8 L88,88 L8,88 Z"/>
-  
-  <path android:fillColor="#9FA8DA" android:pathData="M35,16 L61,16 Q67,16 67,22 L67,74 Q67,80 61,80 L35,80 Q29,80 29,74 L29,22 Q29,16 35,16 Z"/>
-  <path android:fillColor="#1A237E" android:pathData="M33,26 L63,26 L63,66 L33,66 Z"/>
-  <path android:fillColor="#9FA8DA" android:pathData="M44,72 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
-
+    android:width="96dp" android:height="96dp"
+    android:viewportWidth="96" android:viewportHeight="96">
+  <path android:fillColor="#1A237E" android:pathData="M48,4 a44,44 0 1,0 0,88 a44,44 0 1,0 0,-88"/>
+  <path android:fillColor="#9FA8DA" android:pathData="M32,14 L64,14 Q70,14 70,20 L70,76 Q70,82 64,82 L32,82 Q26,82 26,76 L26,20 Q26,14 32,14 Z"/>
+  <path android:fillColor="#1A237E" android:pathData="M30,26 L66,26 L66,66 L30,66 Z"/>
+  <path android:fillColor="#9FA8DA" android:pathData="M44,72 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0"/>
 </vector>

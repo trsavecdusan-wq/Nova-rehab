@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.hardware.usb.host" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
@@ -39,6 +40,9 @@
         <activity android:name=".ui.SettingsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.GalleryActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.MirrorActivity" android:exported="false" android:screenOrientation="portrait" />
+                <activity android:name=".ui.MusicActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.StatsActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.NavigationActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.IconSettingsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.CommunicationActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.VideoCallActivity" android:exported="false" android:screenOrientation="portrait" />
