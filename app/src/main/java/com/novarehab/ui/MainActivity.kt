@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
             if (radioPlaying) stopRadio()
             else playStation(if (currentStation >= 0) currentStation else 0)
         }
-        binding.tvRadioTitle.setOnLongClickListener {
+        binding.btnRadioToggle.setOnLongClickListener {
             showPinDialog()
             true
         }
