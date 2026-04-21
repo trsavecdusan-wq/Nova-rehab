@@ -227,9 +227,6 @@ class MainActivity : AppCompatActivity() {
                         val speedKmh = (location.speed * 3.6).toInt()
                         binding.tvSpeed.text = speedKmh.toString()
                     }
-                    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-                    override fun onProviderEnabled(provider: String) {}
-                    override fun onProviderDisabled(provider: String) {}
                 }
             )
         } catch (e: Exception) {}
@@ -315,14 +312,16 @@ class MainActivity : AppCompatActivity() {
                 action = RadioService.ACTION_DUCK
             })
         }
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "main_comm") {
-            // Po koncu govora obnovi radio
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "main_comm")
+        // Po koncu govora obnovi radio z zamikom
+        val delayMs = (text.length * 80 + 1500).toLong()
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             if (radioPlaying) {
                 startService(Intent(this, RadioService::class.java).apply {
                     action = RadioService.ACTION_UNDUCK
                 })
             }
-        }
+        }, delayMs)
     }
 
     // ── VIDEO KLIC ────────────────────────────────────────────────────────────
