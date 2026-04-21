@@ -256,6 +256,25 @@
             android:inputType="numberPassword" android:maxLength="4"
             android:hint="Pusti prazno ce ne menjas"/>
 
+        <!-- NAVIGACIJA -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Navigacija" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp" android:layout_marginTop="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Domači naslov (za navigacijo):" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etHomeAddress" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="8dp"
+            android:hint="npr. Dunajska cesta 1, Ljubljana"/>
+
+        <!-- KIOSK -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Kiosk — vrnitev v app (minute):" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etKioskMinutes" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="16dp"
+            android:inputType="number" android:hint="5"/>
+
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal">
             <Button android:id="@+id/btnSave" android:layout_width="0dp"

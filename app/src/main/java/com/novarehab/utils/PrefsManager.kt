@@ -78,12 +78,21 @@ class PrefsManager(context: Context) {
 
     private fun defaultStations(): List<RadioStation> {
         return listOf(
-            RadioStation("Radio Lutsk", "http://online.lutsk.fm:8000/lutsk"),
-            RadioStation("UA Kultura", "http://stream.rcs.revma.com/an1ugyygzk8uv"),
-            RadioStation("Radio Promin", "http://stream.rcs.revma.com/ypqvyy2ynk8uv"),
-            RadioStation("FM Galychyna", "http://stream.galychyna.com:8000/fm"),
-            RadioStation("URC Radio", "https://stream.urcradio.com/stream"),
-            RadioStation("USB Glasba", "usb://local")
+            RadioStation("UA Kultura", "https://stream.rcs.revma.com/an1ugyygzk8uv"),
+            RadioStation("Rocks UA", "https://pub0302.101.ru:8443/stream/pro/aac/128/101"),
+            RadioStation("Radio Promin", "https://stream.rcs.revma.com/ypqvyy2ynk8uv"),
+            RadioStation("Радіо Люкс", "https://online.radiolux.ua/radiolux"),
+            RadioStation("Radio 1 SLO", "https://icecast2.rtvslo.si/ars1_aac"),
+            RadioStation("URC Radio", "https://stream.urcradio.com/stream")
         )
     }
 }
+
+    fun getHomeAddress(): String = prefs.getString("home_address", "") ?: ""
+    fun saveHomeAddress(address: String) = prefs.edit().putString("home_address", address).apply()
+
+    fun getKioskReturnMinutes(): Long = prefs.getLong("kiosk_return_minutes", 5L)
+    fun saveKioskReturnMinutes(minutes: Long) = prefs.edit().putLong("kiosk_return_minutes", minutes).apply()
+
+    fun isNavigationEnabled(): Boolean = prefs.getBoolean("navigation_enabled", true)
+    fun saveNavigationEnabled(enabled: Boolean) = prefs.edit().putBoolean("navigation_enabled", enabled).apply()

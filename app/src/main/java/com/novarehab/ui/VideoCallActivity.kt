@@ -11,6 +11,7 @@ import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.R
+import com.novarehab.service.RadioService
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import java.io.File
@@ -56,6 +57,8 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         prefs = PrefsManager(this)
         tts = TextToSpeech(this, this)
+        // Ustavi radio med video klicem
+        startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_STOP })
 
         mainContent         = findViewById(R.id.mainContent)
         callConfirmOverlay  = findViewById(R.id.callConfirmOverlay)

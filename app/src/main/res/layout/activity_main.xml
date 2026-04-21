@@ -2,156 +2,235 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:background="#1a1a2e"
-    android:padding="8dp">
+    android:padding="6dp">
 
-    <!-- RADIO SEKCIJA — fiksna višina, ne weight, da STOP ni odrezan -->
+    <!-- GLAVNA VSEBINA -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+    <!-- ZGORNJI DEL: RADIO (levo 2x3) + HITROST (desno) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="2.2"
-        android:background="#16213e"
-        android:orientation="vertical"
-        android:padding="8dp"
-        android:layout_marginBottom="5dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📻  RADIO"
-            android:textColor="#e94560"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp"/>
-
-        <!-- Vrstica 1: postaje 1-3 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:layout_marginBottom="3dp">
-            <Button android:id="@+id/btnRadio1"
-                android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                android:text="Postaja 1" android:textSize="10sp" android:layout_marginEnd="3dp"
-                android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
-            <Button android:id="@+id/btnRadio2"
-                android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                android:text="Postaja 2" android:textSize="10sp" android:layout_marginEnd="3dp"
-                android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
-            <Button android:id="@+id/btnRadio3"
-                android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                android:text="Postaja 3" android:textSize="10sp"
-                android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
-        </LinearLayout>
-
-        <!-- Vrstica 2: postaje 4-6 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:layout_marginBottom="3dp">
-            <Button android:id="@+id/btnRadio4"
-                android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                android:text="Postaja 4" android:textSize="10sp" android:layout_marginEnd="3dp"
-                android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
-            <Button android:id="@+id/btnRadio5"
-                android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                android:text="Postaja 5" android:textSize="10sp" android:layout_marginEnd="3dp"
-                android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
-            <Button android:id="@+id/btnRadio6"
-                android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                android:text="USB" android:textSize="10sp"
-                android:backgroundTint="#0f3460" android:textColor="#ffffff"/>
-        </LinearLayout>
-
-        <!-- STOP vrstica — fiksna višina, ne more biti odrezana -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-            <Button
-                android:id="@+id/btnRadioStop"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:minWidth="80dp"
-                android:text="⏹ STOP"
-                android:textSize="12sp"
-                android:backgroundTint="#e94560"
-                android:textColor="#ffffff"/>
-            <TextView
-                android:id="@+id/tvNowPlaying"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text=""
-                android:textColor="#e94560"
-                android:textSize="11sp"
-                android:visibility="gone"
-                android:layout_marginStart="8dp"/>
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- HITROST -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.3"
-        android:background="#16213e"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:layout_marginBottom="5dp">
-        <TextView
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="HITROST" android:textColor="#e94560" android:textSize="14sp" android:textStyle="bold"/>
-        <TextView
-            android:id="@+id/tvSpeed"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="0" android:textColor="#ffffff" android:textSize="48sp" android:textStyle="bold"/>
-        <TextView
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="km/h" android:textColor="#aaaaaa" android:textSize="14sp"/>
-    </LinearLayout>
-
-    <!-- KOMUNIKACIJA in VIDEO KLICI -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.4"
+        android:layout_weight="2.8"
         android:orientation="horizontal"
         android:layout_marginBottom="5dp">
-        <Button android:id="@+id/btnCommunication"
-            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-            android:text="💬 KOMUNIKACIJA" android:textSize="14sp" android:textColor="#ffffff"
-            android:layout_marginEnd="4dp" android:backgroundTint="#1a6b3c"/>
-        <Button android:id="@+id/btnVideoCall"
-            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-            android:text="📹 VIDEO KLIC" android:textSize="14sp" android:textColor="#ffffff"
-            android:backgroundTint="#1a3a6b"/>
+
+        <!-- RADIO PANEL -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1.6"
+            android:orientation="vertical"
+            android:background="#16213e"
+            android:padding="6dp"
+            android:layout_marginEnd="4dp">
+
+            <!-- RADIO naslov + START/STOP -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:id="@+id/tvRadioTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="📻 RADIO"
+                    android:textColor="#e94560"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:gravity="center_vertical"/>
+
+                <Button
+                    android:id="@+id/btnRadioToggle"
+                    android:layout_width="48dp"
+                    android:layout_height="34dp"
+                    android:text="▶"
+                    android:textSize="16sp"
+                    android:backgroundTint="#1b5e20"
+                    android:textColor="#ffffff"
+                    android:padding="0dp"/>
+            </LinearLayout>
+
+            <!-- Postaje vrstica 1 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:layout_marginBottom="3dp">
+                <Button android:id="@+id/btnRadio1"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                    android:text="Postaja 1" android:textSize="9sp" android:layout_marginEnd="2dp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
+                <Button android:id="@+id/btnRadio2"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                    android:text="Postaja 2" android:textSize="9sp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
+            </LinearLayout>
+
+            <!-- Postaje vrstica 2 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:layout_marginBottom="3dp">
+                <Button android:id="@+id/btnRadio3"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                    android:text="Postaja 3" android:textSize="9sp" android:layout_marginEnd="2dp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
+                <Button android:id="@+id/btnRadio4"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                    android:text="Postaja 4" android:textSize="9sp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
+            </LinearLayout>
+
+            <!-- Postaje vrstica 3 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <Button android:id="@+id/btnRadio5"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                    android:text="Postaja 5" android:textSize="9sp" android:layout_marginEnd="2dp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
+                <Button android:id="@+id/btnRadio6"
+                    android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                    android:text="Postaja 6" android:textSize="9sp"
+                    android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- HITROST PANEL -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#16213e"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HITROST"
+                android:textColor="#e94560"
+                android:textSize="13sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tvSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#ffffff"
+                android:textSize="52sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tvSpeedUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="km/h"
+                android:textColor="#666688"
+                android:textSize="12sp"/>
+        </LinearLayout>
+
     </LinearLayout>
 
-    <!-- OSTALI GUMBI -->
-    <LinearLayout
+    <!-- KOMUNIKACIJSKE IKONE 3x4 -->
+    <GridLayout
+        android:id="@+id/gridCommMain"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal">
-        <Button android:id="@+id/btnGallery"
-            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-            android:text="🖼 GALERIJA" android:textSize="12sp" android:textColor="#ffffff"
-            android:layout_marginEnd="3dp" android:backgroundTint="#16213e"/>
-        <Button android:id="@+id/btnMirror"
-            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-            android:text="🪞 OGLEDALO" android:textSize="12sp" android:textColor="#ffffff"
-            android:layout_marginEnd="3dp" android:backgroundTint="#16213e"/>
-        <Button android:id="@+id/btnSettings"
-            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-            android:text="⚙ NASTAV." android:textSize="12sp" android:textColor="#ffffff"
-            android:backgroundTint="#16213e"/>
+        android:layout_weight="3.5"
+        android:columnCount="3"
+        android:rowCount="4"
+        android:layout_marginBottom="5dp"/>
+
+    <!-- SPODNJA TIPKA: VIDEO KLIC -->
+    <Button
+        android:id="@+id/btnVideoCall"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.8"
+        android:text="📹  VIDEO KLIC"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#ffffff"
+        android:backgroundTint="#1a3a6b"/>
+
+    </LinearLayout>
+    <!-- GLASNOST — vertikalni pas ob desnem robu -->
+    <LinearLayout
+        android:layout_width="52dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#0d0d1a"
+        android:gravity="center"
+        android:layout_marginStart="5dp">
+
+        <!-- + tipka -->
+        <Button
+            android:id="@+id/btnVolUp"
+            android:layout_width="44dp"
+            android:layout_height="64dp"
+            android:text="＋"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:backgroundTint="#1b5e20"
+            android:textColor="#ffffff"
+            android:padding="0dp"/>
+
+        <!-- Indikator glasnosti -->
+        <LinearLayout
+            android:layout_width="20dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="bottom"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp">
+
+            <View
+                android:id="@+id/volumeBar"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="0.7"
+                android:background="#e94560"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="0.3"
+                android:background="#333355"/>
+
+        </LinearLayout>
+
+        <!-- − tipka -->
+        <Button
+            android:id="@+id/btnVolDown"
+            android:layout_width="44dp"
+            android:layout_height="64dp"
+            android:text="－"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:backgroundTint="#b71c1c"
+            android:textColor="#ffffff"
+            android:padding="0dp"/>
+
     </LinearLayout>
 
 </LinearLayout>

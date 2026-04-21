@@ -12,6 +12,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.novarehab.R
+import com.novarehab.service.RadioService
 import java.io.File
 import java.util.Locale
 
@@ -231,7 +232,14 @@ class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun speak(text: String) {
         tts?.stop()
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "comm_${System.currentTimeMillis()}")
+        // Utišaj radio med govorom
+        startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
+        val params = android.os.Bundle()
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "comm_${System.currentTimeMillis()}")
+        // Obnovi radio po govoru (z zamikom)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+        }, (text.length * 80 + 1500).toLong())
     }
 
     // Dolg pritisk = opcije za spremembo slike

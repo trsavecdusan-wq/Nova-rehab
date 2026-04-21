@@ -8,8 +8,8 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.novarehab.R
@@ -23,9 +23,11 @@ class RadioService : Service() {
     private val NOTIFICATION_ID = 1
 
     companion object {
-        const val ACTION_PLAY = "ACTION_PLAY"
-        const val ACTION_STOP = "ACTION_STOP"
-        const val EXTRA_URL = "EXTRA_URL"
+        const val ACTION_PLAY   = "ACTION_PLAY"
+        const val ACTION_STOP   = "ACTION_STOP"
+        const val ACTION_DUCK   = "ACTION_DUCK"    // utišaj med TTS
+        const val ACTION_UNDUCK = "ACTION_UNDUCK"  // obnovi po TTS
+        const val EXTRA_URL  = "EXTRA_URL"
         const val EXTRA_NAME = "EXTRA_NAME"
     }
 
@@ -38,28 +40,26 @@ class RadioService : Service() {
             .readTimeout(15, TimeUnit.SECONDS)
             .build()
 
-        val okHttpDataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
-            .setUserAgent("NovaRehab/1.0")
-
-        val dataSourceFactory = DefaultDataSource.Factory(this, okHttpDataSourceFactory)
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        val dataSourceFactory = DefaultDataSource.Factory(
+            this,
+            OkHttpDataSource.Factory(okHttpClient).setUserAgent("NovaRehab/1.0")
+        )
 
         player = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(mediaSourceFactory)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .build()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_PLAY -> {
-                val url = intent.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
+                val url  = intent.getStringExtra(EXTRA_URL)  ?: return START_NOT_STICKY
                 val name = intent.getStringExtra(EXTRA_NAME) ?: "Radio"
                 playStream(url, name)
             }
-            ACTION_STOP -> {
-                stopPlayback()
-                stopSelf()
-            }
+            ACTION_STOP -> { stopPlayback(); stopSelf() }
+            ACTION_DUCK   -> player?.volume = 0.1f   // utišaj na 10%
+            ACTION_UNDUCK -> player?.volume = 1.0f   // obnovi
         }
         return START_STICKY
     }
@@ -67,6 +67,7 @@ class RadioService : Service() {
     private fun playStream(url: String, name: String) {
         player?.apply {
             stop()
+            volume = 1.0f
             setMediaItem(MediaItem.fromUri(url))
             prepare()
             play()
@@ -79,20 +80,16 @@ class RadioService : Service() {
         stopForeground(true)
     }
 
-    private fun buildNotification(name: String): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(name: String): Notification =
+        NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Nova Rehab Radio")
             .setContentText("▶ $name")
             .setSmallIcon(R.drawable.ic_radio)
             .setOngoing(true)
             .build()
-    }
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID, "Radio predvajanje",
-            NotificationManager.IMPORTANCE_LOW
-        )
+        val channel = NotificationChannel(CHANNEL_ID, "Radio predvajanje", NotificationManager.IMPORTANCE_LOW)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
