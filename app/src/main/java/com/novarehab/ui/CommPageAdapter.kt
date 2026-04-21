@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.novarehab.R
+import com.novarehab.utils.IconTextManager
 import com.novarehab.service.RadioService
 import java.io.File
 
@@ -20,7 +21,9 @@ class CommPageAdapter(
     private val items: List<Triple<String, Int, Pair<String, String>>>,
     private val getLang: () -> String,
     private val onSpeak: (String) -> Unit
-) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
+) {
+    private val iconMgr = IconTextManager(context)
+ : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
 
     private val pageSize = 12
     val pageCount get() = Math.ceil(items.size.toDouble() / pageSize).toInt().coerceAtLeast(1)
@@ -78,7 +81,10 @@ class CommPageAdapter(
                 isClickable = true
                 isFocusable = true
                 setOnClickListener {
-                    val speech = if (getLang() == "uk") speeches.second else speeches.first
+                    // Najprej preveri custom tekst, potem privzeti
+                    val customText = iconMgr.getText(id, getLang())
+                    val speech = if (customText.isNotEmpty()) customText
+                        else if (getLang() == "uk") speeches.second else speeches.first
                     onSpeak(speech)
                 }
             }

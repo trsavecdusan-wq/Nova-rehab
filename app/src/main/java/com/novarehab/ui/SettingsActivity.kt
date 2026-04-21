@@ -138,6 +138,9 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
             finish()
         }
+        binding.btnIconSettings.setOnClickListener {
+            startActivity(android.content.Intent(this, IconSettingsActivity::class.java))
+        }
         // Gumb za test TTS
         binding.btnTestTts.setOnClickListener {
             testTts()

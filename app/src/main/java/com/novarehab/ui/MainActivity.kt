@@ -14,7 +14,6 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -175,13 +174,18 @@ class MainActivity : AppCompatActivity() {
     // ── HITROST ───────────────────────────────────────────────────────────────
 
     private fun setupSpeed() {
-        // Dvojni klik na hitrost = navigacija
         speedGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
             override fun onDoubleTap(e: MotionEvent): Boolean {
-                openNavigation()
+                val home = prefs.getHomeAddress()
+                if (home.isEmpty()) {
+                    // Pokaži dialog za vnos naslova
+                    showHomeAddressDialog()
+                } else {
+                    openNavigation()
+                }
                 return true
             }
-            override fun onDown(e: MotionEvent) = true
         })
         binding.tvSpeed.isClickable = true
         binding.tvSpeed.isFocusable = true
@@ -189,9 +193,28 @@ class MainActivity : AppCompatActivity() {
             speedGestureDetector.onTouchEvent(event)
             true
         }
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED) startGps()
+    }
+
+    private fun showHomeAddressDialog() {
+        val input = android.widget.EditText(this).apply {
+            hint = "npr. Dunajska cesta 1, Ljubljana"
+            setPadding(40, 20, 40, 20)
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Nastavi domači naslov")
+            .setMessage("Vnesi naslov za navigacijo:")
+            .setView(input)
+            .setPositiveButton("Shrani") { _, _ ->
+                val addr = input.text.toString().trim()
+                if (addr.isNotEmpty()) {
+                    prefs.saveHomeAddress(addr)
+                    openNavigation()
+                }
+            }
+            .setNegativeButton("Prekliči", null)
+            .show()
     }
 
     private fun startGps() {
@@ -267,20 +290,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ── GLASNOST — SEEKBAR ────────────────────────────────────────────────────
+    // ── GLASNOST ─────────────────────────────────────────────────────────────
 
     private fun setupVolumeSeekBar() {
         val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        binding.seekVolume.max = max
-        binding.seekVolume.progress = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-        binding.seekVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) audio.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0)
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
+
+        fun updateIndicator() {
+            val cur = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+            val pct = (cur.toFloat() / max * 5).toInt().coerceIn(0, 5)
+            binding.tvVolLevel.text = "●".repeat(pct) + "○".repeat(5 - pct)
+        }
+
+        binding.btnVolUp.setOnClickListener {
+            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
+            updateIndicator()
+        }
+        binding.btnVolDown.setOnClickListener {
+            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
+            updateIndicator()
+        }
+        updateIndicator()
     }
 
     // ── URA + IME PACIENTA ────────────────────────────────────────────────────
@@ -382,9 +412,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updatePatientName()
-        // Posodobi glasnost seekbar
-        val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        binding.seekVolume.progress = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+
     }
 
     override fun onDestroy() {

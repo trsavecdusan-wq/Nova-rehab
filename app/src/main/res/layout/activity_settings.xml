@@ -256,6 +256,16 @@
             android:inputType="numberPassword" android:maxLength="4"
             android:hint="Pusti prazno ce ne menjas"/>
 
+        <!-- IKONE -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Komunikacijske ikone" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp"/>
+        <Button android:id="@+id/btnIconSettings"
+            android:layout_width="match_parent" android:layout_height="56dp"
+            android:text="UREDI IKONE IN BESEDILA"
+            android:backgroundTint="#1a3a6b" android:textColor="#ffffff"
+            android:textSize="14sp" android:layout_marginBottom="16dp"/>
+
         <!-- TTS NASTAVITVE -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Govor (TTS)" android:textColor="#ffffff" android:textSize="16sp"
