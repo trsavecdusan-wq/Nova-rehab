@@ -5,9 +5,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -19,35 +23,50 @@ import java.util.concurrent.TimeUnit
 class RadioService : Service() {
 
     private var player: ExoPlayer? = null
+    private var audioManager: AudioManager? = null
+    private var focusRequest: AudioFocusRequest? = null
     private val CHANNEL_ID = "radio_channel"
     private val NOTIFICATION_ID = 1
 
     companion object {
         const val ACTION_PLAY   = "ACTION_PLAY"
         const val ACTION_STOP   = "ACTION_STOP"
-        const val ACTION_DUCK   = "ACTION_DUCK"    // utišaj med TTS
-        const val ACTION_UNDUCK = "ACTION_UNDUCK"  // obnovi po TTS
-        const val EXTRA_URL  = "EXTRA_URL"
-        const val EXTRA_NAME = "EXTRA_NAME"
+        const val ACTION_DUCK   = "ACTION_DUCK"
+        const val ACTION_UNDUCK = "ACTION_UNDUCK"
+        const val EXTRA_URL     = "EXTRA_URL"
+        const val EXTRA_NAME    = "EXTRA_NAME"
     }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
         val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .build()
 
         val dataSourceFactory = DefaultDataSource.Factory(
             this,
-            OkHttpDataSource.Factory(okHttpClient).setUserAgent("NovaRehab/1.0")
+            OkHttpDataSource.Factory(okHttpClient)
+                .setUserAgent("Mozilla/5.0 NovaRehab/1.0")
         )
 
         player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
-            .build()
+            .build().also { p ->
+                p.addListener(object : Player.Listener {
+                    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                        // Počakaj 3s in poskusi znova
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            p.prepare()
+                            p.play()
+                        }, 3000)
+                    }
+                })
+            }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -55,13 +74,35 @@ class RadioService : Service() {
             ACTION_PLAY -> {
                 val url  = intent.getStringExtra(EXTRA_URL)  ?: return START_NOT_STICKY
                 val name = intent.getStringExtra(EXTRA_NAME) ?: "Radio"
-                playStream(url, name)
+                requestAudioFocusAndPlay(url, name)
             }
-            ACTION_STOP -> { stopPlayback(); stopSelf() }
-            ACTION_DUCK   -> player?.volume = 0.1f   // utišaj na 10%
-            ACTION_UNDUCK -> player?.volume = 1.0f   // obnovi
+            ACTION_STOP   -> { abandonAudioFocus(); stopPlayback(); stopSelf() }
+            ACTION_DUCK   -> player?.volume = 0.1f
+            ACTION_UNDUCK -> player?.volume = 1.0f
         }
         return START_STICKY
+    }
+
+    private fun requestAudioFocusAndPlay(url: String, name: String) {
+        val attrs = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+        focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(attrs)
+            .setOnAudioFocusChangeListener { focus ->
+                when (focus) {
+                    AudioManager.AUDIOFOCUS_LOSS          -> stopPlayback()
+                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> player?.volume = 0.1f
+                    AudioManager.AUDIOFOCUS_GAIN          -> player?.volume = 1.0f
+                }
+            }.build()
+        audioManager?.requestAudioFocus(focusRequest!!)
+        playStream(url, name)
+    }
+
+    private fun abandonAudioFocus() {
+        focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
     }
 
     private fun playStream(url: String, name: String) {
@@ -89,13 +130,16 @@ class RadioService : Service() {
             .build()
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(CHANNEL_ID, "Radio predvajanje", NotificationManager.IMPORTANCE_LOW)
+        val channel = NotificationChannel(
+            CHANNEL_ID, "Radio predvajanje", NotificationManager.IMPORTANCE_LOW
+        )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        abandonAudioFocus()
         player?.release()
         player = null
         super.onDestroy()

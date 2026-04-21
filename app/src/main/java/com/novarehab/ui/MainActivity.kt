@@ -206,14 +206,22 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Nastavi domači naslov v Nastavitvah", Toast.LENGTH_SHORT).show()
             return
         }
+        // Satelitski pogled + navigacija
         try {
-            startActivity(Intent(Intent.ACTION_VIEW,
-                android.net.Uri.parse("google.navigation:q=${android.net.Uri.encode(home)}")).apply {
+            // Odpri Google Maps v satelitskem načinu z navigacijo
+            val uri = android.net.Uri.parse(
+                "google.navigation:q=${android.net.Uri.encode(home)}&mode=w&layer=satellite"
+            )
+            startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
                 setPackage("com.google.android.apps.maps")
             })
         } catch (e: Exception) {
-            startActivity(Intent(Intent.ACTION_VIEW,
-                android.net.Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${android.net.Uri.encode(home)}")))
+            try {
+                val uri = android.net.Uri.parse(
+                    "https://www.google.com/maps/dir/?api=1&destination=${android.net.Uri.encode(home)}&travelmode=walking&layer=satellite"
+                )
+                startActivity(Intent(Intent.ACTION_VIEW, uri))
+            } catch (e2: Exception) {}
         }
     }
 
@@ -369,9 +377,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        stopRadio()
         tts?.stop(); tts?.shutdown()
         kioskRunnable?.let { kioskHandler.removeCallbacks(it) }
         clockRunnable?.let { clockHandler.removeCallbacks(it) }
         super.onDestroy()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Ustavi radio ko aplikacija gre v ozadje (ne samo med moduli)
+        if (isFinishing) stopRadio()
     }
 }

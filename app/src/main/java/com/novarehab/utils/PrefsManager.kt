@@ -83,11 +83,11 @@ class PrefsManager(context: Context) {
     )
 
     private fun defaultStations(): List<RadioStation> = listOf(
-        RadioStation("UA Kultura",  "https://stream.rcs.revma.com/an1ugyygzk8uv"),
-        RadioStation("Rocks UA",    "https://pub0302.101.ru:8443/stream/pro/aac/128/101"),
-        RadioStation("Radio Promin","https://stream.rcs.revma.com/ypqvyy2ynk8uv"),
-        RadioStation("Радіо Люкс", "https://online.radiolux.ua/radiolux"),
+        RadioStation("UA Kultura",   "https://stream.rcs.revma.com/an1ugyygzk8uv"),
+        RadioStation("Промінь UA",   "https://stream.rcs.revma.com/ypqvyy2ynk8uv"),
+        RadioStation("Радіо Люкс",  "https://europadns.com/radiolux"),
+        RadioStation("Наше Радіо",  "https://nashe1.hostingradio.ru/nashe-256.mp3"),
         RadioStation("Radio 1 SLO", "https://icecast2.rtvslo.si/ars1_aac"),
-        RadioStation("URC Radio",   "https://stream.urcradio.com/stream")
+        RadioStation("Val 202",     "https://icecast2.rtvslo.si/val202_aac")
     )
 }

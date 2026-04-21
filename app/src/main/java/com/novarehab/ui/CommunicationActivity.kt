@@ -119,7 +119,13 @@ class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            updateTtsLanguage()
+            // Najprej nastavi slovenščino kot privzeto
+            val slResult = tts?.setLanguage(Locale("sl", "SI"))
+            if (slResult == TextToSpeech.LANG_MISSING_DATA || slResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.setLanguage(Locale.getDefault())
+            }
+            tts?.setSpeechRate(0.85f)
+            tts?.setPitch(1.0f)
         }
     }
 
@@ -232,15 +238,21 @@ class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun speak(text: String) {
-        tts?.stop()
-        // Utišaj radio med govorom
+        if (text.isEmpty()) return
+        // Nastavi jezik pred govorom
+        val locale = if (activeLang == "uk") Locale("uk", "UA") else Locale("sl", "SI")
+        val result = tts?.setLanguage(locale)
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts?.setLanguage(Locale.getDefault())
+        }
+        // Utišaj radio
         startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
-        val params = android.os.Bundle()
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "comm_${System.currentTimeMillis()}")
-        // Obnovi radio po govoru (z zamikom)
+        tts?.stop()
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "comm_${System.currentTimeMillis()}")
+        // Obnovi radio po govoru
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
-        }, (text.length * 80 + 1500).toLong())
+        }, (text.length * 90 + 2000).toLong())
     }
 
     // Dolg pritisk = opcije za spremembo slike
