@@ -35,7 +35,6 @@ data class StatRecord(
 )
 
 data class DailyReport(
-    val ttsErrors: Int = 0,
     val date: String,
     val appMinutes: Int,
     val radioMinutes: Int,
@@ -46,7 +45,8 @@ data class DailyReport(
     val navMinutes: Int,
     val callCount: Int,
     val musicMinutes: Int,
-    val langChanges: Int
+    val langChanges: Int,
+    val ttsErrors: Int = 0
 )
 
 class StatsManager(context: Context) : SQLiteOpenHelper(context, "nova_stats.db", null, 2) {
