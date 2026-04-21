@@ -92,11 +92,19 @@ class MainActivity : AppCompatActivity() {
         setupClock()
         updatePatientName()
 
-        tts = TextToSpeech(this) { status ->
+        // Poskusi Google TTS engine, sicer privzeti
+        val googleTts = "com.google.android.tts"
+        tts = TextToSpeech(this, { status ->
             if (status == TextToSpeech.SUCCESS) {
+                // Nastavi jezik - če ni SL, vzemi privzetega
+                val sl = tts?.setLanguage(java.util.Locale("sl", "SI"))
+                if (sl == TextToSpeech.LANG_MISSING_DATA || sl == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts?.setLanguage(java.util.Locale.getDefault())
+                }
+                tts?.setSpeechRate(0.9f)
                 ttsReady = true
             }
-        }
+        }, googleTts)
 
         startService(Intent(this, UpdateService::class.java))
     }
@@ -238,22 +246,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun speakComm(text: String) {
-        if (!ttsReady || text.isEmpty()) return
-        val locale = if (activeLang == "uk") Locale("uk", "UA") else Locale("sl", "SI")
-        val result = tts?.setLanguage(locale)
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            tts?.setLanguage(Locale.getDefault())
-        }
+        if (text.isEmpty()) return
         if (radioPlaying) {
             startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
         }
-        tts?.stop()
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "comm_${System.currentTimeMillis()}")
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (radioPlaying) {
-                startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+        if (ttsReady) {
+            tts?.stop()
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "c${System.currentTimeMillis()}")
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (radioPlaying) startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+            }, (text.length * 90 + 2000).toLong())
+        } else {
+            // TTS še ni pripravljen - inicializiraj znova
+            tts = TextToSpeech(this) { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    ttsReady = true
+                    tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "c${System.currentTimeMillis()}")
+                }
             }
-        }, (text.length * 90 + 2000).toLong())
+        }
     }
 
     // ── GLASNOST — SEEKBAR ────────────────────────────────────────────────────

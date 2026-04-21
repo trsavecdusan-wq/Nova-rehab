@@ -3,6 +3,7 @@ package com.novarehab.ui
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.databinding.ActivitySettingsBinding
@@ -137,6 +138,29 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
             finish()
         }
+        // Gumb za test TTS
+        binding.btnTestTts.setOnClickListener {
+            testTts()
+        }
+        // Gumb za namestitev TTS podatkov
+        binding.btnInstallTts.setOnClickListener {
+            startActivity(android.content.Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
+        }
+    }
+
+    private fun testTts() {
+        val tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    Toast.makeText(this, "TTS OK - govorim...", Toast.LENGTH_SHORT).show()
+                }, 500)
+            } else {
+                Toast.makeText(this, "TTS napaka! Namesti glasovne podatke.", Toast.LENGTH_LONG).show()
+            }
+        }
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            tts.speak("Zdravo, to je test govora", TextToSpeech.QUEUE_FLUSH, null, "test")
+        }, 1000)
     }
 
     private fun setupBackButton() {

@@ -256,6 +256,22 @@
             android:inputType="numberPassword" android:maxLength="4"
             android:hint="Pusti prazno ce ne menjas"/>
 
+        <!-- TTS NASTAVITVE -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Govor (TTS)" android:textColor="#ffffff" android:textSize="16sp"
+            android:textStyle="bold" android:layout_marginBottom="8dp"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginBottom="16dp">
+            <Button android:id="@+id/btnTestTts"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="TEST GOVORA" android:backgroundTint="#1b5e20"
+                android:textColor="#ffffff" android:layout_marginEnd="8dp"/>
+            <Button android:id="@+id/btnInstallTts"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="NAMESTI GLASOVE" android:backgroundTint="#0f3460"
+                android:textColor="#ffffff"/>
+        </LinearLayout>
+
         <!-- IME PACIENTA -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Ime pacienta:" android:textColor="#ffffff" android:textSize="16sp"
