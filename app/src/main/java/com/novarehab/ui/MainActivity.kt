@@ -265,7 +265,7 @@ class MainActivity : AppCompatActivity() {
             getLang = { activeLang },
             onSpeak = { text -> speakComm(text) }
         )
-        binding.viewPagerComm.adapter = adapter
+        binding.viewPagerComm.adapter = adapter as androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>
     }
 
     fun speakComm(text: String) {

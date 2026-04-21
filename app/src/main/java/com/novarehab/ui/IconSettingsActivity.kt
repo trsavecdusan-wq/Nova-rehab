@@ -16,7 +16,6 @@ class IconSettingsActivity : AppCompatActivity() {
     private var pendingIconId: String? = null
     private val REQUEST_IMAGE = 401
 
-    // Vse ikone z ID-ji
     private val allIcons = listOf(
         "pomoc" to R.drawable.comm_pomoc,
         "piti" to R.drawable.comm_piti,
@@ -48,143 +47,128 @@ class IconSettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
 
-        val scroll = ScrollView(this).apply {
-            setBackgroundColor(0xFF1a1a2e.toInt())
-        }
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(16, 16, 16, 16)
-        }
+        val scroll = ScrollView(this)
+        scroll.setBackgroundColor(0xFF1a1a2e.toInt())
+        val container = LinearLayout(this)
+        container.orientation = LinearLayout.VERTICAL
+        container.setPadding(16, 16, 16, 16)
         scroll.addView(container)
         setContentView(scroll)
 
         // Glava
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 56.dp)
-        }
-        val title = TextView(this).apply {
-            text = "Uredi ikone"
-            textSize = 18f
-            setTextColor(0xFFe94560.toInt())
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val btnBack = Button(this).apply {
-            text = "NAZAJ"
-            setBackgroundColor(0xFF333355.toInt())
-            setTextColor(0xFFFFFFFF.toInt())
-            setOnClickListener { finish() }
-        }
+        val header = LinearLayout(this)
+        header.orientation = LinearLayout.HORIZONTAL
+        header.gravity = Gravity.CENTER_VERTICAL
+        val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
+        header.layoutParams = lp
+
+        val title = TextView(this)
+        title.text = "Uredi ikone"
+        title.textSize = 18f
+        title.setTextColor(0xFFe94560.toInt())
+        title.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+
+        val btnBack = Button(this)
+        btnBack.text = "NAZAJ"
+        btnBack.setBackgroundColor(0xFF333355.toInt())
+        btnBack.setTextColor(0xFFFFFFFF.toInt())
+        btnBack.setOnClickListener { finish() }
+
         header.addView(title)
         header.addView(btnBack)
         container.addView(header)
 
-        // Seznam ikon
         val iconMgr = IconTextManager(this)
+
         allIcons.forEach { (id, defaultRes) ->
-            val row = createIconRow(id, defaultRes, iconMgr)
-            container.addView(row)
-            // Separator
-            val sep = View(this).apply {
-                setBackgroundColor(0xFF222244.toInt())
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { setMargins(0, 4, 0, 4) }
-            }
+            container.addView(createIconRow(id, defaultRes, iconMgr))
+            val sep = android.view.View(this)
+            sep.setBackgroundColor(0xFF222244.toInt())
+            sep.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1
+            ).apply { setMargins(0, 4, 0, 4) }
             container.addView(sep)
         }
     }
 
     private fun createIconRow(id: String, defaultRes: Int, mgr: IconTextManager): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 6, 0, 6) }
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { setMargins(0, 6, 0, 6) }
 
-            // Slika ikone
-            val img = ImageView(this@IconSettingsActivity).apply {
-                layoutParams = LinearLayout.LayoutParams(72.dp, 72.dp).apply { setMargins(0, 0, 12, 0) }
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                val customFile = File(getExternalFilesDir(null), "icons/$id.png")
-                if (customFile.exists()) setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
-                else setImageResource(defaultRes)
-                // Klik = zamenjaj sliko
-                setOnClickListener {
-                    pendingIconId = id
-                    startActivityForResult(
-                        Intent(Intent.ACTION_PICK).apply { type = "image/*" },
-                        REQUEST_IMAGE
-                    )
-                }
-            }
-            addView(img)
-
-            // Teksti
-            val texts = LinearLayout(this@IconSettingsActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-
-            val etSl = EditText(this@IconSettingsActivity).apply {
-                setText(mgr.getText(id, "sl"))
-                hint = "Slovensko besedilo"
-                textSize = 13f
-                setTextColor(0xFFFFFFFF.toInt())
-                setHintTextColor(0xFF666688.toInt())
-                setBackgroundColor(0xFF16213e.toInt())
-                setPadding(8, 6, 8, 6)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { setMargins(0, 0, 0, 4) }
-            }
-            val etUk = EditText(this@IconSettingsActivity).apply {
-                setText(mgr.getText(id, "uk"))
-                hint = "Ukrajiinsko besedilo"
-                textSize = 13f
-                setTextColor(0xFFFFFFFF.toInt())
-                setHintTextColor(0xFF666688.toInt())
-                setBackgroundColor(0xFF16213e.toInt())
-                setPadding(8, 6, 8, 6)
-            }
-            texts.addView(etSl)
-            texts.addView(etUk)
-            addView(texts)
-
-            // Gumb shrani
-            val btnSave = Button(this@IconSettingsActivity).apply {
-                text = "✓"
-                textSize = 16f
-                setBackgroundColor(0xFF1b5e20.toInt())
-                setTextColor(0xFFFFFFFF.toInt())
-                layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp).apply { setMargins(8, 0, 0, 0) }
-                setOnClickListener {
-                    mgr.setText(id, "sl", etSl.text.toString())
-                    mgr.setText(id, "uk", etUk.text.toString())
-                    Toast.makeText(this@IconSettingsActivity, "Shranjeno", Toast.LENGTH_SHORT).show()
-                }
-            }
-            addView(btnSave)
-
-            // Gumb ponastavi sliko
-            val btnReset = Button(this@IconSettingsActivity).apply {
-                text = "↺"
-                textSize = 16f
-                setBackgroundColor(0xFF333355.toInt())
-                setTextColor(0xFFFFFFFF.toInt())
-                layoutParams = LinearLayout.LayoutParams(48.dp, 48.dp).apply { setMargins(4, 0, 0, 0) }
-                setOnClickListener {
-                    File(getExternalFilesDir(null), "icons/$id.png").delete()
-                    img.setImageResource(defaultRes)
-                    Toast.makeText(this@IconSettingsActivity, "Ikona ponastavljena", Toast.LENGTH_SHORT).show()
-                }
-            }
-            addView(btnReset)
+        val img = ImageView(this)
+        img.layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply { setMargins(0, 0, 12, 0) }
+        img.scaleType = ImageView.ScaleType.FIT_CENTER
+        val customFile = File(getExternalFilesDir(null), "icons/$id.png")
+        if (customFile.exists()) img.setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
+        else img.setImageResource(defaultRes)
+        img.setOnClickListener {
+            pendingIconId = id
+            startActivityForResult(Intent(Intent.ACTION_PICK).apply { type = "image/*" }, REQUEST_IMAGE)
         }
+        row.addView(img)
+
+        val texts = LinearLayout(this)
+        texts.orientation = LinearLayout.VERTICAL
+        texts.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+
+        val etSl = EditText(this)
+        etSl.setText(mgr.getText(id, "sl"))
+        etSl.hint = "Slovensko"
+        etSl.textSize = 12f
+        etSl.setTextColor(0xFFFFFFFF.toInt())
+        etSl.setHintTextColor(0xFF666688.toInt())
+        etSl.setBackgroundColor(0xFF16213e.toInt())
+        etSl.setPadding(8, 4, 8, 4)
+        etSl.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { setMargins(0, 0, 0, 4) }
+
+        val etUk = EditText(this)
+        etUk.setText(mgr.getText(id, "uk"))
+        etUk.hint = "Ukrainsko"
+        etUk.textSize = 12f
+        etUk.setTextColor(0xFFFFFFFF.toInt())
+        etUk.setHintTextColor(0xFF666688.toInt())
+        etUk.setBackgroundColor(0xFF16213e.toInt())
+        etUk.setPadding(8, 4, 8, 4)
+
+        texts.addView(etSl)
+        texts.addView(etUk)
+        row.addView(texts)
+
+        val btnSave = Button(this)
+        btnSave.text = "✓"
+        btnSave.textSize = 16f
+        btnSave.setBackgroundColor(0xFF1b5e20.toInt())
+        btnSave.setTextColor(0xFFFFFFFF.toInt())
+        btnSave.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(8, 0, 0, 0) }
+        btnSave.setOnClickListener {
+            mgr.setText(id, "sl", etSl.text.toString())
+            mgr.setText(id, "uk", etUk.text.toString())
+            Toast.makeText(this, "Shranjeno", Toast.LENGTH_SHORT).show()
+        }
+        row.addView(btnSave)
+
+        val btnReset = Button(this)
+        btnReset.text = "↺"
+        btnReset.textSize = 16f
+        btnReset.setBackgroundColor(0xFF333355.toInt())
+        btnReset.setTextColor(0xFFFFFFFF.toInt())
+        btnReset.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(4, 0, 0, 0) }
+        btnReset.setOnClickListener {
+            File(getExternalFilesDir(null), "icons/$id.png").delete()
+            img.setImageResource(defaultRes)
+            Toast.makeText(this, "Ikona ponastavljena", Toast.LENGTH_SHORT).show()
+        }
+        row.addView(btnReset)
+
+        return row
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -201,10 +185,10 @@ class IconSettingsActivity : AppCompatActivity() {
                 Toast.makeText(this, "Slika zamenjana", Toast.LENGTH_SHORT).show()
                 recreate()
             } catch (e: Exception) {
-                Toast.makeText(this, "Napaka: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Napaka", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    val Int.dp get() = (this * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }
