@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e">
+
+    <!-- GLAVNA VSEBINA -->
+    <LinearLayout
+        android:id="@+id/mainContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- GLAVA -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#0d0d1a"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+            <TextView
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="VIDEO KLICI" android:textColor="#e94560"
+                android:textSize="18sp" android:textStyle="bold"/>
+            <Button
+                android:id="@+id/btnCallBack"
+                android:layout_width="wrap_content" android:layout_height="40dp"
+                android:text="NAZAJ" android:textSize="12sp"
+                android:backgroundTint="#333355" android:textColor="#ffffff"/>
+        </LinearLayout>
+
+        <!-- 6 KONTAKTOV 2x3 -->
+        <GridLayout
+            android:id="@+id/gridContacts"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:columnCount="2"
+            android:rowCount="3"
+            android:padding="6dp"/>
+
+    </LinearLayout>
+
+    <!-- OVERLAY: POTRDITEV KLICA (velika slika + zelena/rdeča tipka) -->
+    <LinearLayout
+        android:id="@+id/callConfirmOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#E5000000"
+        android:visibility="gone"
+        android:padding="24dp">
+
+        <!-- Slika kontakta — velika -->
+        <ImageView
+            android:id="@+id/imgConfirmContact"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:scaleType="fitCenter"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Ime kontakta -->
+        <TextView
+            android:id="@+id/tvConfirmName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mama"
+            android:textColor="#ffffff"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Jezik badge -->
+        <TextView
+            android:id="@+id/tvConfirmLang"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🇸🇮 Slovenščina"
+            android:textColor="#aaaaaa"
+            android:textSize="16sp"
+            android:layout_marginBottom="40dp"/>
+
+        <!-- Tipki KLIC / PREKLIČI -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btnConfirmCall"
+                android:layout_width="0dp"
+                android:layout_height="72dp"
+                android:layout_weight="1"
+                android:text="📞 KLIC"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:backgroundTint="#1b5e20"
+                android:textColor="#ffffff"
+                android:layout_marginEnd="16dp"/>
+
+            <Button
+                android:id="@+id/btnCancelCall"
+                android:layout_width="0dp"
+                android:layout_height="72dp"
+                android:layout_weight="1"
+                android:text="✖ PREKLIČI"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:backgroundTint="#b71c1c"
+                android:textColor="#ffffff"/>
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- OVERLAY: MED KLICEM — hitra sporočila + tipka za prekinitev -->
+    <LinearLayout
+        android:id="@+id/activeCallOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#E5000000"
+        android:visibility="gone">
+
+        <!-- Ime kontakta med klicem -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#0d0d1a"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+            <TextView
+                android:id="@+id/tvCallingContact"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="📞 Mama" android:textColor="#e94560"
+                android:textSize="18sp" android:textStyle="bold"/>
+            <!-- PREKINI KLIC — vedno vidna, rdeča, velika -->
+            <Button
+                android:id="@+id/btnEndCall"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:minWidth="140dp"
+                android:text="📵 PREKINI"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:backgroundTint="#b71c1c"
+                android:textColor="#ffffff"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pritisni za izgovorjavo:"
+            android:textColor="#aaaaaa"
+            android:textSize="12sp"
+            android:padding="8dp"/>
+
+        <!-- Hitra sporočila 3x2 -->
+        <GridLayout
+            android:id="@+id/gridQuickMessages"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:columnCount="3"
+            android:rowCount="2"
+            android:padding="6dp"/>
+
+    </LinearLayout>
+
+</FrameLayout>

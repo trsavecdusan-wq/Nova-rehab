@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <ImageView
+        android:id="@+id/ivGallery"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:contentDescription="Galerija"/>
+
+    <TextView
+        android:id="@+id/tvNoImages"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Ni slik v galeriji"
+        android:textColor="#ffffff"
+        android:textSize="18sp"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/tvImageCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="60dp"
+        android:textColor="#ffffff"
+        android:textSize="14sp"
+        android:background="#80000000"
+        android:padding="8dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <Button android:id="@+id/btnPrev" android:layout_width="0dp"
+            android:layout_height="50dp" android:layout_weight="1"
+            android:text="Prejsnja" android:backgroundTint="#80000000"
+            android:textColor="#ffffff" android:layout_marginEnd="8dp"/>
+
+        <Button android:id="@+id/btnClose" android:layout_width="wrap_content"
+            android:layout_height="50dp" android:text="ZAPRI"
+            android:backgroundTint="#e94560" android:textColor="#ffffff"
+            android:layout_marginEnd="8dp"/>
+
+        <Button android:id="@+id/btnNext" android:layout_width="0dp"
+            android:layout_height="50dp" android:layout_weight="1"
+            android:text="Naslednja" android:backgroundTint="#80000000"
+            android:textColor="#ffffff"/>
+
+    </LinearLayout>
+
+</FrameLayout>

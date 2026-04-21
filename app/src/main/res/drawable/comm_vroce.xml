@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+  <!-- Ozadje -->
+  <path android:fillColor="#E65100" android:pathData="M8,8 L88,8 L88,88 L8,88 Z"/>
+  
+  <path android:fillColor="#FFD54F" android:pathData="M48,28 m-20,0 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0"/>
+  <path android:fillColor="#FFB300" android:strokeColor="#FFB300" android:strokeWidth="4"
+    android:pathData="M48,14 L48,8 M48,88 L48,82 M14,48 L8,48 M88,48 L82,48
+      M24,24 L20,20 M76,24 L80,20 M24,72 L20,76 M76,72 L80,76"/>
+
+</vector>
