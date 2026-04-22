@@ -73,6 +73,10 @@ class PrefsManager(context: Context) {
         prefs.edit().putString("radio_stations", gson.toJson(stations)).apply()
     }
 
+    fun saveRadioStationsJson(json: String) {
+        prefs.edit().putString("radio_stations", json).apply()
+    }
+
     fun getContacts(): List<Contact> {
         val json = prefs.getString("contacts", null)
         if (json != null) {
