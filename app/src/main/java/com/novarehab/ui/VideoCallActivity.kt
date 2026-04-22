@@ -20,7 +20,6 @@ class VideoCallActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
     private lateinit var ttsManager: OpenAiTtsManager
-    private lateinit var callPrefs: PrefsManager
     private var activeContact: Contact? = null
 
     private lateinit var mainContent: View
@@ -57,7 +56,6 @@ class VideoCallActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         ttsManager = OpenAiTtsManager(this)
-        callPrefs = PrefsManager(this)
         // Ustavi radio med video klicem
         startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_STOP })
 
@@ -243,7 +241,7 @@ class VideoCallActivity : AppCompatActivity() {
                 isClickable = true
                 isFocusable = true
                 setOnClickListener {
-                    ttsManager.speakAndroid(text, contact?.language ?: "sl")
+                    ttsManager.speakAndroid(text, contact.language)
                 }
             }
             gridQuickMessages.addView(cell)
