@@ -104,9 +104,9 @@ class PrefsManager(context: Context) {
     private fun defaultStations(): List<RadioStation> = listOf(
         RadioStation("Val 202",      "http://mp3.rtvslo.si/val202"),
         RadioStation("Radio Center", "http://stream2.radiocenter.si:8000/center"),
-        RadioStation("Lux FM UA",    "https://online.luxfm.com.ua/luxfm"),
-        RadioStation("Hits UA",      "https://hitsradio.com.ua/online"),
+        RadioStation("BBC World",    "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"),
         RadioStation("Kiss FM UA",   "https://online.kissfm.ua/KissFM"),
+        RadioStation("Nashe UA",     "https://nashe1.hostingradio.ru/nashe-256.mp3"),
         RadioStation("Glasba",       "music://local")
     )
 }

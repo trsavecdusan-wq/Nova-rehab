@@ -33,7 +33,7 @@ class OpenAiTtsManager(private val context: Context) {
                 tts?.setSpeechRate(0.9f)
                 val r = tts?.setLanguage(Locale("sl", "SI"))
                 if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    tts?.setLanguage(Locale.getDefault())
+                    tts?.setLanguage(Locale.ENGLISH)
                 }
             }
         }
@@ -89,8 +89,12 @@ class OpenAiTtsManager(private val context: Context) {
         val locale = if (language == "uk") Locale("uk", "UA") else Locale("sl", "SI")
         val r = tts?.setLanguage(locale)
         if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-            // Jezik ni podprt - uporabi privzeti jezik tablice
-            tts?.setLanguage(Locale.getDefault())
+            // Slovenščina/ukrainščina ni nameščena
+            // Poskusi angleščino ki je VEDNO na Samsungu
+            val rEn = tts?.setLanguage(Locale.ENGLISH)
+            if (rEn == TextToSpeech.LANG_MISSING_DATA || rEn == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.setLanguage(Locale.getDefault())
+            }
         }
         val uid = "u${System.currentTimeMillis()}"
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
