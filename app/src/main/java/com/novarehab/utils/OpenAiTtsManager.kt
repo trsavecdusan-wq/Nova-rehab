@@ -18,7 +18,8 @@ class OpenAiTtsManager(private val context: Context) {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var mediaPlayer: MediaPlayer? = null
-    private val cacheDir = File(context.getExternalFilesDir(null), "tts_cache").also { it.mkdirs() }
+    // Shrani v INTERNI spomin - vedno dostopen brez permissiona
+    private val cacheDir = File(context.filesDir, "tts_cache").also { it.mkdirs() }
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -30,7 +31,6 @@ class OpenAiTtsManager(private val context: Context) {
             ttsReady = (status == TextToSpeech.SUCCESS)
             if (ttsReady) {
                 tts?.setSpeechRate(0.9f)
-                // Poskusi nastaviti slovenščino, sicer privzeti jezik
                 val r = tts?.setLanguage(Locale("sl", "SI"))
                 if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.setLanguage(Locale.getDefault())
@@ -49,8 +49,8 @@ class OpenAiTtsManager(private val context: Context) {
         if (apiKey.isNotEmpty()) {
             speakOpenAI(text, language, apiKey, voice, onDone)
         } else {
-            // Brez API ključa: Google Translate TTS (deluje brez nameščenih glasov)
-            speakGoogle(text, language, onDone)
+            // Brez API ključa - Android TTS je PRIMARNI (dela brez interneta)
+            speakAndroid(text, language, onDone)
         }
     }
 
@@ -75,30 +75,6 @@ class OpenAiTtsManager(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {}
-            android.os.Handler(android.os.Looper.getMainLooper()).post { speakGoogle(text, language, onDone) }
-        }.start()
-    }
-
-    // Google Translate TTS - deluje brez nameščenih glasov, podpira SL in UK
-    fun speakGoogle(text: String, language: String, onDone: () -> Unit = {}) {
-        val cache = File(cacheDir, "g_${text.hashCode()}_$language.mp3")
-        if (cache.exists() && cache.length() > 1024) { playFile(cache, onDone); return }
-        Thread {
-            try {
-                val enc = java.net.URLEncoder.encode(text.take(200), "UTF-8")
-                val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=$language&client=tw-ob&q=$enc"
-                val resp = http.newCall(Request.Builder()
-                    .url(url).header("User-Agent", "Mozilla/5.0").build()).execute()
-                if (resp.isSuccessful) {
-                    val bytes = resp.body?.bytes()
-                    if (bytes != null && bytes.size > 1024) {
-                        cache.writeBytes(bytes)
-                        android.os.Handler(android.os.Looper.getMainLooper()).post { playFile(cache, onDone) }
-                        return@Thread
-                    }
-                }
-            } catch (e: Exception) {}
-            // Zadnji fallback - Android TTS
             android.os.Handler(android.os.Looper.getMainLooper()).post { speakAndroid(text, language, onDone) }
         }.start()
     }
@@ -113,6 +89,7 @@ class OpenAiTtsManager(private val context: Context) {
         val locale = if (language == "uk") Locale("uk", "UA") else Locale("sl", "SI")
         val r = tts?.setLanguage(locale)
         if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
+            // Jezik ni podprt - uporabi privzeti jezik tablice
             tts?.setLanguage(Locale.getDefault())
         }
         val uid = "u${System.currentTimeMillis()}"

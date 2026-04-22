@@ -251,8 +251,7 @@ class MainActivity : AppCompatActivity() {
             getLang = { activeLang },
             onSpeak = { text -> speakComm(text) }
         )
-        @Suppress("UNCHECKED_CAST")
-        binding.viewPagerComm.adapter = adapter as androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>
+        binding.viewPagerComm.adapter = adapter
     }
 
     fun speakComm(text: String) {
