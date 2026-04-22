@@ -273,7 +273,20 @@ class MainActivity : AppCompatActivity() {
             startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
         }
 
-        if (!ttsReady) return
+        // Če TTS še ni pripravljen, počakaj 1s in poskusi znova
+        if (!ttsReady) {
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                speakComm(text)
+            }, 1000)
+            return
+        }
+
+        // Nastavi jezik glede na activeLang
+        val locale = if (activeLang == "uk") java.util.Locale("uk", "UA") else java.util.Locale("sl", "SI")
+        val langResult = tts?.setLanguage(locale)
+        if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts?.setLanguage(java.util.Locale.getDefault())
+        }
 
         val uid = "comm_${System.currentTimeMillis()}"
         tts?.stop()
