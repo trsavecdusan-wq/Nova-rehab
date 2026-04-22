@@ -10,10 +10,10 @@ import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.R
-import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.service.RadioService
-import com.novarehab.utils.Contact
+import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.utils.PrefsManager
+import com.novarehab.utils.Contact
 import java.io.File
 
 class VideoCallActivity : AppCompatActivity() {
@@ -32,20 +32,20 @@ class VideoCallActivity : AppCompatActivity() {
     private lateinit var gridQuickMessages: GridLayout
 
     private val quickMessagesSl = listOf(
-        "Slišim te"       to R.drawable.comm_dobro,
-        "Ne slišim te"    to R.drawable.comm_slabo,
-        "Počakaj"         to R.drawable.comm_pocakaj,
-        "Hvala"           to R.drawable.comm_hvala,
+        "Slišim te"        to R.drawable.comm_dobro,
+        "Ne slišim te"     to R.drawable.comm_slabo,
+        "Počakaj"          to R.drawable.comm_pocakaj,
+        "Hvala"            to R.drawable.comm_hvala,
         "Potrebujem pomoč" to R.drawable.comm_pomoc,
-        "Nasvidenje"      to R.drawable.comm_vesela
+        "Nasvidenje"       to R.drawable.comm_vesela
     )
     private val quickMessagesUk = listOf(
-        "Я чую тебе"      to R.drawable.comm_dobro,
-        "Не чую тебе"     to R.drawable.comm_slabo,
-        "Зачекай"         to R.drawable.comm_pocakaj,
-        "Дякую"           to R.drawable.comm_hvala,
+        "Я чую тебе"             to R.drawable.comm_dobro,
+        "Не чую тебе"            to R.drawable.comm_slabo,
+        "Зачекай"                to R.drawable.comm_pocakaj,
+        "Дякую"                  to R.drawable.comm_hvala,
         "Мені потрібна допомога" to R.drawable.comm_pomoc,
-        "До побачення"    to R.drawable.comm_vesela
+        "До побачення"           to R.drawable.comm_vesela
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,41 +56,37 @@ class VideoCallActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         ttsManager = OpenAiTtsManager(this)
-        // Ustavi radio med video klicem
+
         startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_STOP })
 
-        mainContent         = findViewById(R.id.mainContent)
-        callConfirmOverlay  = findViewById(R.id.callConfirmOverlay)
-        activeCallOverlay   = findViewById(R.id.activeCallOverlay)
-        imgConfirmContact   = findViewById(R.id.imgConfirmContact)
-        tvConfirmName       = findViewById(R.id.tvConfirmName)
-        tvConfirmLang       = findViewById(R.id.tvConfirmLang)
-        tvCallingContact    = findViewById(R.id.tvCallingContact)
-        gridQuickMessages   = findViewById(R.id.gridQuickMessages)
+        mainContent        = findViewById(R.id.mainContent)
+        callConfirmOverlay = findViewById(R.id.callConfirmOverlay)
+        activeCallOverlay  = findViewById(R.id.activeCallOverlay)
+        imgConfirmContact  = findViewById(R.id.imgConfirmContact)
+        tvConfirmName      = findViewById(R.id.tvConfirmName)
+        tvConfirmLang      = findViewById(R.id.tvConfirmLang)
+        tvCallingContact   = findViewById(R.id.tvCallingContact)
+        gridQuickMessages  = findViewById(R.id.gridQuickMessages)
 
-        // Gumbi v overlay-u
         findViewById<Button>(R.id.btnConfirmCall).setOnClickListener { executeCall() }
-        findViewById<Button>(R.id.btnCancelCall).setOnClickListener { hideAllOverlays() }
-        findViewById<Button>(R.id.btnEndCall).setOnClickListener { endCall() }
-        findViewById<Button>(R.id.btnCallBack).setOnClickListener { finish() }
+        findViewById<Button>(R.id.btnCancelCall).setOnClickListener  { hideAllOverlays() }
+        findViewById<Button>(R.id.btnEndCall).setOnClickListener     { endCall() }
+        findViewById<Button>(R.id.btnCallBack).setOnClickListener    { finish() }
 
         loadContacts()
     }
-
-
 
     private fun loadContacts() {
         val grid = findViewById<GridLayout>(R.id.gridContacts)
         val contacts = prefs.getContacts()
         grid.removeAllViews()
-
         for (i in 0 until 6) {
             val contact = contacts.getOrNull(i)
             val cell = createContactCell(contact, i)
             val lp = GridLayout.LayoutParams().apply {
                 width = 0; height = 0
                 columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                rowSpec    = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
                 setMargins(6, 6, 6, 6)
             }
             cell.layoutParams = lp
@@ -106,76 +102,59 @@ class VideoCallActivity : AppCompatActivity() {
                 if (contact != null && contact.phone.isNotEmpty()) 0xFF1a3a6b.toInt()
                 else 0xFF222244.toInt()
             )
-
             val imgView = ImageView(this@VideoCallActivity).apply {
-                val lp = LinearLayout.LayoutParams(0, 0).apply {
-                    weight = 1f
-                    width = LinearLayout.LayoutParams.MATCH_PARENT
-                    setMargins(14, 14, 14, 4)
-                }
-                layoutParams = lp
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+                ).also { it.setMargins(14, 14, 14, 4) }
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 loadContactImage(this, index)
             }
             addView(imgView)
-
             val tvName = TextView(this@VideoCallActivity).apply {
                 text = contact?.name ?: "Kontakt ${index + 1}"
                 textSize = 15f
                 setTextColor(if (contact?.phone?.isNotEmpty() == true) 0xFFFFFFFF.toInt() else 0xFF666688.toInt())
                 gravity = Gravity.CENTER
-                val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                    .apply { setMargins(4, 0, 4, 2) }
-                layoutParams = lp
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.setMargins(4, 0, 4, 2) }
             }
             addView(tvName)
-
             val tvLang = TextView(this@VideoCallActivity).apply {
-                val lang = contact?.language ?: "sl"
-                text = if (lang == "uk") "🇺🇦" else "🇸🇮"
+                text = if (contact?.language == "uk") "\uD83C\uDDFA\uD83C\uDDE6" else "\uD83C\uDDF8\uD83C\uDDEE"
                 textSize = 16f
                 gravity = Gravity.CENTER
-                val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                    .apply { setMargins(4, 0, 4, 8) }
-                layoutParams = lp
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.setMargins(4, 0, 4, 8) }
             }
             addView(tvLang)
-
             isClickable = true
             isFocusable = true
             setOnClickListener {
-                if (contact != null && contact.phone.isNotEmpty()) {
-                    showCallConfirm(contact, index)
-                } else {
-                    Toast.makeText(this@VideoCallActivity, "Nastavi številko v Nastavitvah", Toast.LENGTH_SHORT).show()
-                }
+                if (contact != null && contact.phone.isNotEmpty()) showCallConfirm(contact, index)
+                else Toast.makeText(this@VideoCallActivity, "Nastavi številko v Nastavitvah", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // Pokaže overlay z veliko sliko + KLIC/PREKLIČI
     private fun showCallConfirm(contact: Contact, index: Int) {
         activeContact = contact
         tvConfirmName.text = contact.name
-        tvConfirmLang.text = if (contact.language == "uk") "🇺🇦 Ukrajinščina" else "🇸🇮 Slovenščina"
+        tvConfirmLang.text = if (contact.language == "uk") "\uD83C\uDDFA\uD83C\uDDE6 Ukrajinščina" else "\uD83C\uDDF8\uD83C\uDDEE Slovenščina"
         loadContactImage(imgConfirmContact, index)
         callConfirmOverlay.visibility = View.VISIBLE
     }
 
     private fun hideAllOverlays() {
         callConfirmOverlay.visibility = View.GONE
-        activeCallOverlay.visibility = View.GONE
+        activeCallOverlay.visibility  = View.GONE
     }
 
-    // Dejansko pokliče — odpre WhatsApp ali dialer
     private fun executeCall() {
         val contact = activeContact ?: return
         callConfirmOverlay.visibility = View.GONE
-
-        // Pokaži active call overlay s hitrimi sporočili
         showActiveCallOverlay(contact)
-
-        // Pokliči
         val phone = contact.phone.replace("+", "").replace(" ", "")
         try {
             startActivity(Intent(Intent.ACTION_VIEW).apply {
@@ -196,48 +175,36 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     private fun showActiveCallOverlay(contact: Contact) {
-        tvCallingContact.text = "📞  ${contact.name}"
-        // jezik se nastavi v ttsManager
-
+        tvCallingContact.text = "\uD83D\uDCDE  ${contact.name}"
         gridQuickMessages.removeAllViews()
         val messages = if (contact.language == "uk") quickMessagesUk else quickMessagesSl
-
         messages.forEach { (text, iconRes) ->
             val cell = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
                 setBackgroundColor(0xFF0f3460.toInt())
-                val lp = GridLayout.LayoutParams().apply {
+                layoutParams = GridLayout.LayoutParams().apply {
                     width = 0; height = 0
                     columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                    rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                    rowSpec    = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
                     setMargins(5, 5, 5, 5)
                 }
-                layoutParams = lp
-
-                val img = ImageView(this@VideoCallActivity).apply {
+                addView(ImageView(this@VideoCallActivity).apply {
                     setImageResource(iconRes)
-                    val lp2 = LinearLayout.LayoutParams(0, 0).apply {
-                        weight = 1f
-                        width = LinearLayout.LayoutParams.MATCH_PARENT
-                        setMargins(8, 8, 8, 2)
-                    }
-                    layoutParams = lp2
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+                    ).also { it.setMargins(8, 8, 8, 2) }
                     scaleType = ImageView.ScaleType.FIT_CENTER
-                }
-                addView(img)
-
-                val tv = TextView(this@VideoCallActivity).apply {
+                })
+                addView(TextView(this@VideoCallActivity).apply {
                     this.text = text
                     textSize = 11f
                     setTextColor(0xFFFFFFFF.toInt())
                     gravity = Gravity.CENTER
-                    val lp2 = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                        .apply { setMargins(2, 0, 2, 5) }
-                    layoutParams = lp2
-                }
-                addView(tv)
-
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).also { it.setMargins(2, 0, 2, 5) }
+                })
                 isClickable = true
                 isFocusable = true
                 setOnClickListener {
@@ -246,7 +213,6 @@ class VideoCallActivity : AppCompatActivity() {
             }
             gridQuickMessages.addView(cell)
         }
-
         activeCallOverlay.visibility = View.VISIBLE
     }
 
@@ -257,12 +223,8 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun loadContactImage(imageView: ImageView, index: Int) {
         val file = File(getExternalFilesDir(null), "contacts/contact_$index.png")
-        if (file.exists()) {
-            imageView.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
-        } else {
-            imageView.setImageResource(R.drawable.ic_contact_default)
-            imageView.setColorFilter(0xFFaaaaff.toInt())
-        }
+        if (file.exists()) imageView.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
+        else { imageView.setImageResource(R.drawable.ic_contact_default); imageView.setColorFilter(0xFFaaaaff.toInt()) }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
