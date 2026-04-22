@@ -13,11 +13,10 @@ import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.novarehab.R
-import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 class RadioService : Service() {
@@ -42,17 +41,14 @@ class RadioService : Service() {
         createNotificationChannel()
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
-        val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
-            .build()
+        // DefaultHttpDataSource z redirect podporo - brez OkHttp
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Linux; Android) AppleWebKit/537.36")
+            .setConnectTimeoutMs(15000)
+            .setReadTimeoutMs(15000)
+            .setAllowCrossProtocolRedirects(true)
 
-        val dataSourceFactory = DefaultDataSource.Factory(
-            this,
-            OkHttpDataSource.Factory(okHttpClient)
-                .setUserAgent("Mozilla/5.0 NovaRehab/1.0")
-        )
+        val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
 
         player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
@@ -92,9 +88,9 @@ class RadioService : Service() {
             .setAudioAttributes(attrs)
             .setOnAudioFocusChangeListener { focus ->
                 when (focus) {
-                    AudioManager.AUDIOFOCUS_LOSS          -> stopPlayback()
+                    AudioManager.AUDIOFOCUS_LOSS           -> stopPlayback()
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> player?.volume = 0.1f
-                    AudioManager.AUDIOFOCUS_GAIN          -> player?.volume = 1.0f
+                    AudioManager.AUDIOFOCUS_GAIN           -> player?.volume = 1.0f
                 }
             }.build()
         audioManager?.requestAudioFocus(focusRequest!!)

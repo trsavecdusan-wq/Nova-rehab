@@ -96,7 +96,8 @@ class MainActivity : AppCompatActivity() {
         setupVolumeControls()
         setupClock()
         updatePatientName()
-        setupLanguageDetector()
+        // LanguageDetector začasno izklopljen - povzroča zvoke
+        // setupLanguageDetector()
         scheduleReports()
 
         stats.log(StatEvent.APP_START)
@@ -208,8 +209,10 @@ class MainActivity : AppCompatActivity() {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
                 lm.requestLocationUpdates(android.location.LocationManager.GPS_PROVIDER, 1000L, 0.5f) { loc ->
+                    // Filtriraj samo po GPS natančnosti, ne po hitrosti
+                    // accuracy < 10m = zanesljiv GPS signal
                     val kmh = (loc.speed * 3.6).toInt()
-                    binding.tvSpeed.text = if (kmh < 2) "0" else kmh.toString()
+                    binding.tvSpeed.text = if (loc.accuracy > 10f || !loc.hasSpeed()) "0" else kmh.toString()
                 }
             }
         } catch (e: Exception) {}
@@ -260,8 +263,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Zaustavi zaznavanje med govorom
-        langDetector?.pause()
-
         ttsManager.speak(
             text = text,
             language = activeLang,
@@ -271,7 +272,6 @@ class MainActivity : AppCompatActivity() {
                 if (radioPlaying) {
                     startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
                 }
-                langDetector?.resume()
             }
         )
 
@@ -281,17 +281,8 @@ class MainActivity : AppCompatActivity() {
     // ── ZAZNAVANJE JEZIKA ─────────────────────────────────────────────────────
 
     private fun setupLanguageDetector() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED) return
-
-        langDetector = LanguageDetector(this) { detectedLang ->
-            if (detectedLang != activeLang) {
-                activeLang = detectedLang
-                updateLangIndicator()
-                stats.log(StatEvent.LANG_CHANGE, detectedLang)
-            }
-        }
-        langDetector?.start()
+        // Izklopljeno - SpeechRecognizer povzroča zvoke ob napakah
+        // Jezik se preklopi ročno prek gumba v komunikacijskem modulu
     }
 
     private fun updateLangIndicator() {
