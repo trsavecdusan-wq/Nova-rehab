@@ -64,7 +64,16 @@ class PrefsManager(context: Context) {
     fun saveReportEmail(email: String) = prefs.edit().putString("report_email", email).apply()
 
     // ── RADIO ────────────────────────────────────────────────────────────────
+    private val STATIONS_VERSION = 3  // Povečaj ko spremenimo postaje
+
     fun getRadioStations(): List<RadioStation> {
+        // Če je verzija postaj drugačna, ponastavi na privzete
+        val savedVersion = prefs.getInt("stations_version", 0)
+        if (savedVersion < STATIONS_VERSION) {
+            prefs.edit().putInt("stations_version", STATIONS_VERSION).apply()
+            saveRadioStations(defaultStations())
+            return defaultStations()
+        }
         val json = prefs.getString("radio_stations", null)
         if (json != null) {
             return try {
@@ -112,9 +121,20 @@ class PrefsManager(context: Context) {
         Contact("Skrbnik", "", "🧑‍💼", "sl")
     )
 
-    private fun defaultStations(): List<RadioStation> = listOf(
-        // RTV Slovenija - preizkušeni direktni streami
-        RadioStation("Val 202",    "https://icecast2.rtvslo.si/val202_aac"),
+            private fun defaultStations(): List<RadioStation> = listOf(
+        RadioStation("Radio Center", "http://stream2.radiocenter.si:8000/center"),
+        RadioStation("Val 202", "http://mp3.rtvslo.si/val202"),
+        RadioStation("Radio 1", "http://mp3.rtvslo.si/ra1"),
+        RadioStation("Lux FM UA", "https://online.luxfm.com.ua/luxfm"),
+        RadioStation("Nashe UA", "https://nashe1.hostingradio.ru/nashe-256.mp3"),
+        RadioStation("🎵 Glasba", "music://local")
+    ),
+        RadioStation("Radio 1",       "http://mp3.rtvslo.si/ra1"),
+        RadioStation("Val 202",       "http://mp3.rtvslo.si/val202"),
+        RadioStation("Lux FM UA",     "https://online.luxfm.com.ua/luxfm"),
+        RadioStation("Nashe UA",      "https://nashe1.hostingradio.ru/nashe-256.mp3"),
+        RadioStation("🎵 Glasba",     "music://local")
+    ),
         RadioStation("Ars",        "https://icecast2.rtvslo.si/ars1_aac"),
         // BBC - zanesljiv test stream
         RadioStation("BBC World",  "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"),

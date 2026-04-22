@@ -13,6 +13,8 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.novarehab.R
+import com.novarehab.utils.OpenAiTtsManager
+import com.novarehab.utils.PrefsManager
 import com.novarehab.service.RadioService
 import java.io.File
 import java.util.Locale
@@ -32,9 +34,10 @@ data class CommPage(
     val items: MutableList<CommItem>
 )
 
-class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+class CommunicationActivity : AppCompatActivity() {
 
-    private var tts: TextToSpeech? = null
+    private lateinit var ttsManager: OpenAiTtsManager
+    private lateinit var commPrefs: PrefsManager
     private lateinit var tvLastMessage: TextView
     private lateinit var gridButtons: GridLayout
     private lateinit var tabContainer: HorizontalScrollView
@@ -90,7 +93,8 @@ class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_communication)
 
         customIconDir().mkdirs()  // ustvari mapo če ne obstaja
-        tts = TextToSpeech(this, this)
+        ttsManager = OpenAiTtsManager(this)
+        commPrefs = PrefsManager(this)
 
         tvLastMessage = findViewById(R.id.tvLastMessage)
         gridButtons = findViewById(R.id.gridButtons)
@@ -117,11 +121,7 @@ class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         renderPage(0)
     }
 
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            tts?.setSpeechRate(0.9f)
-        }
-    }
+
 
     private fun updateTtsLanguage() {
         val locale = if (activeLang == "sl") Locale("sl", "SI") else Locale("uk", "UA")
@@ -234,11 +234,15 @@ class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun speak(text: String) {
         if (text.isEmpty()) return
         startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
-        tts?.stop()
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "c${System.currentTimeMillis()}")
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
-        }, (text.length * 90 + 2000).toLong())
+        ttsManager.speak(
+            text = text,
+            language = activeLang,
+            apiKey = commPrefs.getOpenAiKey(),
+            voice = commPrefs.getTtsVoice(),
+            onDone = {
+                startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+            }
+        )
     }
 
     // Dolg pritisk = opcije za spremembo slike
@@ -336,8 +340,7 @@ class CommunicationActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
+        ttsManager.destroy()
         super.onDestroy()
     }
 

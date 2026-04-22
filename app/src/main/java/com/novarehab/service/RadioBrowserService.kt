@@ -8,72 +8,104 @@ import okhttp3.Request
 import org.json.JSONArray
 import java.util.concurrent.TimeUnit
 
-// Potegne delujoče radio postaje iz radio-browser.info API
 object RadioBrowserService {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .followSslRedirects(true)
         .build()
 
-    // API strežniki - vzame prvega ki se odzove
-    private val servers = listOf(
-        "https://de1.api.radio-browser.info",
-        "https://at1.api.radio-browser.info",
-        "https://nl1.api.radio-browser.info"
+    // Preizkušeni direktni stream URL-ji - brez redirectov
+    // Pridobljeni prek radio-browser.info url_resolved polja
+    private val hardcodedStations = listOf(
+        RadioStation("Radio Center", "http://stream2.radiocenter.si:8000/center"),
+        RadioStation("Val 202", "http://mp3.rtvslo.si/val202"),
+        RadioStation("Radio 1", "http://mp3.rtvslo.si/ra1"),
+        RadioStation("Lux FM UA", "https://online.luxfm.com.ua/luxfm"),
+        RadioStation("Nashe UA", "https://nashe1.hostingradio.ru/nashe-256.mp3"),
+        RadioStation("🎵 Glasba", "music://local")
+    ),
+        RadioStation("Radio 1",       "http://mp3.rtvslo.si/ra1"),
+        RadioStation("Val 202",       "http://mp3.rtvslo.si/val202"),
+        // Ukrajna - glasba
+        RadioStation("Lux FM UA",     "https://online.luxfm.com.ua/luxfm"),
+        RadioStation("Nashe UA",      "https://nashe1.hostingradio.ru/nashe-256.mp3"),
+        RadioStation("🎵 Glasba",     "music://local")
+    )
+        RadioStation("Val 202",     "http://mp3.rtvslo.si/val202"),
+        RadioStation("Radio 1",     "http://mp3.rtvslo.si/ra1"),
+        RadioStation("Ars",         "http://mp3.rtvslo.si/ars"),
+        // BBC - zanesljiv
+        RadioStation("BBC World",   "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"),
+        // UA - revma CDN
+        RadioStation("UA Kultura",  "https://stream.rcs.revma.com/an1ugyygzk8uv"),
+        RadioStation("🎵 Glasba",   "music://local")
     )
 
-    fun fetchStations(context: Context, onSuccess: (List<RadioStation>) -> Unit, onError: () -> Unit) {
-        // Ne kliči API - samo vrni obstoječe postaje
-        // API URL-ji so pogosto nezanesljivi, bolje hardcoded preizkušeni
-        onSuccess(PrefsManager(context).getRadioStations())
-    }
-
-    private fun fetchByLanguage(language: String, limit: Int): List<RadioStation> {
-        for (server in servers) {
+    fun fetchStations(
+        context: Context,
+        onSuccess: (List<RadioStation>) -> Unit,
+        onError: () -> Unit
+    ) {
+        // Poskusi potegniti sveže URL-je iz radio-browser.info
+        // Če ne uspe, uporabi hardcoded
+        Thread {
             try {
-                val url = "$server/json/stations/search?" +
-                    "language=$language&lastcheckok=1&order=clickcount&reverse=true&limit=$limit&hidebroken=true"
-                val result = get(url)
-                if (result != null) return parseStations(result)
-            } catch (e: Exception) { continue }
-        }
-        return emptyList()
+                val stations = mutableListOf<RadioStation>()
+
+                // SLO postaje
+                val slo = fetchFromApi("https://de1.api.radio-browser.info/json/stations/search?countrycodeexact=SI&lastcheckok=1&order=clickcount&reverse=true&limit=2&hidebroken=true")
+                stations.addAll(slo)
+
+                // UA postaje
+                val ua = fetchFromApi("https://de1.api.radio-browser.info/json/stations/search?languageexact=ukrainian&lastcheckok=1&order=clickcount&reverse=true&limit=3&hidebroken=true")
+                stations.addAll(ua)
+
+                // Dodaj glasbo
+                stations.add(RadioStation("🎵 Glasba", "music://local"))
+
+                if (stations.size >= 3) {
+                    PrefsManager(context).saveRadioStations(stations)
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        onSuccess(stations)
+                    }
+                } else {
+                    throw Exception("Not enough stations")
+                }
+            } catch (e: Exception) {
+                // Fallback na hardcoded
+                PrefsManager(context).saveRadioStations(hardcodedStations)
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    onSuccess(hardcodedStations)
+                }
+            }
+        }.start()
     }
 
-    private fun fetchByCountryCode(countryCode: String, limit: Int): List<RadioStation> {
-        for (server in servers) {
-            try {
-                val url = "$server/json/stations/search?" +
-                    "countrycodeexact=$countryCode&lastcheckok=1&order=clickcount&reverse=true&limit=$limit&hidebroken=true"
-                val result = get(url)
-                if (result != null) return parseStations(result)
-            } catch (e: Exception) { continue }
-        }
-        return emptyList()
-    }
-
-    private fun get(url: String): String? {
+    private fun fetchFromApi(url: String): List<RadioStation> {
         val request = Request.Builder()
             .url(url)
-            .header("User-Agent", "NovaRehab/1.0")
+            .header("User-Agent", "NovaRehab/2.0")
             .build()
-        val response = client.newCall(request).execute()
-        return if (response.isSuccessful) response.body?.string() else null
-    }
 
-    private fun parseStations(json: String): List<RadioStation> {
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) return emptyList()
+
+        val body = response.body?.string() ?: return emptyList()
+        val arr = JSONArray(body)
         val result = mutableListOf<RadioStation>()
-        val arr = JSONArray(json)
+
         for (i in 0 until arr.length()) {
             val obj = arr.getJSONObject(i)
-            val name = obj.optString("name", "").trim()
-            // Uporabi url_resolved (že razrešen redirect)
-            val url = obj.optString("url_resolved", "").ifEmpty {
+            val name = obj.optString("name", "").trim().take(15)
+            // url_resolved je že razrešen URL po redirectu
+            val streamUrl = obj.optString("url_resolved", "").ifEmpty {
                 obj.optString("url", "")
             }
-            if (name.isNotEmpty() && url.isNotEmpty() && url.startsWith("http")) {
-                result.add(RadioStation(name.take(20), url))
+            if (name.isNotEmpty() && streamUrl.startsWith("http")) {
+                result.add(RadioStation(name, streamUrl))
             }
         }
         return result
