@@ -33,7 +33,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PrefsManager
     private lateinit var stats: StatsManager
-    private lateinit var ttsManager: OpenAiTtsManager
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
     private var langDetector: LanguageDetector? = null
 
     private var currentStation = -1
@@ -85,8 +86,16 @@ class MainActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         stats = StatsManager(this)
-        ttsManager = OpenAiTtsManager(this)
-        ttsManager.initLocalTts()
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val r = tts?.setLanguage(Locale("sl", "SI"))
+                if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts?.setLanguage(Locale.getDefault())
+                }
+                tts?.setSpeechRate(0.9f)
+                ttsReady = true
+            }
+        }
 
         requestAllPermissions()
         setupRadio()
@@ -257,28 +266,27 @@ class MainActivity : AppCompatActivity() {
     fun speakComm(text: String) {
         if (text.isEmpty()) return
 
-        // Vizualni feedback - pokaži besedilo
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 
-        // Utišaj radio
         if (radioPlaying) {
             startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
         }
 
-        // Zaustavi zaznavanje med govorom
-        ttsManager.speak(
-            text = text,
-            language = activeLang,
-            apiKey = prefs.getOpenAiKey(),
-            voice = prefs.getTtsVoice(),
-            onDone = {
-                if (radioPlaying) {
-                    startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
-                }
-            }
-        )
+        if (!ttsReady) return
+
+        val uid = "comm_${System.currentTimeMillis()}"
+        tts?.stop()
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
 
         stats.log(StatEvent.COMM_ICON, text.take(30))
+
+        // Vklopi radio nazaj po govorjenju
+        val delay = (text.length * 90 + 2000).toLong()
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (radioPlaying) {
+                startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+            }
+        }, delay)
     }
 
     // ── ZAZNAVANJE JEZIKA ─────────────────────────────────────────────────────
@@ -445,7 +453,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        ttsManager.destroy()
+        tts?.stop()
+        tts?.shutdown()
         langDetector?.stop()
         kioskRunnable?.let { kioskHandler.removeCallbacks(it) }
         clockRunnable?.let { clockHandler.removeCallbacks(it) }
