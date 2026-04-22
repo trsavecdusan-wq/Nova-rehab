@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -124,12 +123,7 @@ class CommunicationActivity : AppCompatActivity() {
 
 
     private fun updateTtsLanguage() {
-        val locale = if (activeLang == "sl") Locale("sl", "SI") else Locale("uk", "UA")
-        val result = tts?.setLanguage(locale)
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            tts?.setLanguage(Locale.getDefault())
-        }
-        tts?.setSpeechRate(0.85f)
+        // Jezik se nastavi v OpenAiTtsManager ob vsakem govoru
     }
 
     private fun renderTabs() {
