@@ -4,23 +4,23 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.R
+import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.service.RadioService
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import java.io.File
-import java.util.Locale
 
-class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+class VideoCallActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
-    private var tts: TextToSpeech? = null
+    private lateinit var ttsManager: OpenAiTtsManager
+    private lateinit var callPrefs: PrefsManager
     private var activeContact: Contact? = null
 
     private lateinit var mainContent: View
@@ -56,7 +56,8 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         setContentView(R.layout.activity_video_call)
 
         prefs = PrefsManager(this)
-        tts = TextToSpeech(this, this)
+        ttsManager = OpenAiTtsManager(this)
+        callPrefs = PrefsManager(this)
         // Ustavi radio med video klicem
         startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_STOP })
 
@@ -78,20 +79,7 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         loadContacts()
     }
 
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            setTtsLanguage(activeContact?.language ?: "sl")
-        }
-    }
 
-    private fun setTtsLanguage(lang: String) {
-        val locale = if (lang == "uk") Locale("uk", "UA") else Locale("sl", "SI")
-        val result = tts?.setLanguage(locale)
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            tts?.setLanguage(Locale.getDefault())
-        }
-        tts?.setSpeechRate(0.85f)
-    }
 
     private fun loadContacts() {
         val grid = findViewById<GridLayout>(R.id.gridContacts)
@@ -211,7 +199,7 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun showActiveCallOverlay(contact: Contact) {
         tvCallingContact.text = "📞  ${contact.name}"
-        setTtsLanguage(contact.language)
+        // jezik se nastavi v ttsManager
 
         gridQuickMessages.removeAllViews()
         val messages = if (contact.language == "uk") quickMessagesUk else quickMessagesSl
@@ -255,8 +243,7 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 isClickable = true
                 isFocusable = true
                 setOnClickListener {
-                    tts?.stop()
-                    tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "qm_${System.currentTimeMillis()}")
+                    ttsManager.speakAndroid(text, contact?.language ?: "sl")
                 }
             }
             gridQuickMessages.addView(cell)
@@ -266,7 +253,7 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun endCall() {
-        tts?.stop()
+        ttsManager.stop()
         activeCallOverlay.visibility = View.GONE
     }
 
@@ -296,8 +283,7 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
-        tts?.stop()
-        tts?.shutdown()
+        ttsManager.destroy()
         super.onDestroy()
     }
 }
