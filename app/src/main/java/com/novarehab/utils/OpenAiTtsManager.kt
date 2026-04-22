@@ -27,11 +27,13 @@ class OpenAiTtsManager(private val context: Context) {
     private var localTtsReady = false
 
     // Inicializiraj lokalni TTS kot fallback
-    fun initLocalTts() {
+    fun initLocalTts(onReady: (() -> Unit)? = null) {
         localTts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 localTtsReady = true
                 localTts?.setSpeechRate(0.9f)
+                localTts?.setPitch(1.0f)
+                onReady?.invoke()
             }
         }
     }
@@ -125,16 +127,29 @@ class OpenAiTtsManager(private val context: Context) {
     }
 
     private fun speakLocal(text: String, language: String, onDone: () -> Unit) {
-        if (!localTtsReady) { onDone(); return }
+        if (!localTtsReady) {
+            // TTS še ni pripravljen - počakaj 1s in poskusi znova
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                speakLocal(text, language, onDone)
+            }, 1000)
+            return
+        }
         val locale = if (language == "uk") Locale("uk", "UA") else Locale("sl", "SI")
         val result = localTts?.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            // Ukrainščina ni podprta lokalno → poskusi Google Translate TTS
-            speakGoogleTranslate(text, language, onDone)
+            if (language == "uk") {
+                // Ukrainščina ni lokalno - Google Translate fallback
+                speakGoogleTranslate(text, language, onDone)
+            } else {
+                // Slovenščina ni - uporabi privzeti jezik
+                localTts?.setLanguage(Locale.getDefault())
+                localTts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "local_${System.currentTimeMillis()}")
+                android.os.Handler(android.os.Looper.getMainLooper())
+                    .postDelayed(onDone, (text.length * 90 + 1500).toLong())
+            }
             return
         }
         localTts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "local_${System.currentTimeMillis()}")
-        // Oceni trajanje in pokliči onDone
         val delay = (text.length * 90 + 1500).toLong()
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(onDone, delay)
     }

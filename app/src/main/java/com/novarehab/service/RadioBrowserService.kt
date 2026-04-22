@@ -24,31 +24,9 @@ object RadioBrowserService {
     )
 
     fun fetchStations(context: Context, onSuccess: (List<RadioStation>) -> Unit, onError: () -> Unit) {
-        Thread {
-            try {
-                val stations = mutableListOf<RadioStation>()
-
-                // Poišči UA postaje (jezik: ukrainian, samo delujoče, sortirane po popularnosti)
-                val uaStations = fetchByLanguage("ukrainian", 4)
-                stations.addAll(uaStations)
-
-                // Poišči SLO postaje
-                val sloStations = fetchByCountryCode("SI", 2)
-                stations.addAll(sloStations)
-
-                if (stations.isNotEmpty()) {
-                    // Shrani v prefs
-                    PrefsManager(context).saveRadioStations(stations)
-                    android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        onSuccess(stations)
-                    }
-                } else {
-                    android.os.Handler(android.os.Looper.getMainLooper()).post { onError() }
-                }
-            } catch (e: Exception) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post { onError() }
-            }
-        }.start()
+        // Ne kliči API - samo vrni obstoječe postaje
+        // API URL-ji so pogosto nezanesljivi, bolje hardcoded preizkušeni
+        onSuccess(PrefsManager(context).getRadioStations())
     }
 
     private fun fetchByLanguage(language: String, limit: Int): List<RadioStation> {

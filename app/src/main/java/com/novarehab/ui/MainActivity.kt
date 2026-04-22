@@ -251,7 +251,10 @@ class MainActivity : AppCompatActivity() {
     fun speakComm(text: String) {
         if (text.isEmpty()) return
 
-        // Ustišaj radio
+        // Vizualni feedback - pokaži besedilo
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+
+        // Utišaj radio
         if (radioPlaying) {
             startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
         }

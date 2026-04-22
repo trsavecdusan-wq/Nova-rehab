@@ -113,11 +113,14 @@ class PrefsManager(context: Context) {
     )
 
     private fun defaultStations(): List<RadioStation> = listOf(
+        // RTV Slovenija - uradni AAC streami
         RadioStation("Val 202",      "https://icecast2.rtvslo.si/val202_aac"),
-        RadioStation("ARS",          "https://icecast2.rtvslo.si/ars1_aac"),
+        RadioStation("Ars",          "https://icecast2.rtvslo.si/ars1_aac"),
+        // UA - prek revma CDN (preizkušeni)
         RadioStation("UA Kultura",   "https://stream.rcs.revma.com/an1ugyygzk8uv"),
         RadioStation("UA Promin",    "https://stream.rcs.revma.com/ypqvyy2ynk8uv"),
-        RadioStation("UA Pershyi",   "https://stream.rcs.revma.com/qnkh30knab8uv"),
+        // BBC World Service - vedno deluje kot test
+        RadioStation("BBC World",    "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"),
         RadioStation("🎵 Glasba",    "music://local")
     )
 }
