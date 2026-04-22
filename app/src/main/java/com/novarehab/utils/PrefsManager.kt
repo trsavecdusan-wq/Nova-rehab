@@ -11,7 +11,7 @@ class PrefsManager(context: Context) {
 
     private val prefs = context.getSharedPreferences("nova_rehab_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
-    private val STATIONS_VERSION = 4
+    private val STATIONS_VERSION = 5
 
     fun getPin(): String = prefs.getString("pin", "1234") ?: "1234"
     fun savePin(pin: String) = prefs.edit().putString("pin", pin).apply()

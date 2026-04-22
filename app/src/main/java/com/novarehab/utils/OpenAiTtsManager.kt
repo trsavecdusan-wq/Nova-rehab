@@ -1,6 +1,7 @@
 package com.novarehab.utils
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -26,20 +27,21 @@ class OpenAiTtsManager(private val context: Context) {
 
     init {
         tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
+            ttsReady = (status == TextToSpeech.SUCCESS)
+            if (ttsReady) {
+                tts?.setSpeechRate(0.9f)
+                // Poskusi nastaviti slovenščino, sicer privzeti jezik
                 val r = tts?.setLanguage(Locale("sl", "SI"))
                 if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.setLanguage(Locale.getDefault())
                 }
-                tts?.setSpeechRate(0.9f)
-                ttsReady = true
             }
         }
     }
 
     fun initLocalTts(onReady: (() -> Unit)? = null) {
         if (ttsReady) { onReady?.invoke(); return }
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ onReady?.invoke() }, 1000)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ onReady?.invoke() }, 1500)
     }
 
     fun speak(text: String, language: String, apiKey: String, voice: String, onDone: () -> Unit = {}) {
@@ -47,7 +49,8 @@ class OpenAiTtsManager(private val context: Context) {
         if (apiKey.isNotEmpty()) {
             speakOpenAI(text, language, apiKey, voice, onDone)
         } else {
-            speakAndroid(text, language, onDone)
+            // Brez API ključa: Google Translate TTS (deluje brez nameščenih glasov)
+            speakGoogle(text, language, onDone)
         }
     }
 
@@ -72,6 +75,30 @@ class OpenAiTtsManager(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {}
+            android.os.Handler(android.os.Looper.getMainLooper()).post { speakGoogle(text, language, onDone) }
+        }.start()
+    }
+
+    // Google Translate TTS - deluje brez nameščenih glasov, podpira SL in UK
+    fun speakGoogle(text: String, language: String, onDone: () -> Unit = {}) {
+        val cache = File(cacheDir, "g_${text.hashCode()}_$language.mp3")
+        if (cache.exists() && cache.length() > 1024) { playFile(cache, onDone); return }
+        Thread {
+            try {
+                val enc = java.net.URLEncoder.encode(text.take(200), "UTF-8")
+                val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=$language&client=tw-ob&q=$enc"
+                val resp = http.newCall(Request.Builder()
+                    .url(url).header("User-Agent", "Mozilla/5.0").build()).execute()
+                if (resp.isSuccessful) {
+                    val bytes = resp.body?.bytes()
+                    if (bytes != null && bytes.size > 1024) {
+                        cache.writeBytes(bytes)
+                        android.os.Handler(android.os.Looper.getMainLooper()).post { playFile(cache, onDone) }
+                        return@Thread
+                    }
+                }
+            } catch (e: Exception) {}
+            // Zadnji fallback - Android TTS
             android.os.Handler(android.os.Looper.getMainLooper()).post { speakAndroid(text, language, onDone) }
         }.start()
     }
@@ -86,7 +113,6 @@ class OpenAiTtsManager(private val context: Context) {
         val locale = if (language == "uk") Locale("uk", "UA") else Locale("sl", "SI")
         val r = tts?.setLanguage(locale)
         if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-            if (language == "uk") { speakGoogleTranslate(text, language, onDone); return }
             tts?.setLanguage(Locale.getDefault())
         }
         val uid = "u${System.currentTimeMillis()}"
@@ -104,35 +130,14 @@ class OpenAiTtsManager(private val context: Context) {
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
     }
 
-    private fun speakGoogleTranslate(text: String, language: String, onDone: () -> Unit) {
-        val cache = File(cacheDir, "gt_${text.hashCode()}_$language.mp3")
-        if (cache.exists() && cache.length() > 1024) { playFile(cache, onDone); return }
-        Thread {
-            try {
-                val enc = java.net.URLEncoder.encode(text.take(200), "UTF-8")
-                val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=$language&client=tw-ob&q=$enc"
-                val resp = http.newCall(Request.Builder().url(url).header("User-Agent", "Mozilla/5.0").build()).execute()
-                if (resp.isSuccessful) {
-                    val bytes = resp.body?.bytes()
-                    if (bytes != null && bytes.size > 1024) {
-                        cache.writeBytes(bytes)
-                        android.os.Handler(android.os.Looper.getMainLooper()).post { playFile(cache, onDone) }
-                        return@Thread
-                    }
-                }
-            } catch (e: Exception) {}
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                tts?.setLanguage(Locale.getDefault())
-                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "fb${System.currentTimeMillis()}")
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(onDone, (text.length * 90 + 1500).toLong())
-            }
-        }.start()
-    }
-
     private fun playFile(file: File, onDone: () -> Unit) {
         try {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer().apply {
+                setAudioAttributes(AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build())
                 setDataSource(file.absolutePath)
                 prepare()
                 start()
