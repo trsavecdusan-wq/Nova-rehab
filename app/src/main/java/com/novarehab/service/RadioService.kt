@@ -25,9 +25,8 @@ class RadioService : Service() {
     private var player: ExoPlayer? = null
     private var audioManager: AudioManager? = null
     private var focusRequest: AudioFocusRequest? = null
+    private var audioFocusGranted = false
     private var retryCount = 0
-    private var currentUrl = ""
-    private var currentName = ""
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
 
     private val CHANNEL_ID = "radio_channel"
@@ -50,42 +49,24 @@ class RadioService : Service() {
     }
 
     private fun buildPlayer() {
-        // HTTP data source z vsemi potrebnimi nastavitvami za radio
         val httpFactory = DefaultHttpDataSource.Factory().apply {
-            setUserAgent("Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/91.0")
+            setUserAgent("Mozilla/5.0 (Linux; Android 10)")
             setConnectTimeoutMs(20_000)
             setReadTimeoutMs(20_000)
             setAllowCrossProtocolRedirects(true)
-            setKeepPostFor302Redirects(true)
         }
-
-        val dataSourceFactory = DefaultDataSource.Factory(this, httpFactory)
-
-        // LoadControl - optimizirano za radio streaming (ne za video)
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(
-                10_000,   // min buffer 10s
-                30_000,   // max buffer 30s
-                2_000,    // buffer za start 2s
-                2_000     // buffer za restart po buffering 2s
-            )
+            .setBufferDurationsMs(10_000, 30_000, 2_000, 2_000)
             .build()
-
-        player?.release()
         player = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+            .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, httpFactory)))
             .setLoadControl(loadControl)
-            .build()
-            .also { p ->
+            .build().also { p ->
                 p.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        // Samodejni ponovni poskus (max 3x)
                         if (retryCount < 3) {
                             retryCount++
-                            handler.postDelayed({
-                                p.prepare()
-                                p.play()
-                            }, 3000L * retryCount)
+                            handler.postDelayed({ p.prepare(); p.play() }, 3000L * retryCount)
                         }
                     }
                     override fun onPlaybackStateChanged(state: Int) {
@@ -100,10 +81,13 @@ class RadioService : Service() {
             ACTION_PLAY -> {
                 val url  = intent.getStringExtra(EXTRA_URL)  ?: return START_NOT_STICKY
                 val name = intent.getStringExtra(EXTRA_NAME) ?: "Radio"
-                currentUrl = url
-                currentName = name
                 retryCount = 0
-                requestAudioFocusAndPlay(url, name)
+                // Če imamo že focus, direktno predvajaj - ne zahtevaj znova
+                if (audioFocusGranted) {
+                    playStream(url, name)
+                } else {
+                    requestAudioFocusAndPlay(url, name)
+                }
             }
             ACTION_STOP -> {
                 handler.removeCallbacksAndMessages(null)
@@ -122,19 +106,18 @@ class RadioService : Service() {
             .setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
-
         focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(attrs)
             .setOnAudioFocusChangeListener { focus ->
                 when (focus) {
-                    AudioManager.AUDIOFOCUS_LOSS           -> { stopPlayback() }
+                    AudioManager.AUDIOFOCUS_LOSS -> { audioFocusGranted = false; stopPlayback() }
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> player?.volume = 0.15f
-                    AudioManager.AUDIOFOCUS_GAIN           -> player?.volume = 1.0f
+                    AudioManager.AUDIOFOCUS_GAIN -> { audioFocusGranted = true; player?.volume = 1.0f }
                 }
             }.build()
-
         val result = audioManager?.requestAudioFocus(focusRequest!!)
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            audioFocusGranted = true
             playStream(url, name)
         }
     }
@@ -158,6 +141,7 @@ class RadioService : Service() {
     }
 
     private fun abandonAudioFocus() {
+        audioFocusGranted = false
         focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
     }
 
@@ -166,14 +150,12 @@ class RadioService : Service() {
             .setContentTitle("Nova Rehab Radio")
             .setContentText("▶ $name")
             .setSmallIcon(R.drawable.ic_radio)
-            .setOngoing(true)
-            .build()
+            .setOngoing(true).build()
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID, "Radio predvajanje", NotificationManager.IMPORTANCE_LOW
+        getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, "Radio", NotificationManager.IMPORTANCE_LOW)
         )
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
