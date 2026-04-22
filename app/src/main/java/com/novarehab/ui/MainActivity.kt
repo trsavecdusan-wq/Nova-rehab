@@ -126,9 +126,8 @@ class MainActivity : AppCompatActivity() {
             button.setOnClickListener {
                 if (station?.url == "music://local") {
                     startActivity(Intent(this, MusicActivity::class.java))
-                } else if (currentStation == index && radioPlaying) {
-                    stopRadio()
                 } else {
+                    // Vedno preklopi - tudi če je ista postaja (restart)
                     playStation(index)
                 }
             }
@@ -146,7 +145,12 @@ class MainActivity : AppCompatActivity() {
     private fun playStation(index: Int) {
         val stations = prefs.getRadioStations()
         val station = stations.getOrNull(index) ?: return
-        if (station.url == "music://local") return
+        if (station.url == "music://local") {
+            startActivity(Intent(this, MusicActivity::class.java))
+            return
+        }
+        if (radioPlaying) stats.log(StatEvent.RADIO_STOP)
+        // Pošlji PLAY direktno - RadioService interno ustavi staro in zažene novo
         startForegroundService(Intent(this, RadioService::class.java).apply {
             action = RadioService.ACTION_PLAY
             putExtra(RadioService.EXTRA_URL, station.url)
@@ -429,7 +433,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        if (isFinishing) { stopRadio(); stats.log(StatEvent.APP_STOP) }
+        // Ustavi radio ko aplikacija gre v ozadje ali se zapre
+        stopRadio()
+        if (isFinishing) {
+            stats.log(StatEvent.APP_STOP)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updatePatientName()
     }
 
     override fun onDestroy() {

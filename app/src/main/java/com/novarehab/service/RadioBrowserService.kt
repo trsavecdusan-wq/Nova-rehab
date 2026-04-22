@@ -18,12 +18,12 @@ object RadioBrowserService {
         .build()
 
     private val hardcodedStations = listOf(
-        RadioStation("Radio Center", "http://stream2.radiocenter.si:8000/center"),
         RadioStation("Val 202",      "http://mp3.rtvslo.si/val202"),
-        RadioStation("Radio 1",      "http://mp3.rtvslo.si/ra1"),
+        RadioStation("Radio Center", "http://stream2.radiocenter.si:8000/center"),
         RadioStation("Lux FM UA",    "https://online.luxfm.com.ua/luxfm"),
-        RadioStation("Nashe UA",     "https://nashe1.hostingradio.ru/nashe-256.mp3"),
-        RadioStation("🎵 Glasba",    "music://local")
+        RadioStation("Hits UA",      "https://hitsradio.com.ua/online"),
+        RadioStation("Kiss FM UA",   "https://online.kissfm.ua/KissFM"),
+        RadioStation("Glasba",       "music://local")
     )
 
     fun fetchStations(
