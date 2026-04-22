@@ -121,26 +121,12 @@ class PrefsManager(context: Context) {
         Contact("Skrbnik", "", "🧑‍💼", "sl")
     )
 
-            private fun defaultStations(): List<RadioStation> = listOf(
+    private fun defaultStations(): List<RadioStation> = listOf(
         RadioStation("Radio Center", "http://stream2.radiocenter.si:8000/center"),
-        RadioStation("Val 202", "http://mp3.rtvslo.si/val202"),
-        RadioStation("Radio 1", "http://mp3.rtvslo.si/ra1"),
-        RadioStation("Lux FM UA", "https://online.luxfm.com.ua/luxfm"),
-        RadioStation("Nashe UA", "https://nashe1.hostingradio.ru/nashe-256.mp3"),
-        RadioStation("🎵 Glasba", "music://local")
-    ),
-        RadioStation("Radio 1",       "http://mp3.rtvslo.si/ra1"),
-        RadioStation("Val 202",       "http://mp3.rtvslo.si/val202"),
-        RadioStation("Lux FM UA",     "https://online.luxfm.com.ua/luxfm"),
-        RadioStation("Nashe UA",      "https://nashe1.hostingradio.ru/nashe-256.mp3"),
-        RadioStation("🎵 Glasba",     "music://local")
-    ),
-        RadioStation("Ars",        "https://icecast2.rtvslo.si/ars1_aac"),
-        // BBC - zanesljiv test stream
-        RadioStation("BBC World",  "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"),
-        // UA streami - direktni MP3
-        RadioStation("UA Kultura", "https://stream.rcs.revma.com/an1ugyygzk8uv"),
-        RadioStation("UA Promin",  "https://stream.rcs.revma.com/ypqvyy2ynk8uv"),
-        RadioStation("🎵 Glasba",  "music://local")
+        RadioStation("Val 202",      "http://mp3.rtvslo.si/val202"),
+        RadioStation("Radio 1",      "http://mp3.rtvslo.si/ra1"),
+        RadioStation("Lux FM UA",    "https://online.luxfm.com.ua/luxfm"),
+        RadioStation("Nashe UA",     "https://nashe1.hostingradio.ru/nashe-256.mp3"),
+        RadioStation("🎵 Glasba",    "music://local")
     )
 }
