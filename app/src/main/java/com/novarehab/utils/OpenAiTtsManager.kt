@@ -71,7 +71,7 @@ class OpenAiTtsManager(private val context: Context) {
         }
 
         if (apiKey.isNotBlank() && isOnline()) {
-            speakOpenAI(clean, apiKey, voice, cache, onDone)
+            speakOpenAI(clean, language, apiKey, voice, cache, onDone)
         } else {
             speakAndroid(clean, language, onDone)
         }
@@ -79,6 +79,7 @@ class OpenAiTtsManager(private val context: Context) {
 
     private fun speakOpenAI(
         text: String,
+        language: String,
         apiKey: String,
         voice: String,
         cache: File,
@@ -114,7 +115,7 @@ class OpenAiTtsManager(private val context: Context) {
             }
 
             android.os.Handler(android.os.Looper.getMainLooper()).post {
-                speakAndroid(text, "sl", onDone)
+                speakAndroid(text, language, onDone)
             }
         }.start()
     }
@@ -158,6 +159,12 @@ class OpenAiTtsManager(private val context: Context) {
 
     private fun setBestLocale(language: String) {
         val candidates = when (language.lowercase()) {
+            "sl", "si", "slovenian" -> listOf(
+                Locale("sl", "SI"),
+                Locale("hr", "HR"),
+                Locale("sr", "RS")
+            )
+
             "uk", "ua", "ukrainian" -> listOf(
                 Locale("uk", "UA"),
                 Locale("ru", "RU"),
@@ -177,29 +184,30 @@ class OpenAiTtsManager(private val context: Context) {
                 Locale("sl", "SI")
             )
 
-            "en" -> listOf(
-                Locale.ENGLISH,
-                Locale("sl", "SI")
+            "en", "english" -> listOf(
+                Locale.US,
+                Locale.UK,
+                Locale.ENGLISH
             )
 
             else -> listOf(
                 Locale("sl", "SI"),
                 Locale("hr", "HR"),
-                Locale("sr", "RS"),
-                Locale.ENGLISH
+                Locale("sr", "RS")
             )
         }
 
         for (locale in candidates) {
             val result = tts?.setLanguage(locale)
-            if (result != TextToSpeech.LANG_MISSING_DATA &&
+            if (
+                result != TextToSpeech.LANG_MISSING_DATA &&
                 result != TextToSpeech.LANG_NOT_SUPPORTED
             ) {
                 return
             }
         }
 
-        tts?.setLanguage(Locale.getDefault())
+        tts?.setLanguage(Locale("sl", "SI"))
     }
 
     private fun playFile(file: File, onDone: () -> Unit) {
