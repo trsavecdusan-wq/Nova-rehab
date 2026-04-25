@@ -4,21 +4,39 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-data class RadioStation(val name: String, val url: String)
-data class Contact(val name: String, val phone: String, val emoji: String = "👤", val language: String = "sl")
-data class CustomCommIcon(val id: String, val title: String, val text: String, val language: String = "sl")
+data class RadioStation(
+    val name: String,
+    val url: String
+)
+
+data class Contact(
+    val name: String,
+    val phone: String,
+    val emoji: String = "",
+    val language: String = "sl"
+)
+
+data class CustomCommIcon(
+    val id: String,
+    val title: String,
+    val text: String,
+    val language: String = "sl"
+)
 
 class PrefsManager(context: Context) {
 
     private val prefs = context.getSharedPreferences("nova_rehab_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
-    private val STATIONS_VERSION = 9
+
+    // povečano zato, da aplikacija prepiše stare shranjene radijske postaje
+    private val STATIONS_VERSION = 10
 
     fun getPin(): String = prefs.getString("pin", "1234") ?: "1234"
     fun savePin(pin: String) = prefs.edit().putString("pin", pin).apply()
 
     fun getServerIp(): String = prefs.getString("server_ip", "") ?: ""
     fun saveServerIp(ip: String) = prefs.edit().putString("server_ip", ip).apply()
+
     fun getServerPort(): String = prefs.getString("server_port", "8080") ?: "8080"
     fun saveServerPort(port: String) = prefs.edit().putString("server_port", port).apply()
 
@@ -27,6 +45,7 @@ class PrefsManager(context: Context) {
 
     fun isNavigationEnabled(): Boolean = prefs.getBoolean("navigation_enabled", false)
     fun saveNavigationEnabled(v: Boolean) = prefs.edit().putBoolean("navigation_enabled", v).apply()
+
     fun getHomeAddress(): String = prefs.getString("home_address", "") ?: ""
     fun saveHomeAddress(address: String) = prefs.edit().putString("home_address", address).apply()
 
@@ -36,16 +55,29 @@ class PrefsManager(context: Context) {
     fun getOpenAiKey(): String = prefs.getString("openai_key", "") ?: ""
     fun saveOpenAiKey(key: String) = prefs.edit().putString("openai_key", key).apply()
 
-    fun getDefaultSpeechLanguage(): String = prefs.getString("default_speech_language", "sl") ?: "sl"
-    fun saveDefaultSpeechLanguage(lang: String) = prefs.edit().putString("default_speech_language", lang).apply()
+    fun getDefaultSpeechLanguage(): String =
+        prefs.getString("default_speech_language", "sl") ?: "sl"
 
-    fun isAutoLanguageEnabled(): Boolean = prefs.getBoolean("auto_language_enabled", false)
-    fun saveAutoLanguageEnabled(v: Boolean) = prefs.edit().putBoolean("auto_language_enabled", v).apply()
+    fun saveDefaultSpeechLanguage(lang: String) =
+        prefs.edit().putString("default_speech_language", lang).apply()
 
-    fun getPatientLanguage1(): String = prefs.getString("patient_language_1", "sl") ?: "sl"
-    fun savePatientLanguage1(lang: String) = prefs.edit().putString("patient_language_1", lang).apply()
-    fun getPatientLanguage2(): String = prefs.getString("patient_language_2", "uk") ?: "uk"
-    fun savePatientLanguage2(lang: String) = prefs.edit().putString("patient_language_2", lang).apply()
+    fun isAutoLanguageEnabled(): Boolean =
+        prefs.getBoolean("auto_language_enabled", false)
+
+    fun saveAutoLanguageEnabled(v: Boolean) =
+        prefs.edit().putBoolean("auto_language_enabled", v).apply()
+
+    fun getPatientLanguage1(): String =
+        prefs.getString("patient_language_1", "sl") ?: "sl"
+
+    fun savePatientLanguage1(lang: String) =
+        prefs.edit().putString("patient_language_1", lang).apply()
+
+    fun getPatientLanguage2(): String =
+        prefs.getString("patient_language_2", "uk") ?: "uk"
+
+    fun savePatientLanguage2(lang: String) =
+        prefs.edit().putString("patient_language_2", lang).apply()
 
     fun getCommIconsPerPage(): Int {
         val v = prefs.getInt("comm_icons_per_page", 12)
@@ -62,53 +94,76 @@ class PrefsManager(context: Context) {
         return try {
             val type = object : TypeToken<List<CustomCommIcon>>() {}.type
             gson.fromJson(json, type)
-        } catch (e: Exception) { emptyList() }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     fun saveCustomCommIcons(items: List<CustomCommIcon>) {
         prefs.edit().putString("custom_comm_icons", gson.toJson(items)).apply()
     }
+
     fun getTtsVoice(): String = prefs.getString("tts_voice", "nova") ?: "nova"
     fun saveTtsVoice(voice: String) = prefs.edit().putString("tts_voice", voice).apply()
 
     fun getGmailUser(): String = prefs.getString("gmail_user", "") ?: ""
     fun saveGmailUser(email: String) = prefs.edit().putString("gmail_user", email).apply()
+
     fun getGmailAppPassword(): String = prefs.getString("gmail_pass", "") ?: ""
     fun saveGmailAppPassword(pass: String) = prefs.edit().putString("gmail_pass", pass).apply()
+
     fun getReportMail1(): String = prefs.getString("report_mail1", "") ?: ""
     fun saveReportMail1(email: String) = prefs.edit().putString("report_mail1", email).apply()
+
     fun getReportMail2(): String = prefs.getString("report_mail2", "") ?: ""
     fun saveReportMail2(email: String) = prefs.edit().putString("report_mail2", email).apply()
+
     fun isReportMail1Enabled(): Boolean = prefs.getBoolean("report_mail1_enabled", true)
-    fun saveReportMail1Enabled(v: Boolean) = prefs.edit().putBoolean("report_mail1_enabled", v).apply()
+    fun saveReportMail1Enabled(v: Boolean) =
+        prefs.edit().putBoolean("report_mail1_enabled", v).apply()
+
     fun isReportMail2Enabled(): Boolean = prefs.getBoolean("report_mail2_enabled", false)
-    fun saveReportMail2Enabled(v: Boolean) = prefs.edit().putBoolean("report_mail2_enabled", v).apply()
+    fun saveReportMail2Enabled(v: Boolean) =
+        prefs.edit().putBoolean("report_mail2_enabled", v).apply()
+
     fun getReportHour(): Int = prefs.getInt("report_hour", 8)
     fun saveReportHour(hour: Int) = prefs.edit().putInt("report_hour", hour).apply()
 
     fun getRadioStations(): List<RadioStation> {
         val savedVersion = prefs.getInt("stations_version", 0)
+
         if (savedVersion < STATIONS_VERSION) {
-            prefs.edit().putInt("stations_version", STATIONS_VERSION).apply()
-            saveRadioStations(defaultStations())
-            return defaultStations()
+            val stations = defaultStations()
+            prefs.edit()
+                .putInt("stations_version", STATIONS_VERSION)
+                .putString("radio_stations", gson.toJson(stations))
+                .apply()
+            return stations
         }
+
         val json = prefs.getString("radio_stations", null)
         if (json != null) {
             return try {
                 val type = object : TypeToken<List<RadioStation>>() {}.type
                 gson.fromJson(json, type)
-            } catch (e: Exception) { defaultStations() }
+            } catch (e: Exception) {
+                defaultStations()
+            }
         }
+
         return defaultStations()
     }
 
     fun saveRadioStations(stations: List<RadioStation>) {
-        prefs.edit().putString("radio_stations", gson.toJson(stations)).apply()
+        prefs.edit()
+            .putString("radio_stations", gson.toJson(stations))
+            .apply()
     }
 
     fun saveRadioStationsJson(json: String) {
-        prefs.edit().putString("radio_stations", json).apply()
+        prefs.edit()
+            .putString("radio_stations", json)
+            .apply()
     }
 
     fun getContacts(): List<Contact> {
@@ -117,7 +172,9 @@ class PrefsManager(context: Context) {
             return try {
                 val type = object : TypeToken<List<Contact>>() {}.type
                 gson.fromJson(json, type)
-            } catch (e: Exception) { defaultContacts() }
+            } catch (e: Exception) {
+                defaultContacts()
+            }
         }
         return defaultContacts()
     }
@@ -127,20 +184,20 @@ class PrefsManager(context: Context) {
     }
 
     private fun defaultContacts(): List<Contact> = listOf(
-        Contact("Mama",     "", "👩", "sl"),
-        Contact("Ata",      "", "👨", "sl"),
-        Contact("Sestra",   "", "👧", "sl"),
-        Contact("Brat",     "", "🧑", "sl"),
-        Contact("Zdravnik", "", "👨‍⚕️", "sl"),
-        Contact("Skrbnik",  "", "🧑‍💼", "sl")
+        Contact("Mama", "", "", "sl"),
+        Contact("Ata", "", "", "sl"),
+        Contact("Sestra", "", "", "sl"),
+        Contact("Brat", "", "", "sl"),
+        Contact("Zdravnik", "", "👩‍⚕️", "sl"),
+        Contact("Skrbnik", "", "👤", "sl")
     )
 
     private fun defaultStations(): List<RadioStation> = listOf(
-        RadioStation("Radio 1",       "https://live.radio.si/Radio1"),
-        RadioStation("Radio Center",  "https://stream2.radiocenter.si/center"),
-        RadioStation("ROKS UA",       "https://online.radioroks.ua/RadioROKS"),
-        RadioStation("Kiss FM UA",    "https://online.kissfm.ua/KissFM"),
-        RadioStation("Nashe UA",      "https://online.nasheradio.ua/NasheRadio"),
-        RadioStation("USB glasba",    "music://local")
+        RadioStation("Radio 1", "https://live.radio.si/Radio1"),
+        RadioStation("Radio Center", "https://stream2.radiocenter.si/center"),
+        RadioStation("ROKS UA", "https://online.radioroks.ua/RadioROKS"),
+        RadioStation("Kiss FM UA", "https://online.kissfm.ua/KissFM"),
+        RadioStation("Nashe UA", "https://online.nasheradio.ua/NasheRadio"),
+        RadioStation("USB glasba", "music://local")
     )
 }
