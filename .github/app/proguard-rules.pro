@@ -1,3 +1,0 @@
--keep class com.novarehab.** { *; }
--keep class androidx.media3.** { *; }
--dontwarn okhttp3.**

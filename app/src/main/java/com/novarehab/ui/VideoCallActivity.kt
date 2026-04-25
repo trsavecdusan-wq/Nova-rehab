@@ -208,7 +208,7 @@ class VideoCallActivity : AppCompatActivity() {
                 isClickable = true
                 isFocusable = true
                 setOnClickListener {
-                    ttsManager.speakAndroid(text, contact.language)
+                    ttsManager.speak(text, contact.language, prefs.getOpenAiKey(), prefs.getTtsVoice())
                 }
             }
             gridQuickMessages.addView(cell)

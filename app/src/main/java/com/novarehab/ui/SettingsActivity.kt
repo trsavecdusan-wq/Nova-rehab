@@ -20,14 +20,110 @@ class SettingsActivity : AppCompatActivity() {
     private val contactLangSpinners = mutableListOf<Spinner>()
     private val contactImageButtons = mutableListOf<ImageButton>()
     private var pendingImageIndex = -1
+    private lateinit var spinnerDefaultSpeechLang: Spinner
+    private lateinit var spinnerPatientLang1: Spinner
+    private lateinit var spinnerPatientLang2: Spinner
+    private lateinit var spinnerCommIconsPerPage: Spinner
+    private lateinit var switchAutoLanguage: Switch
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefs = PrefsManager(this)
+        addLanguageSettingsPanel()
         loadSettings()
         setupButtons()
+    }
+
+    private fun langOptions() = arrayOf("🇸🇮 Slovenščina", "🇺🇦 Ukrajinščina", "🇬🇧 Angleščina", "🇩🇪 Nemščina", "🇭🇷 Hrvaščina", "🇷🇸 Srbščina")
+
+    private fun langCode(position: Int): String = when (position) {
+        1 -> "uk"
+        2 -> "en"
+        3 -> "de"
+        4 -> "hr"
+        5 -> "sr"
+        else -> "sl"
+    }
+
+    private fun langIndex(code: String): Int = when (code) {
+        "uk" -> 1
+        "en" -> 2
+        "de" -> 3
+        "hr" -> 4
+        "sr" -> 5
+        else -> 0
+    }
+
+    private fun newLangSpinner(): Spinner {
+        return Spinner(this).apply {
+            adapter = ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_item, langOptions())
+                .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+    }
+
+    private fun addLanguageSettingsPanel() {
+        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 16)
+        }
+        panel.addView(TextView(this).apply {
+            text = "Jeziki pacienta in govor"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        panel.addView(TextView(this).apply {
+            text = "Število komunikacijskih ikon na stran:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerCommIconsPerPage = Spinner(this).apply {
+            adapter = ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_item, arrayOf("6 ikon", "8 ikon", "12 ikon", "18 ikon"))
+                .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        panel.addView(spinnerCommIconsPerPage)
+
+        panel.addView(TextView(this).apply {
+            text = "Privzeti jezik izgovora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerDefaultSpeechLang = newLangSpinner()
+        panel.addView(spinnerDefaultSpeechLang)
+
+        panel.addView(TextView(this).apply {
+            text = "Jezik, ki ga pacient razume 1:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerPatientLang1 = newLangSpinner()
+        panel.addView(spinnerPatientLang1)
+
+        panel.addView(TextView(this).apply {
+            text = "Jezik, ki ga pacient razume 2:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerPatientLang2 = newLangSpinner()
+        panel.addView(spinnerPatientLang2)
+
+        val autoRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        autoRow.addView(TextView(this).apply {
+            text = "Samodejno zaznavanje jezika sogovornika"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 13f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        switchAutoLanguage = Switch(this)
+        autoRow.addView(switchAutoLanguage)
+        panel.addView(autoRow)
+        rootLayout.addView(panel, 5)
     }
 
     private fun loadSettings() {
@@ -106,6 +202,17 @@ class SettingsActivity : AppCompatActivity() {
 
         // Pacient
         binding.etPatientName.setText(prefs.getPatientName())
+        spinnerCommIconsPerPage.setSelection(when (prefs.getCommIconsPerPage()) {
+            6 -> 0
+            8 -> 1
+            12 -> 2
+            18 -> 3
+            else -> 1
+        })
+        spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
+        spinnerPatientLang1.setSelection(langIndex(prefs.getPatientLanguage1()))
+        spinnerPatientLang2.setSelection(langIndex(prefs.getPatientLanguage2()))
+        switchAutoLanguage.isChecked = prefs.isAutoLanguageEnabled()
 
         // Server
         binding.etServerIp.setText(prefs.getServerIp())
@@ -207,6 +314,16 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveNavigationEnabled(binding.switchNavigation.isChecked)
         prefs.saveHomeAddress(binding.etHomeAddress.text.toString().trim())
         prefs.savePatientName(binding.etPatientName.text.toString().trim())
+        prefs.saveCommIconsPerPage(when (spinnerCommIconsPerPage.selectedItemPosition) {
+            0 -> 6
+            2 -> 12
+            3 -> 18
+            else -> 8
+        })
+        prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
+        prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
+        prefs.savePatientLanguage2(langCode(spinnerPatientLang2.selectedItemPosition))
+        prefs.saveAutoLanguageEnabled(switchAutoLanguage.isChecked)
         prefs.saveServerIp(binding.etServerIp.text.toString().trim())
         prefs.saveServerPort(binding.etServerPort.text.toString().trim())
         prefs.saveKioskReturnMinutes(binding.etKioskMinutes.text.toString().trim().toLongOrNull() ?: 5L)

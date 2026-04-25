@@ -15,13 +15,26 @@ import java.io.File
 class CommPageAdapter(
     private val context: Context,
     private val items: List<Triple<String, Int, Pair<String, String>>>,
+    private val pageSize: Int = 8,
     private val getLang: () -> String,
-    private val onSpeak: (String) -> Unit
+    private val onSpeak: (String, String) -> Unit
 ) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
 
     private val iconMgr = IconTextManager(context)
-    private val pageSize = 12
-    val pageCount get() = maxOf(1, Math.ceil(items.size.toDouble() / pageSize).toInt())
+    private val safePageSize = if (pageSize in setOf(6, 8, 12, 18)) pageSize else 8
+    private val gridColumns = when (safePageSize) {
+        6 -> 2
+        8 -> 2
+        18 -> 3
+        else -> 3
+    }
+    private val gridRows = when (safePageSize) {
+        6 -> 3
+        8 -> 4
+        18 -> 6
+        else -> 4
+    }
+    val pageCount get() = maxOf(1, Math.ceil(items.size.toDouble() / safePageSize).toInt())
 
     override fun getItemCount() = pageCount
 
@@ -31,8 +44,8 @@ class CommPageAdapter(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            columnCount = 3
-            rowCount = 4
+            columnCount = gridColumns
+            rowCount = gridRows
         }
         return PageViewHolder(grid)
     }
@@ -40,8 +53,8 @@ class CommPageAdapter(
     override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
         val grid = holder.grid
         grid.removeAllViews()
-        val start = position * pageSize
-        val end = minOf(start + pageSize, items.size)
+        val start = position * safePageSize
+        val end = minOf(start + safePageSize, items.size)
 
         items.subList(start, end).forEach { (id, iconRes, speeches) ->
             val cell = LinearLayout(context).apply {
@@ -73,10 +86,22 @@ class CommPageAdapter(
                 isClickable = true
                 isFocusable = true
                 setOnClickListener {
-                    val custom = iconMgr.getText(id, getLang())
-                    val speech = if (custom.isNotEmpty()) custom
-                        else if (getLang() == "uk") speeches.second else speeches.first
-                    onSpeak(speech)
+                    val targetLang = getLang()
+                    val customTarget = iconMgr.getText(id, targetLang)
+                    val customSl = iconMgr.getText(id, "sl")
+                    val speech: String
+                    val sourceLang: String
+                    if (customTarget.isNotEmpty()) {
+                        speech = customTarget
+                        sourceLang = targetLang
+                    } else if (targetLang == "uk" && speeches.second.isNotEmpty()) {
+                        speech = speeches.second
+                        sourceLang = "uk"
+                    } else {
+                        speech = customSl.ifEmpty { speeches.first }
+                        sourceLang = "sl"
+                    }
+                    onSpeak(speech, sourceLang)
                 }
             }
             grid.addView(cell)

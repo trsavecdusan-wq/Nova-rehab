@@ -6,12 +6,13 @@ import com.google.gson.reflect.TypeToken
 
 data class RadioStation(val name: String, val url: String)
 data class Contact(val name: String, val phone: String, val emoji: String = "👤", val language: String = "sl")
+data class CustomCommIcon(val id: String, val title: String, val text: String, val language: String = "sl")
 
 class PrefsManager(context: Context) {
 
     private val prefs = context.getSharedPreferences("nova_rehab_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
-    private val STATIONS_VERSION = 7
+    private val STATIONS_VERSION = 8
 
     fun getPin(): String = prefs.getString("pin", "1234") ?: "1234"
     fun savePin(pin: String) = prefs.edit().putString("pin", pin).apply()
@@ -34,6 +35,39 @@ class PrefsManager(context: Context) {
 
     fun getOpenAiKey(): String = prefs.getString("openai_key", "") ?: ""
     fun saveOpenAiKey(key: String) = prefs.edit().putString("openai_key", key).apply()
+
+    fun getDefaultSpeechLanguage(): String = prefs.getString("default_speech_language", "sl") ?: "sl"
+    fun saveDefaultSpeechLanguage(lang: String) = prefs.edit().putString("default_speech_language", lang).apply()
+
+    fun isAutoLanguageEnabled(): Boolean = prefs.getBoolean("auto_language_enabled", false)
+    fun saveAutoLanguageEnabled(v: Boolean) = prefs.edit().putBoolean("auto_language_enabled", v).apply()
+
+    fun getPatientLanguage1(): String = prefs.getString("patient_language_1", "sl") ?: "sl"
+    fun savePatientLanguage1(lang: String) = prefs.edit().putString("patient_language_1", lang).apply()
+    fun getPatientLanguage2(): String = prefs.getString("patient_language_2", "uk") ?: "uk"
+    fun savePatientLanguage2(lang: String) = prefs.edit().putString("patient_language_2", lang).apply()
+
+    fun getCommIconsPerPage(): Int {
+        val v = prefs.getInt("comm_icons_per_page", 8)
+        return if (v in setOf(6, 8, 12, 18)) v else 8
+    }
+
+    fun saveCommIconsPerPage(v: Int) {
+        val safe = if (v in setOf(6, 8, 12, 18)) v else 8
+        prefs.edit().putInt("comm_icons_per_page", safe).apply()
+    }
+
+    fun getCustomCommIcons(): List<CustomCommIcon> {
+        val json = prefs.getString("custom_comm_icons", null) ?: return emptyList()
+        return try {
+            val type = object : TypeToken<List<CustomCommIcon>>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: Exception) { emptyList() }
+    }
+
+    fun saveCustomCommIcons(items: List<CustomCommIcon>) {
+        prefs.edit().putString("custom_comm_icons", gson.toJson(items)).apply()
+    }
     fun getTtsVoice(): String = prefs.getString("tts_voice", "nova") ?: "nova"
     fun saveTtsVoice(voice: String) = prefs.edit().putString("tts_voice", voice).apply()
 
@@ -102,11 +136,11 @@ class PrefsManager(context: Context) {
     )
 
     private fun defaultStations(): List<RadioStation> = listOf(
-        RadioStation("Val 202",      "http://mp3.rtvslo.si/val202"),
-        RadioStation("Radio Center", "http://stream2.radiocenter.si:8000/center"),
-        RadioStation("BBC World",    "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"),
-        RadioStation("Kiss FM UA",   "https://online.kissfm.ua/KissFM"),
-        RadioStation("Nashe UA",     "https://nashe1.hostingradio.ru/nashe-256.mp3"),
-        RadioStation("Glasba",       "music://local")
+        RadioStation("Radio 1",       "https://live.radio.si/Radio1"),
+        RadioStation("Radio Center",  "https://stream2.radiocenter.si/center"),
+        RadioStation("ROKS UA",       "https://online.radioroks.ua/RadioROKS"),
+        RadioStation("Kiss FM UA",    "https://online.kissfm.ua/KissFM"),
+        RadioStation("Nashe UA",      "https://online.nasheradio.ua/NasheRadio"),
+        RadioStation("USB glasba",    "music://local")
     )
 }

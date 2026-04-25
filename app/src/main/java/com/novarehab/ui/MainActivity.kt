@@ -37,6 +37,8 @@ class MainActivity : AppCompatActivity() {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var langDetector: LanguageDetector? = null
+    private lateinit var ttsManager: OpenAiTtsManager
+    private lateinit var translateManager: OpenAiTranslateManager
 
     private var currentStation = -1
     private var radioPlaying = false
@@ -87,6 +89,9 @@ class MainActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         stats = StatsManager(this)
+        ttsManager = OpenAiTtsManager(this)
+        translateManager = OpenAiTranslateManager(this)
+        activeLang = prefs.getDefaultSpeechLanguage()
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 val r = tts?.setLanguage(Locale("sl", "SI"))
@@ -103,11 +108,11 @@ class MainActivity : AppCompatActivity() {
         setupSpeed()
         setupCommPager()
         setupVideoCallButton()
+        setupBottomActionButtons()
         setupVolumeControls()
         setupClock()
         updatePatientName()
-        // LanguageDetector začasno izklopljen - povzroča zvoke
-        // setupLanguageDetector()
+        if (prefs.isAutoLanguageEnabled()) setupLanguageDetector()
         scheduleReports()
 
         stats.log(StatEvent.APP_START)
@@ -136,20 +141,14 @@ class MainActivity : AppCompatActivity() {
             button.setOnClickListener {
                 if (station?.url == "music://local") {
                     startActivity(Intent(this, MusicActivity::class.java))
+                } else if (radioPlaying && currentStation == index) {
+                    stopRadio()
                 } else {
-                    // Vedno preklopi - tudi če je ista postaja (restart)
                     playStation(index)
                 }
             }
         }
-        binding.btnRadioToggle.setOnClickListener {
-            if (radioPlaying) stopRadio()
-            else playStation(if (currentStation >= 0) currentStation else 0)
-        }
-        binding.btnRadioToggle.setOnLongClickListener {
-            showPinDialog()
-            true
-        }
+        binding.btnRadioToggle.visibility = View.GONE
     }
 
     private fun playStation(index: Int) {
@@ -180,9 +179,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateRadioUI() {
-        binding.btnRadioToggle.backgroundTintList = android.content.res.ColorStateList.valueOf(
-            if (radioPlaying) 0xFFe94560.toInt() else 0xFF1b5e20.toInt()
-        )
         listOf(binding.btnRadio1, binding.btnRadio2, binding.btnRadio3,
                binding.btnRadio4, binding.btnRadio5, binding.btnRadio6
         ).forEachIndexed { index, btn ->
@@ -197,6 +193,9 @@ class MainActivity : AppCompatActivity() {
     private fun setupSpeed() {
         speedGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDown(e: MotionEvent): Boolean = true
+            override fun onLongPress(e: MotionEvent) {
+                showPinDialog()
+            }
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (!prefs.isNavigationEnabled()) {
                     Toast.makeText(this@MainActivity, "Navigacija je izklopljena v Nastavitvah", Toast.LENGTH_SHORT).show()
@@ -254,17 +253,25 @@ class MainActivity : AppCompatActivity() {
 
     // ── KOMUNIKACIJA ──────────────────────────────────────────────────────────
 
+    private fun getCommItems(): List<Triple<String, Int, Pair<String, String>>> {
+        val custom = prefs.getCustomCommIcons()
+            .filter { it.text.isNotBlank() || it.title.isNotBlank() }
+            .map { item -> Triple(item.id, R.drawable.ic_contact_default, Pair(item.text.ifBlank { item.title }, "")) }
+        return allCommItems + custom
+    }
+
     private fun setupCommPager() {
         val adapter = CommPageAdapter(
             context = this,
-            items = allCommItems,
+            items = getCommItems(),
+            pageSize = prefs.getCommIconsPerPage(),
             getLang = { activeLang },
-            onSpeak = { text -> speakComm(text) }
+            onSpeak = { text, sourceLang -> speakComm(text, sourceLang) }
         )
         binding.viewPagerComm.adapter = adapter
     }
 
-    fun speakComm(text: String) {
+    fun speakComm(text: String, sourceLang: String = "sl") {
         if (text.isEmpty()) return
 
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
@@ -273,41 +280,41 @@ class MainActivity : AppCompatActivity() {
             startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
         }
 
-        // Če TTS še ni pripravljen, počakaj 1s in poskusi znova
-        if (!ttsReady) {
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                speakComm(text)
-            }, 1000)
-            return
-        }
+        val targetLang = activeLang
+        val apiKey = prefs.getOpenAiKey()
+        val voice = prefs.getTtsVoice()
 
-        // Nastavi jezik glede na activeLang
-        val locale = if (activeLang == "uk") java.util.Locale("uk", "UA") else java.util.Locale("sl", "SI")
-        val langResult = tts?.setLanguage(locale)
-        if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
-            tts?.setLanguage(java.util.Locale.getDefault())
-        }
-
-        val uid = "comm_${System.currentTimeMillis()}"
-        tts?.stop()
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
-
-        stats.log(StatEvent.COMM_ICON, text.take(30))
-
-        // Vklopi radio nazaj po govorjenju
-        val delay = (text.length * 90 + 2000).toLong()
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            if (radioPlaying) {
-                startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+        fun speakFinal(finalText: String) {
+            ttsManager.speak(finalText, targetLang, apiKey, voice) {
+                if (radioPlaying) {
+                    startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+                }
             }
-        }, delay)
+            stats.log(StatEvent.COMM_ICON, finalText.take(30))
+        }
+
+        if (sourceLang != targetLang && apiKey.isNotBlank()) {
+            translateManager.translate(text, targetLang, apiKey) { translated ->
+                speakFinal(translated)
+            }
+        } else {
+            speakFinal(text)
+        }
     }
 
     // ── ZAZNAVANJE JEZIKA ─────────────────────────────────────────────────────
 
     private fun setupLanguageDetector() {
-        // Izklopljeno - SpeechRecognizer povzroča zvoke ob napakah
-        // Jezik se preklopi ročno prek gumba v komunikacijskem modulu
+        langDetector?.stop()
+        langDetector = LanguageDetector(this) { detectedLang ->
+            val allowed = setOf(prefs.getPatientLanguage1(), prefs.getPatientLanguage2())
+            if (detectedLang in allowed) {
+                activeLang = detectedLang
+                prefs.saveDefaultSpeechLanguage(detectedLang)
+                updateLangIndicator()
+            }
+        }
+        langDetector?.start()
     }
 
     private fun updateLangIndicator() {
@@ -363,6 +370,16 @@ class MainActivity : AppCompatActivity() {
             if (radioPlaying) stopRadio()
             stats.log(StatEvent.CALL_OUT)
             startActivity(Intent(this, VideoCallActivity::class.java))
+        }
+    }
+
+    private fun setupBottomActionButtons() {
+        binding.btnMirror.setOnClickListener {
+            if (radioPlaying) stopRadio()
+            startActivity(Intent(this, MirrorActivity::class.java))
+        }
+        binding.btnRelax.setOnClickListener {
+            Toast.makeText(this, "Sprostitev in grafično učenje bova dodala v naslednji fazi.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -463,12 +480,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        activeLang = prefs.getDefaultSpeechLanguage()
         updatePatientName()
+        setupCommPager()
     }
 
     override fun onDestroy() {
         tts?.stop()
         tts?.shutdown()
+        if (::ttsManager.isInitialized) ttsManager.destroy()
         langDetector?.stop()
         kioskRunnable?.let { kioskHandler.removeCallbacks(it) }
         clockRunnable?.let { clockHandler.removeCallbacks(it) }

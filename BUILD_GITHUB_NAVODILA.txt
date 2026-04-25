@@ -1,0 +1,14 @@
+NAVODILA ZA GITHUB BUILD
+
+1. Vsebino ZIP datoteke nalozi v GitHub repository.
+2. V GitHubu pojdi na Actions.
+3. Izberi Android APK Build.
+4. Klikni Run workflow.
+5. Ko se build konca, spodaj odpri Artifacts.
+6. Prenesi NovaRehab-debug-apk.
+7. V njem je APK za namestitev na tablico.
+
+Pomembno:
+- Build uporablja Java 17, Android SDK 34 in Gradle 8.1.1.
+- Projekt vsebuje samostojen gradlew, ki na GitHubu sam prenese Gradle.
+- Ce build pade, poslji celoten error iz GitHub Actions.
