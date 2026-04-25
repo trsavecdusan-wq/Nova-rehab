@@ -1,174 +1,68 @@
 package com.novarehab.service
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
-import android.content.Intent
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
-import android.os.IBinder
-import androidx.core.app.NotificationCompat
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
-import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import com.novarehab.R
 
-class RadioService : Service() {
+object RadioService {
 
     private var player: ExoPlayer? = null
-    private var audioManager: AudioManager? = null
-    private var focusRequest: AudioFocusRequest? = null
-    private var audioFocusGranted = false
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    // prepreči spam retry (in piskanje)
     private var retryCount = 0
-    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val maxRetries = 3
 
-    private val CHANNEL_ID = "radio_channel"
-    private val NOTIFICATION_ID = 1
-
-    companion object {
-        const val ACTION_PLAY   = "ACTION_PLAY"
-        const val ACTION_STOP   = "ACTION_STOP"
-        const val ACTION_DUCK   = "ACTION_DUCK"
-        const val ACTION_UNDUCK = "ACTION_UNDUCK"
-        const val ACTION_PAUSE_FOR_SPEECH = "ACTION_PAUSE_FOR_SPEECH"
-        const val ACTION_RESUME_AFTER_SPEECH = "ACTION_RESUME_AFTER_SPEECH"
-        const val EXTRA_URL     = "EXTRA_URL"
-        const val EXTRA_NAME    = "EXTRA_NAME"
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-        createNotificationChannel()
-        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-        buildPlayer()
-    }
-
-    private fun buildPlayer() {
-        val httpFactory = DefaultHttpDataSource.Factory().apply {
-            setUserAgent("Mozilla/5.0 (Linux; Android 10)")
-            setConnectTimeoutMs(20_000)
-            setReadTimeoutMs(20_000)
-            setAllowCrossProtocolRedirects(true)
-        }
-        val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(10_000, 30_000, 2_000, 2_000)
-            .build()
-        player = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, httpFactory)))
-            .setLoadControl(loadControl)
-            .build().also { p ->
-                p.addListener(object : Player.Listener {
+    private fun ensurePlayer(context: Context) {
+        if (player == null) {
+            player = ExoPlayer.Builder(context.applicationContext).build().apply {
+                addListener(object : androidx.media3.common.Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        if (retryCount < 3) {
+                        if (retryCount < maxRetries) {
                             retryCount++
-                            handler.postDelayed({ p.prepare(); p.play() }, 3000L * retryCount)
+                            // poskusi znova čez 3 sekunde
+                            mainHandler.postDelayed({
+                                player?.prepare()
+                                player?.playWhenReady = true
+                            }, 3000)
+                        } else {
+                            stop()
                         }
-                    }
-                    override fun onPlaybackStateChanged(state: Int) {
-                        if (state == Player.STATE_READY) retryCount = 0
                     }
                 })
             }
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_PLAY -> {
-                val url  = intent.getStringExtra(EXTRA_URL)  ?: return START_NOT_STICKY
-                val name = intent.getStringExtra(EXTRA_NAME) ?: "Radio"
-                retryCount = 0
-                // Če imamo že focus, direktno predvajaj - ne zahtevaj znova
-                if (audioFocusGranted) {
-                    playStream(url, name)
-                } else {
-                    requestAudioFocusAndPlay(url, name)
-                }
-            }
-            ACTION_STOP -> {
-                handler.removeCallbacksAndMessages(null)
-                abandonAudioFocus()
-                stopPlayback()
-                stopSelf()
-            }
-            ACTION_DUCK   -> player?.volume = 0.15f
-            ACTION_UNDUCK -> player?.volume = 1.0f
-            ACTION_PAUSE_FOR_SPEECH -> player?.pause()
-            ACTION_RESUME_AFTER_SPEECH -> player?.play()
-        }
-        return START_STICKY
-    }
-
-    private fun requestAudioFocusAndPlay(url: String, name: String) {
-        val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-            .build()
-        focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(attrs)
-            .setOnAudioFocusChangeListener { focus ->
-                when (focus) {
-                    AudioManager.AUDIOFOCUS_LOSS -> { audioFocusGranted = false; stopPlayback() }
-                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> player?.volume = 0.15f
-                    AudioManager.AUDIOFOCUS_GAIN -> { audioFocusGranted = true; player?.volume = 1.0f }
-                }
-            }.build()
-        val result = audioManager?.requestAudioFocus(focusRequest!!)
-        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            audioFocusGranted = true
-            playStream(url, name)
         }
     }
 
-    private fun playStream(url: String, name: String) {
-        player?.apply {
-            stop()
-            clearMediaItems()
-            volume = 1.0f
-            setMediaItem(MediaItem.fromUri(url))
-            prepare()
-            playWhenReady = true
+    fun play(context: Context, url: String) {
+        stop() // vedno najprej ustavi staro
+
+        if (url.startsWith("music://")) {
+            // lokalna glasba (USB) – trenutno ne implementiramo
+            return
         }
-        startForeground(NOTIFICATION_ID, buildNotification(name))
+
+        ensurePlayer(context)
+
+        val mediaItem = MediaItem.fromUri(url)
+        player?.setMediaItem(mediaItem)
+        player?.prepare()
+        player?.playWhenReady = true
+
+        retryCount = 0
     }
 
-    private fun stopPlayback() {
+    fun stop() {
         player?.stop()
         player?.clearMediaItems()
-        stopForeground(true)
+        retryCount = 0
     }
 
-    private fun abandonAudioFocus() {
-        audioFocusGranted = false
-        focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
-    }
-
-    private fun buildNotification(name: String): Notification =
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Nova Rehab Radio")
-            .setContentText("▶ $name")
-            .setSmallIcon(R.drawable.ic_radio)
-            .setOngoing(true).build()
-
-    private fun createNotificationChannel() {
-        getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Radio", NotificationManager.IMPORTANCE_LOW)
-        )
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onDestroy() {
-        handler.removeCallbacksAndMessages(null)
-        abandonAudioFocus()
+    fun release() {
         player?.release()
         player = null
-        super.onDestroy()
     }
 }
