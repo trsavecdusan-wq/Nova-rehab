@@ -1,11 +1,13 @@
 package com.novarehab.ui
 
+import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.text.InputType
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.databinding.ActivitySettingsBinding
@@ -35,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs = PrefsManager(this)
         addLanguageSettingsPanel()
         loadSettings()
+        setupOpenAiKeyField()
         setupButtons()
     }
 
@@ -128,8 +131,46 @@ class SettingsActivity : AppCompatActivity() {
         rootLayout.addView(panel, 5)
     }
 
+    private fun setupOpenAiKeyField() {
+        val rootLayout = binding.root.getChildAt(0) as? LinearLayout
+        if (rootLayout != null) {
+            for (i in 0 until rootLayout.childCount) {
+                val child = rootLayout.getChildAt(i)
+                if (child is TextView && child.text.toString().startsWith("OpenAI API ključ")) {
+                    child.text = "OpenAI API ključ"
+                    break
+                }
+            }
+        }
+
+        binding.etOpenAiKey.apply {
+            hint = "Vnesi OpenAI API ključ"
+            isEnabled = true
+            isFocusable = true
+            isFocusableInTouchMode = true
+            isClickable = true
+            isLongClickable = true
+            setSingleLine(true)
+            inputType = InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
+                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            setSelectAllOnFocus(false)
+            setOnClickListener { showKeyboardForApiKey() }
+            setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) showKeyboardForApiKey()
+            }
+        }
+    }
+
+    private fun showKeyboardForApiKey() {
+        binding.etOpenAiKey.post {
+            binding.etOpenAiKey.requestFocus()
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(binding.etOpenAiKey, InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
     private fun loadSettings() {
-        // Radio
         val stations = prefs.getRadioStations()
         val nameFields = listOf(binding.etStation1Name, binding.etStation2Name, binding.etStation3Name,
             binding.etStation4Name, binding.etStation5Name, binding.etStation6Name)
@@ -139,7 +180,6 @@ class SettingsActivity : AppCompatActivity() {
             if (i < nameFields.size) { nameFields[i].setText(s.name); urlFields[i].setText(s.url) }
         }
 
-        // Kontakti
         val contacts = prefs.getContacts()
         val nameF = listOf(binding.etContact1Name, binding.etContact2Name, binding.etContact3Name,
             binding.etContact4Name, binding.etContact5Name, binding.etContact6Name)
@@ -150,7 +190,8 @@ class SettingsActivity : AppCompatActivity() {
         val imgC = listOf(binding.imgContainer1, binding.imgContainer2, binding.imgContainer3,
             binding.imgContainer4, binding.imgContainer5, binding.imgContainer6)
 
-        contactLangSpinners.clear(); contactImageButtons.clear()
+        contactLangSpinners.clear()
+        contactImageButtons.clear()
         contacts.forEachIndexed { i, c ->
             if (i < nameF.size) { nameF[i].setText(c.name); phoneF[i].setText(c.phone) }
         }
@@ -170,7 +211,7 @@ class SettingsActivity : AppCompatActivity() {
                 if (f.exists()) setImageBitmap(BitmapFactory.decodeFile(f.absolutePath))
                 else setImageResource(android.R.drawable.ic_menu_camera)
                 setBackgroundColor(0xFF333355.toInt())
-                layoutParams = LinearLayout.LayoutParams(80, 80).apply { setMargins(0,4,0,4) }
+                layoutParams = LinearLayout.LayoutParams(80, 80).apply { setMargins(0, 4, 0, 4) }
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 setOnClickListener {
                     pendingImageIndex = i
@@ -181,7 +222,6 @@ class SettingsActivity : AppCompatActivity() {
             contactImageButtons.add(imgBtn)
         }
 
-        // OpenAI TTS
         binding.etOpenAiKey.setText(prefs.getOpenAiKey())
         val voices = arrayOf("nova", "shimmer", "alloy", "echo", "fable", "onyx")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
@@ -189,7 +229,6 @@ class SettingsActivity : AppCompatActivity() {
         binding.spinnerTtsVoice.adapter = voiceAdapter
         binding.spinnerTtsVoice.setSelection(voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
 
-        // Mail
         binding.etGmailUser.setText(prefs.getGmailUser())
         binding.etGmailPass.setText(prefs.getGmailAppPassword())
         binding.etReportMail1.setText(prefs.getReportMail1())
@@ -198,12 +237,10 @@ class SettingsActivity : AppCompatActivity() {
         binding.switchMail2.isChecked = prefs.isReportMail2Enabled()
         binding.etReportHour.setText(prefs.getReportHour().toString())
 
-        // Navigacija
         binding.switchNavigation.isChecked = prefs.isNavigationEnabled()
         binding.etHomeAddress.setText(prefs.getHomeAddress())
-
-        // Pacient
         binding.etPatientName.setText(prefs.getPatientName())
+
         spinnerCommIconsPerPage.setSelection(when (prefs.getCommIconsPerPage()) {
             6 -> 0
             8 -> 1
@@ -216,14 +253,9 @@ class SettingsActivity : AppCompatActivity() {
         spinnerPatientLang2.setSelection(langIndex(prefs.getPatientLanguage2()))
         switchAutoLanguage.isChecked = prefs.isAutoLanguageEnabled()
 
-        // Server
         binding.etServerIp.setText(prefs.getServerIp())
         binding.etServerPort.setText(prefs.getServerPort())
-
-        // PIN
         binding.etNewPin.setText("")
-
-        // Kiosk vrnitev
         binding.etKioskMinutes.setText(prefs.getKioskReturnMinutes().toString())
     }
 
@@ -236,11 +268,13 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.btnTestTts.setOnClickListener {
-            val key = binding.etOpenAiKey.text.toString().trim()
             val voice = binding.spinnerTtsVoice.selectedItem.toString()
+            prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
+            prefs.saveTtsVoice(voice)
+
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
-            tts.speak("Zdravo, to je test govora aplikacije Nova Rehab.", "sl", key, voice) {
+            tts.speak("Zdravo, to je test govora aplikacije Rehab.", "sl", prefs.getOpenAiKey(), voice) {
                 tts.destroy()
             }
         }
@@ -270,7 +304,8 @@ class SettingsActivity : AppCompatActivity() {
         if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
             val uri = data?.data ?: return
             try {
-                val dir = File(getExternalFilesDir(null), "contacts"); dir.mkdirs()
+                val dir = File(getExternalFilesDir(null), "contacts")
+                dir.mkdirs()
                 contentResolver.openInputStream(uri)?.use { input ->
                     File(dir, "contact_$pendingImageIndex.png").outputStream().use { output -> input.copyTo(output) }
                 }
@@ -281,38 +316,35 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun saveSettings() {
-        // Radio
         val nameF = listOf(binding.etStation1Name, binding.etStation2Name, binding.etStation3Name,
             binding.etStation4Name, binding.etStation5Name, binding.etStation6Name)
         val urlF = listOf(binding.etStation1Url, binding.etStation2Url, binding.etStation3Url,
             binding.etStation4Url, binding.etStation5Url, binding.etStation6Url)
         val stations = mutableListOf<RadioStation>()
         nameF.forEachIndexed { i, f ->
-            val n = f.text.toString().trim(); val u = urlF[i].text.toString().trim()
+            val n = f.text.toString().trim()
+            val u = urlF[i].text.toString().trim()
             if (n.isNotEmpty() && u.isNotEmpty()) stations.add(RadioStation(n, u))
         }
         prefs.saveRadioStations(stations)
 
-        // Kontakti
         val nameC = listOf(binding.etContact1Name, binding.etContact2Name, binding.etContact3Name,
             binding.etContact4Name, binding.etContact5Name, binding.etContact6Name)
         val phoneC = listOf(binding.etContact1Phone, binding.etContact2Phone, binding.etContact3Phone,
             binding.etContact4Phone, binding.etContact5Phone, binding.etContact6Phone)
-        val emojis = listOf("👩","👨","👧","🧑","👨‍⚕️","🧑‍💼")
+        val emojis = listOf("👩", "👨", "👧", "🧑", "👨‍⚕️", "🧑‍💼")
         val contacts = mutableListOf<Contact>()
         nameC.forEachIndexed { i, f ->
             val n = f.text.toString().trim()
             val p = phoneC[i].text.toString().trim()
             val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) "uk" else "sl"
-            contacts.add(Contact(n.ifEmpty { "Kontakt ${i+1}" }, p, emojis.getOrElse(i){"👤"}, lang))
+            contacts.add(Contact(n.ifEmpty { "Kontakt ${i + 1}" }, p, emojis.getOrElse(i) { "👤" }, lang))
         }
         prefs.saveContacts(contacts)
 
-        // OpenAI TTS
         prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
         prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
 
-        // Mail
         prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
         prefs.saveGmailAppPassword(binding.etGmailPass.text.toString().trim())
         prefs.saveReportMail1(binding.etReportMail1.text.toString().trim())
@@ -321,7 +353,6 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveReportMail2Enabled(binding.switchMail2.isChecked)
         prefs.saveReportHour(binding.etReportHour.text.toString().trim().toIntOrNull() ?: 8)
 
-        // Ostalo
         prefs.saveNavigationEnabled(binding.switchNavigation.isChecked)
         prefs.saveHomeAddress(binding.etHomeAddress.text.toString().trim())
         prefs.savePatientName(binding.etPatientName.text.toString().trim())
@@ -338,6 +369,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveServerIp(binding.etServerIp.text.toString().trim())
         prefs.saveServerPort(binding.etServerPort.text.toString().trim())
         prefs.saveKioskReturnMinutes(binding.etKioskMinutes.text.toString().trim().toLongOrNull() ?: 5L)
+
         val pin = binding.etNewPin.text.toString().trim()
         if (pin.length == 4) prefs.savePin(pin)
 
