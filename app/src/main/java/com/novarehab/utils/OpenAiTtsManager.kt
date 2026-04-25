@@ -3,6 +3,8 @@ package com.novarehab.utils
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import okhttp3.*
@@ -18,24 +20,56 @@ class OpenAiTtsManager(private val context: Context) {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var mediaPlayer: MediaPlayer? = null
-    // Shrani v INTERNI spomin - vedno dostopen brez permissiona
+    private var initializingDefault = false
+
+    // RHVoice Android uporablja ta package name v večini distribucij. Če ni nameščen,
+    // se varno vrnemo na sistemski Android TTS.
+    private val rhVoicePackage = "com.github.olga_yakovleva.rhvoice.android"
+
+    // Interni cache: ko je OpenAI govor enkrat ustvarjen, deluje tudi pozneje brez ponovnega prenosa.
     private val cacheDir = File(context.filesDir, "tts_cache").also { it.mkdirs() }
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
         .build()
 
     init {
-        tts = TextToSpeech(context) { status ->
-            ttsReady = (status == TextToSpeech.SUCCESS)
-            if (ttsReady) {
-                tts?.setSpeechRate(0.9f)
-                val r = tts?.setLanguage(Locale("sl", "SI"))
-                if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    tts?.setLanguage(Locale.ENGLISH)
-                }
+        initBestLocalTts()
+    }
+
+    private fun initBestLocalTts() {
+        val engine = if (isPackageInstalled(rhVoicePackage)) rhVoicePackage else null
+        initTts(engine)
+    }
+
+    private fun initTts(enginePackage: String?) {
+        try {
+            tts = if (enginePackage != null) {
+                TextToSpeech(context, { status -> onTtsInit(status, enginePackage != null) }, enginePackage)
+            } else {
+                initializingDefault = true
+                TextToSpeech(context) { status -> onTtsInit(status, false) }
             }
+        } catch (e: Exception) {
+            initializingDefault = true
+            tts = TextToSpeech(context) { status -> onTtsInit(status, false) }
+        }
+    }
+
+    private fun onTtsInit(status: Int, triedRhVoice: Boolean) {
+        ttsReady = (status == TextToSpeech.SUCCESS)
+        if (!ttsReady && triedRhVoice) {
+            // RHVoice je lahko nameščen, ampak brez glasu ali z napako. Vrnemo se na sistemski TTS.
+            try { tts?.shutdown() } catch (_: Exception) {}
+            initializingDefault = true
+            tts = TextToSpeech(context) { st -> onTtsInit(st, false) }
+            return
+        }
+        if (ttsReady) {
+            tts?.setSpeechRate(0.88f)
+            tts?.setPitch(1.0f)
+            setBestLocale("sl")
         }
     }
 
@@ -45,27 +79,38 @@ class OpenAiTtsManager(private val context: Context) {
     }
 
     fun speak(text: String, language: String, apiKey: String, voice: String, onDone: () -> Unit = {}) {
-        if (text.isEmpty()) { onDone(); return }
-        if (apiKey.isNotEmpty()) {
-            speakOpenAI(text, language, apiKey, voice, onDone)
+        val clean = text.trim()
+        if (clean.isEmpty()) { onDone(); return }
+
+        // Če je OpenAI cache že narejen, ga predvajamo tudi brez interneta.
+        val cache = File(cacheDir, cacheName(clean, language, voice))
+        if (cache.exists() && cache.length() > 1024) {
+            playFile(cache, onDone)
+            return
+        }
+
+        // Online OpenAI samo, če je ključ vpisan in je internet dejansko aktiven.
+        if (apiKey.isNotBlank() && isOnline()) {
+            speakOpenAI(clean, language, apiKey, voice, cache, onDone)
         } else {
-            // Brez API ključa - Android TTS je PRIMARNI (dela brez interneta)
-            speakAndroid(text, language, onDone)
+            // Offline: prednost RHVoice, drugače Android TTS. To je varnostni način za izpad interneta.
+            speakAndroid(clean, language, onDone)
         }
     }
 
-    private fun speakOpenAI(text: String, language: String, apiKey: String, voice: String, onDone: () -> Unit) {
-        val cache = File(cacheDir, "${text.hashCode()}_${language}_${voice}.mp3")
-        if (cache.exists() && cache.length() > 1024) { playFile(cache, onDone); return }
+    private fun speakOpenAI(text: String, language: String, apiKey: String, voice: String, cache: File, onDone: () -> Unit) {
         Thread {
             try {
                 val body = JSONObject().apply {
-                    put("model", "tts-1"); put("input", text); put("voice", voice)
+                    put("model", "tts-1")
+                    put("input", text)
+                    put("voice", voice.ifBlank { "nova" })
                 }.toString().toRequestBody("application/json".toMediaType())
                 val resp = http.newCall(Request.Builder()
                     .url("https://api.openai.com/v1/audio/speech")
                     .header("Authorization", "Bearer $apiKey")
-                    .post(body).build()).execute()
+                    .post(body)
+                    .build()).execute()
                 if (resp.isSuccessful) {
                     val bytes = resp.body?.bytes()
                     if (bytes != null && bytes.size > 1024) {
@@ -74,7 +119,7 @@ class OpenAiTtsManager(private val context: Context) {
                         return@Thread
                     }
                 }
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
             android.os.Handler(android.os.Looper.getMainLooper()).post { speakAndroid(text, language, onDone) }
         }.start()
     }
@@ -86,16 +131,7 @@ class OpenAiTtsManager(private val context: Context) {
             }, 500)
             return
         }
-        val locale = if (language == "uk") Locale("uk", "UA") else Locale("sl", "SI")
-        val r = tts?.setLanguage(locale)
-        if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-            // Slovenščina/ukrainščina ni nameščena
-            // Poskusi angleščino ki je VEDNO na Samsungu
-            val rEn = tts?.setLanguage(Locale.ENGLISH)
-            if (rEn == TextToSpeech.LANG_MISSING_DATA || rEn == TextToSpeech.LANG_NOT_SUPPORTED) {
-                tts?.setLanguage(Locale.getDefault())
-            }
-        }
+        setBestLocale(language)
         val uid = "u${System.currentTimeMillis()}"
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(id: String?) {}
@@ -109,6 +145,22 @@ class OpenAiTtsManager(private val context: Context) {
         })
         tts?.stop()
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
+    }
+
+    private fun setBestLocale(language: String) {
+        val candidates = when (language) {
+            "uk" -> listOf(Locale("uk", "UA"), Locale("ru", "RU"), Locale("sl", "SI"))
+            "hr" -> listOf(Locale("hr", "HR"), Locale("sr", "RS"), Locale("sl", "SI"))
+            "sr" -> listOf(Locale("sr", "RS"), Locale("hr", "HR"), Locale("sl", "SI"))
+            "de" -> listOf(Locale.GERMANY, Locale("sl", "SI"))
+            "en" -> listOf(Locale.ENGLISH, Locale("sl", "SI"))
+            else -> listOf(Locale("sl", "SI"), Locale("hr", "HR"), Locale("sr", "RS"), Locale.ENGLISH)
+        }
+        for (locale in candidates) {
+            val r = tts?.setLanguage(locale)
+            if (r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED) return
+        }
+        tts?.setLanguage(Locale.getDefault())
     }
 
     private fun playFile(file: File, onDone: () -> Unit) {
@@ -127,6 +179,25 @@ class OpenAiTtsManager(private val context: Context) {
             }
         } catch (e: Exception) { onDone() }
     }
+
+    private fun isOnline(): Boolean {
+        return try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        } catch (_: Exception) { false }
+    }
+
+    private fun isPackageInstalled(packageName: String): Boolean {
+        return try {
+            context.packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (_: Exception) { false }
+    }
+
+    private fun cacheName(text: String, language: String, voice: String): String =
+        "${text.hashCode()}_${language}_${voice.ifBlank { "nova" }}.mp3"
 
     fun stop() { tts?.stop(); mediaPlayer?.release(); mediaPlayer = null }
 

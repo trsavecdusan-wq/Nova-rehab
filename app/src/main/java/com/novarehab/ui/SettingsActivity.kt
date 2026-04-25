@@ -1,6 +1,8 @@
 package com.novarehab.ui
 
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -207,7 +209,7 @@ class SettingsActivity : AppCompatActivity() {
             8 -> 1
             12 -> 2
             18 -> 3
-            else -> 1
+            else -> 2
         })
         spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
         spinnerPatientLang1.setSelection(langIndex(prefs.getPatientLanguage1()))
@@ -244,7 +246,16 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.btnInstallTts.setOnClickListener {
-            startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
+            try {
+                startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
+                Toast.makeText(this, "Če slovenskega glasu ni, namesti RHVoice iz Trgovine Play.", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=RHVoice&c=apps")))
+                } catch (e2: Exception) {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/search?q=RHVoice&c=apps")))
+                }
+            }
         }
 
         binding.btnTestMail.setOnClickListener {

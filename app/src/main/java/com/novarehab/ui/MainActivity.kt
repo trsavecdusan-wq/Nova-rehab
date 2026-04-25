@@ -277,7 +277,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 
         if (radioPlaying) {
-            startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_DUCK })
+            startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_PAUSE_FOR_SPEECH })
         }
 
         val targetLang = activeLang
@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity() {
         fun speakFinal(finalText: String) {
             ttsManager.speak(finalText, targetLang, apiKey, voice) {
                 if (radioPlaying) {
-                    startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_UNDUCK })
+                    startService(Intent(this, RadioService::class.java).apply { action = RadioService.ACTION_RESUME_AFTER_SPEECH })
                 }
             }
             stats.log(StatEvent.COMM_ICON, finalText.take(30))

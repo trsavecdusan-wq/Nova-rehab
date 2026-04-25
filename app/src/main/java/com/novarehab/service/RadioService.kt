@@ -37,6 +37,8 @@ class RadioService : Service() {
         const val ACTION_STOP   = "ACTION_STOP"
         const val ACTION_DUCK   = "ACTION_DUCK"
         const val ACTION_UNDUCK = "ACTION_UNDUCK"
+        const val ACTION_PAUSE_FOR_SPEECH = "ACTION_PAUSE_FOR_SPEECH"
+        const val ACTION_RESUME_AFTER_SPEECH = "ACTION_RESUME_AFTER_SPEECH"
         const val EXTRA_URL     = "EXTRA_URL"
         const val EXTRA_NAME    = "EXTRA_NAME"
     }
@@ -97,6 +99,8 @@ class RadioService : Service() {
             }
             ACTION_DUCK   -> player?.volume = 0.15f
             ACTION_UNDUCK -> player?.volume = 1.0f
+            ACTION_PAUSE_FOR_SPEECH -> player?.pause()
+            ACTION_RESUME_AFTER_SPEECH -> player?.play()
         }
         return START_STICKY
     }

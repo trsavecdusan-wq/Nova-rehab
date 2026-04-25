@@ -1,0 +1,21 @@
+REHAB V2.19 - TTS/RADIO popravek
+
+Spremembe:
+1. Komunikacijske ikone imajo privzeto 12 ikon na stran.
+   Nastavitve ostanejo: 6 / 8 / 12 / 18.
+
+2. Govor ima bolj varno logiko:
+   - če je OpenAI API ključ vpisan in je internet aktiven: uporabi OpenAI TTS;
+   - če je isti stavek že bil predvajan prek OpenAI, uporabi lokalni cache tudi pozneje;
+   - če ni interneta ali ključ ni vpisan: uporabi lokalni TTS;
+   - če je RHVoice nameščen, ga aplikacija uporabi pred sistemskim Android TTS;
+   - če RHVoice ni nameščen, pade nazaj na Android TTS.
+
+3. Radio se ob govoru komunikacijske ikone začasno pavzira, ne samo utiša.
+   Po koncu govora se radio nadaljuje.
+
+4. V nastavitvah gumb NAMESTI GLASOVE ostane, dodano je opozorilo za RHVoice.
+
+Opomba:
+RHVoice mora biti na tablici nameščen posebej. APK ga ne vsebuje v sebi.
+Če RHVoice ni nameščen in ni interneta, bo aplikacija še vedno uporabila Android TTS, vendar bo slovenski glas lahko slabši.

@@ -12,7 +12,7 @@ class PrefsManager(context: Context) {
 
     private val prefs = context.getSharedPreferences("nova_rehab_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
-    private val STATIONS_VERSION = 8
+    private val STATIONS_VERSION = 9
 
     fun getPin(): String = prefs.getString("pin", "1234") ?: "1234"
     fun savePin(pin: String) = prefs.edit().putString("pin", pin).apply()
@@ -48,12 +48,12 @@ class PrefsManager(context: Context) {
     fun savePatientLanguage2(lang: String) = prefs.edit().putString("patient_language_2", lang).apply()
 
     fun getCommIconsPerPage(): Int {
-        val v = prefs.getInt("comm_icons_per_page", 8)
-        return if (v in setOf(6, 8, 12, 18)) v else 8
+        val v = prefs.getInt("comm_icons_per_page", 12)
+        return if (v in setOf(6, 8, 12, 18)) v else 12
     }
 
     fun saveCommIconsPerPage(v: Int) {
-        val safe = if (v in setOf(6, 8, 12, 18)) v else 8
+        val safe = if (v in setOf(6, 8, 12, 18)) v else 12
         prefs.edit().putInt("comm_icons_per_page", safe).apply()
     }
 
