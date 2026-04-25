@@ -7,29 +7,32 @@ import java.util.Locale
 object OpenAiTtsManager {
 
     private var tts: TextToSpeech? = null
+    private var initialized = false
 
     fun init(context: Context) {
         if (tts == null) {
-            tts = TextToSpeech(context) { status ->
+            tts = TextToSpeech(context.applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS) {
 
-                    // POSKUSI SLOVENŠČINO
                     val result = tts?.setLanguage(Locale("sl", "SI"))
 
                     if (result == TextToSpeech.LANG_MISSING_DATA ||
                         result == TextToSpeech.LANG_NOT_SUPPORTED) {
 
-                        // če slovenščina ne dela → hrvaščina (bolj razumljivo kot angleško)
                         tts?.setLanguage(Locale("hr", "HR"))
                     }
+
+                    initialized = true
                 }
             }
         }
     }
 
     fun speak(context: Context, text: String) {
-        if (tts == null) init(context)
+        if (!initialized) {
+            init(context)
+        }
 
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "rehab_tts")
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 }
