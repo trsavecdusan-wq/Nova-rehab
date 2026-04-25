@@ -1,288 +1,126 @@
 package com.novarehab.utils
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-class OpenAiTtsManager(private val context: Context) {
+class OpenAiTranslateManager(private val context: Context) {
 
-    private var tts: TextToSpeech? = null
-    private var ttsReady = false
-    private var mediaPlayer: MediaPlayer? = null
-
-    private val cacheDir = File(context.filesDir, "tts_cache").also { it.mkdirs() }
+    private val prefs = context.getSharedPreferences("translation_cache", Context.MODE_PRIVATE)
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(8, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    init {
-        initLocalTts()
-    }
-
-    fun initLocalTts(onReady: (() -> Unit)? = null) {
-        if (tts != null) {
-            onReady?.invoke()
-            return
-        }
-
-        tts = TextToSpeech(context.applicationContext) { status ->
-            ttsReady = status == TextToSpeech.SUCCESS
-            if (ttsReady) {
-                tts?.setSpeechRate(0.88f)
-                tts?.setPitch(1.0f)
-                setBestLocale("sl")
-            }
-            onReady?.invoke()
-        }
-    }
-
-    fun speak(
+    fun translate(
         text: String,
-        language: String,
+        targetLanguage: String,
         apiKey: String,
-        voice: String,
-        onDone: () -> Unit = {}
+        onResult: (String) -> Unit
     ) {
-        val clean = text.trim()
-        if (clean.isEmpty()) {
-            onDone()
+        val cleanText = text.trim()
+
+        if (cleanText.isEmpty()) {
+            onResult("")
             return
         }
 
-        val cache = File(cacheDir, cacheName(clean, language, voice))
-
-        if (cache.exists() && cache.length() > 1024) {
-            playFile(cache, onDone)
+        if (targetLanguage == "sl") {
+            onResult(cleanText)
             return
         }
 
-        if (apiKey.isNotBlank() && isOnline()) {
-            speakOpenAI(clean, language, apiKey, voice, cache, onDone)
-        } else {
-            speakAndroid(clean, language, onDone)
-        }
-    }
-
-    private fun speakOpenAI(
-        text: String,
-        language: String,
-        apiKey: String,
-        voice: String,
-        cache: File,
-        onDone: () -> Unit
-    ) {
-        Thread {
-            try {
-                val body = JSONObject().apply {
-                    put("model", "tts-1")
-                    put("input", text)
-                    put("voice", voice.ifBlank { "nova" })
-                }.toString().toRequestBody("application/json".toMediaType())
-
-                val request = Request.Builder()
-                    .url("https://api.openai.com/v1/audio/speech")
-                    .header("Authorization", "Bearer $apiKey")
-                    .post(body)
-                    .build()
-
-                val response = http.newCall(request).execute()
-
-                if (response.isSuccessful) {
-                    val bytes = response.body?.bytes()
-                    if (bytes != null && bytes.size > 1024) {
-                        cache.writeBytes(bytes)
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                            playFile(cache, onDone)
-                        }
-                        return@Thread
-                    }
-                }
-            } catch (_: Exception) {
-            }
-
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                speakAndroid(text, language, onDone)
-            }
-        }.start()
-    }
-
-    fun speakAndroid(
-        text: String,
-        language: String,
-        onDone: () -> Unit = {}
-    ) {
-        if (!ttsReady) {
-            initLocalTts {
-                speakAndroid(text, language, onDone)
-            }
+        if (apiKey.isBlank()) {
+            onResult(cleanText)
             return
         }
 
-        setBestLocale(language)
+        val cacheKey = "${targetLanguage}_${cleanText.hashCode()}"
 
-        val uid = "rehab_${System.currentTimeMillis()}"
-
-        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {}
-
-            override fun onDone(utteranceId: String?) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    onDone()
-                }
-            }
-
-            @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    onDone()
-                }
-            }
-        })
-
-        tts?.stop()
-        val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
-
-        if (result == TextToSpeech.ERROR || result == null) {
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                onDone()
-            }, 500L)
-        }
-    }
-
-    private fun setBestLocale(language: String) {
-        val candidates = when (language.lowercase()) {
-            "sl", "si", "slovenian" -> listOf(
-                Locale("sl", "SI"),
-                Locale("hr", "HR"),
-                Locale("sr", "RS"),
-                Locale.getDefault(),
-                Locale.ENGLISH
-            )
-
-            "uk", "ua", "ukrainian" -> listOf(
-                Locale("uk", "UA"),
-                Locale("ru", "RU"),
-                Locale("hr", "HR"),
-                Locale("sl", "SI"),
-                Locale.getDefault(),
-                Locale.ENGLISH
-            )
-
-            "hr" -> listOf(
-                Locale("hr", "HR"),
-                Locale("sr", "RS"),
-                Locale("sl", "SI"),
-                Locale.getDefault(),
-                Locale.ENGLISH
-            )
-
-            "sr" -> listOf(
-                Locale("sr", "RS"),
-                Locale("hr", "HR"),
-                Locale("sl", "SI"),
-                Locale.getDefault(),
-                Locale.ENGLISH
-            )
-
-            "en", "english" -> listOf(
-                Locale.US,
-                Locale.UK,
-                Locale.ENGLISH,
-                Locale.getDefault()
-            )
-
-            else -> listOf(
-                Locale("sl", "SI"),
-                Locale("hr", "HR"),
-                Locale("sr", "RS"),
-                Locale.getDefault(),
-                Locale.ENGLISH
-            )
-        }
-
-        for (locale in candidates) {
-            val result = tts?.setLanguage(locale)
-            if (
-                result != TextToSpeech.LANG_MISSING_DATA &&
-                result != TextToSpeech.LANG_NOT_SUPPORTED
-            ) {
+        prefs.getString(cacheKey, null)?.let { cached ->
+            if (cached.isNotBlank()) {
+                onResult(cached)
                 return
             }
         }
 
-        tts?.setLanguage(Locale.getDefault())
-    }
+        Thread {
+            val translated = try {
+                translateWithOpenAi(cleanText, targetLanguage, apiKey)
+            } catch (_: Exception) {
+                null
+            }
 
-    private fun playFile(file: File, onDone: () -> Unit) {
-        try {
-            mediaPlayer?.release()
-            mediaPlayer = MediaPlayer().apply {
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                setDataSource(file.absolutePath)
-                prepare()
-                start()
-                setOnCompletionListener {
-                    release()
-                    mediaPlayer = null
-                    onDone()
-                }
-                setOnErrorListener { _, _, _ ->
-                    release()
-                    mediaPlayer = null
-                    onDone()
-                    true
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                if (!translated.isNullOrBlank()) {
+                    prefs.edit().putString(cacheKey, translated).apply()
+                    onResult(translated)
+                } else {
+                    onResult(cleanText)
                 }
             }
-        } catch (_: Exception) {
-            onDone()
+        }.start()
+    }
+
+    private fun translateWithOpenAi(
+        text: String,
+        targetLanguage: String,
+        apiKey: String
+    ): String? {
+        val targetName = when (targetLanguage) {
+            "uk", "ua" -> "Ukrainian"
+            "en" -> "English"
+            "de" -> "German"
+            "hr" -> "Croatian"
+            "sr" -> "Serbian"
+            else -> "Slovenian"
         }
-    }
 
-    private fun isOnline(): Boolean {
-        return try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val network = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(network) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-        } catch (_: Exception) {
-            false
+        val messages = JSONArray()
+            .put(
+                JSONObject()
+                    .put("role", "system")
+                    .put(
+                        "content",
+                        "Translate short patient communication phrases. Return only the translated phrase. Keep it natural, clear, polite, and in first person when appropriate. Do not add explanations."
+                    )
+            )
+            .put(
+                JSONObject()
+                    .put("role", "user")
+                    .put("content", "Target language: $targetName\nText: $text")
+            )
+
+        val bodyJson = JSONObject()
+            .put("model", "gpt-4o-mini")
+            .put("temperature", 0.1)
+            .put("messages", messages)
+
+        val request = Request.Builder()
+            .url("https://api.openai.com/v1/chat/completions")
+            .header("Authorization", "Bearer $apiKey")
+            .header("Content-Type", "application/json")
+            .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+
+        http.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+
+            val raw = response.body?.string() ?: return null
+            val json = JSONObject(raw)
+
+            return json
+                .getJSONArray("choices")
+                .getJSONObject(0)
+                .getJSONObject("message")
+                .getString("content")
+                .trim()
         }
-    }
-
-    private fun cacheName(text: String, language: String, voice: String): String {
-        return "${text.hashCode()}_${language}_${voice.ifBlank { "nova" }}.mp3"
-    }
-
-    fun stop() {
-        tts?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
-    }
-
-    fun destroy() {
-        stop()
-        tts?.shutdown()
-        tts = null
-        ttsReady = false
     }
 }
