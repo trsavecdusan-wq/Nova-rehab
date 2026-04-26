@@ -43,12 +43,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun langOptions() = arrayOf(
-        "🇸🇮 Slovenščina",
-        "🇺🇦 Ukrajinščina",
-        "🇬🇧 Angleščina",
-        "🇩🇪 Nemščina",
-        "🇭🇷 Hrvaščina",
-        "🇷🇸 Srbščina"
+        "Slovenscina",
+        "Ukrajinscina",
+        "Anglescina",
+        "Nemscina",
+        "Hrvanscina",
+        "Srbscina"
     )
 
     private fun langCode(position: Int): String = when (position) {
@@ -97,7 +97,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         panel.addView(TextView(this).apply {
-            text = "Število komunikacijskih ikon na stran:"
+            text = "Stevilo komunikacijskih ikon na stran:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -169,9 +169,6 @@ class SettingsActivity : AppCompatActivity() {
             isClickable = true
             isLongClickable = true
             setSingleLine(true)
-            inputType = InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
-                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             setOnClickListener { showOpenAiKeyDialog() }
             setOnLongClickListener {
                 showOpenAiKeyDialog()
@@ -199,10 +196,10 @@ class SettingsActivity : AppCompatActivity() {
             binding.etStation6Url
         )
 
-        stations.forEachIndexed { i, s ->
+        stations.forEachIndexed { i, station ->
             if (i < nameFields.size) {
-                nameFields[i].setText(s.name)
-                urlFields[i].setText(s.url)
+                nameFields[i].setText(station.name)
+                urlFields[i].setText(station.url)
             }
         }
 
@@ -243,10 +240,10 @@ class SettingsActivity : AppCompatActivity() {
         contactLangSpinners.clear()
         contactImageButtons.clear()
 
-        contacts.forEachIndexed { i, c ->
+        contacts.forEachIndexed { i, contact ->
             if (i < nameF.size) {
-                nameF[i].setText(c.name)
-                phoneF[i].setText(c.phone)
+                nameF[i].setText(contact.name)
+                phoneF[i].setText(contact.phone)
             }
         }
 
@@ -254,11 +251,10 @@ class SettingsActivity : AppCompatActivity() {
             val contact = contacts.getOrNull(i)
 
             val spinner = Spinner(this).apply {
-                val opts = arrayOf("🇸🇮 Slovenščina", "🇺🇦 Ukrajinščina")
                 adapter = ArrayAdapter(
                     this@SettingsActivity,
                     android.R.layout.simple_spinner_item,
-                    opts
+                    arrayOf("Slovenscina", "Ukrajinscina")
                 ).also {
                     it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 }
@@ -363,7 +359,7 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
                 Toast.makeText(
                     this,
-                    "Če slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
+                    "Ce slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
                     Toast.LENGTH_LONG
                 ).show()
             } catch (e: Exception) {
@@ -390,7 +386,7 @@ class SettingsActivity : AppCompatActivity() {
             ReportWorker.schedule(this, prefs.getReportHour())
             Toast.makeText(
                 this,
-                "Poročilo bo poslano ob ${prefs.getReportHour()}:00",
+                "Porocilo bo poslano ob ${prefs.getReportHour()}:00",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -413,4 +409,160 @@ class SettingsActivity : AppCompatActivity() {
         val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("OpenAI API ključ")
             .setView(input)
-            .setPositiveButton("Shrani") { _, _
+            .setPositiveButton("Shrani") { _, _ ->
+                val key = input.text.toString().trim()
+                prefs.saveOpenAiKey(key)
+                binding.etOpenAiKey.setText(maskApiKey(key))
+                Toast.makeText(this, "OpenAI kljuc shranjen", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Preklici", null)
+            .create()
+
+        dialog.setOnShowListener {
+            input.requestFocus()
+            dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+            input.postDelayed({
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
+            }, 250L)
+        }
+
+        dialog.show()
+    }
+
+    private fun maskApiKey(key: String): String {
+        if (key.isBlank()) return ""
+        if (key.length <= 12) return "********"
+        return key.take(7) + "..." + key.takeLast(4)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
+            val uri = data?.data ?: return
+
+            try {
+                val dir = File(getExternalFilesDir(null), "contacts")
+                dir.mkdirs()
+
+                contentResolver.openInputStream(uri)?.use { input ->
+                    File(dir, "contact_$pendingImageIndex.png").outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                val bmp = BitmapFactory.decodeFile(
+                    File(dir, "contact_$pendingImageIndex.png").absolutePath
+                )
+                contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    private fun saveSettings() {
+        val nameF = listOf(
+            binding.etStation1Name,
+            binding.etStation2Name,
+            binding.etStation3Name,
+            binding.etStation4Name,
+            binding.etStation5Name,
+            binding.etStation6Name
+        )
+        val urlF = listOf(
+            binding.etStation1Url,
+            binding.etStation2Url,
+            binding.etStation3Url,
+            binding.etStation4Url,
+            binding.etStation5Url,
+            binding.etStation6Url
+        )
+
+        val stations = mutableListOf<RadioStation>()
+        nameF.forEachIndexed { i, f ->
+            val n = f.text.toString().trim()
+            val u = urlF[i].text.toString().trim()
+            if (n.isNotEmpty() && u.isNotEmpty()) {
+                stations.add(RadioStation(n, u))
+            }
+        }
+        prefs.saveRadioStations(stations)
+
+        val nameC = listOf(
+            binding.etContact1Name,
+            binding.etContact2Name,
+            binding.etContact3Name,
+            binding.etContact4Name,
+            binding.etContact5Name,
+            binding.etContact6Name
+        )
+        val phoneC = listOf(
+            binding.etContact1Phone,
+            binding.etContact2Phone,
+            binding.etContact3Phone,
+            binding.etContact4Phone,
+            binding.etContact5Phone,
+            binding.etContact6Phone
+        )
+
+        val contacts = mutableListOf<Contact>()
+        nameC.forEachIndexed { i, f ->
+            val n = f.text.toString().trim()
+            val p = phoneC[i].text.toString().trim()
+            val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) {
+                "uk"
+            } else {
+                "sl"
+            }
+
+            contacts.add(
+                Contact(
+                    n.ifEmpty { "Kontakt ${i + 1}" },
+                    p,
+                    "",
+                    lang
+                )
+            )
+        }
+        prefs.saveContacts(contacts)
+
+        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
+
+        prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
+        prefs.saveGmailAppPassword(binding.etGmailPass.text.toString().trim())
+        prefs.saveReportMail1(binding.etReportMail1.text.toString().trim())
+        prefs.saveReportMail2(binding.etReportMail2.text.toString().trim())
+        prefs.saveReportMail1Enabled(binding.switchMail1.isChecked)
+        prefs.saveReportMail2Enabled(binding.switchMail2.isChecked)
+        prefs.saveReportHour(binding.etReportHour.text.toString().trim().toIntOrNull() ?: 8)
+
+        prefs.saveNavigationEnabled(binding.switchNavigation.isChecked)
+        prefs.saveHomeAddress(binding.etHomeAddress.text.toString().trim())
+        prefs.savePatientName(binding.etPatientName.text.toString().trim())
+
+        prefs.saveCommIconsPerPage(
+            when (spinnerCommIconsPerPage.selectedItemPosition) {
+                0 -> 6
+                2 -> 12
+                3 -> 18
+                else -> 8
+            }
+        )
+
+        prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
+        prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
+        prefs.savePatientLanguage2(langCode(spinnerPatientLang2.selectedItemPosition))
+        prefs.saveAutoLanguageEnabled(switchAutoLanguage.isChecked)
+        prefs.saveServerIp(binding.etServerIp.text.toString().trim())
+        prefs.saveServerPort(binding.etServerPort.text.toString().trim())
+        prefs.saveKioskReturnMinutes(binding.etKioskMinutes.text.toString().trim().toLongOrNull() ?: 5L)
+
+        val pin = binding.etNewPin.text.toString().trim()
+        if (pin.length == 4) {
+            prefs.savePin(pin)
+        }
+
+        Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
+    }
+}
