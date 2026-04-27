@@ -57,7 +57,7 @@ class RadioService : Service() {
 
             ACTION_PAUSE_FOR_SPEECH,
             ACTION_DUCK -> {
-                player?.volume = 0.18f
+                player?.volume = 0.04f
             }
 
             ACTION_RESUME_AFTER_SPEECH,
@@ -79,6 +79,7 @@ class RadioService : Service() {
 
         player = ExoPlayer.Builder(applicationContext).build().apply {
             setAudioAttributes(audioAttributes, true)
+            volume = 1.0f
             playWhenReady = true
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
@@ -96,6 +97,7 @@ class RadioService : Service() {
         player?.apply {
             stop()
             clearMediaItems()
+            volume = 1.0f
             setMediaItem(MediaItem.fromUri(url))
             prepare()
             play()
@@ -116,6 +118,7 @@ class RadioService : Service() {
             player?.apply {
                 stop()
                 clearMediaItems()
+                volume = 1.0f
                 setMediaItem(MediaItem.fromUri(url))
                 prepare()
                 play()
@@ -139,7 +142,7 @@ class RadioService : Service() {
     private fun buildNotification(stationName: String): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_radio)
-            .setContentTitle("Nova Rehab radio")
+            .setContentTitle("Rehab radio")
             .setContentText(stationName)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -153,7 +156,7 @@ class RadioService : Service() {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Nova Rehab radio",
+            "Rehab radio",
             NotificationManager.IMPORTANCE_LOW
         )
 
