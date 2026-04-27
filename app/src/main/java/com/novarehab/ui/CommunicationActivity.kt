@@ -4,6 +4,8 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -39,9 +41,21 @@ class CommunicationActivity : AppCompatActivity() {
     private lateinit var tvLastMessage: TextView
     private lateinit var gridButtons: GridLayout
     private lateinit var tabLayout: LinearLayout
+    private lateinit var btnLang: Button
 
+    private val handler = Handler(Looper.getMainLooper())
     private var currentPageIndex = 0
     private var activeLang = "sl"
+
+    private val returnToSlovenianRunnable = Runnable {
+        if (activeLang != "sl") {
+            activeLang = "sl"
+            updateLanguageButton()
+            renderTabs()
+            renderPage(currentPageIndex)
+            Toast.makeText(this, "Jezik je vrnjen na slovenščino", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val pages: MutableList<CommPage> = mutableListOf(
         CommPage("potrebe", "POTREBE", mutableListOf(
@@ -97,22 +111,144 @@ class CommunicationActivity : AppCompatActivity() {
         tvLastMessage = findViewById(R.id.tvLastMessage)
         gridButtons = findViewById(R.id.gridButtons)
         tabLayout = findViewById(R.id.tabLayout)
+        btnLang = findViewById(R.id.btnLangToggle)
 
         findViewById<Button>(R.id.btnCommBack).setOnClickListener { finish() }
         findViewById<Button>(R.id.btnAddPage).setOnClickListener { showAddPageDialog() }
 
-        val btnLang = findViewById<Button>(R.id.btnLangToggle)
-        btnLang.text = "SL"
+        activeLang = "sl"
+        updateLanguageButton()
+
         btnLang.setOnClickListener {
-            activeLang = if (activeLang == "sl") commPrefs.getPatientLanguage2() else "sl"
-            if (activeLang.isBlank()) activeLang = "sl"
-            btnLang.text = activeLang.uppercase()
-            renderTabs()
-            renderPage(currentPageIndex)
+            Toast.makeText(this, "Za spremembo jezika držite gumb.", Toast.LENGTH_SHORT).show()
+        }
+
+        btnLang.setOnLongClickListener {
+            showGuestLanguageDialog()
+            true
         }
 
         renderTabs()
         renderPage(0)
+    }
+
+    private fun showGuestLanguageDialog() {
+        val dialog = android.app.Dialog(this)
+        dialog.window?.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(22), dp(24), dp(22))
+            setBackgroundColor(0xFF1a1a2e.toInt())
+        }
+
+        val title = TextView(this).apply {
+            text = "Izberi jezik gosta"
+            textSize = 22f
+            setTextColor(0xFFFFFFFF.toInt())
+            gravity = Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, 0, 0, dp(18)) }
+        }
+        root.addView(title)
+
+        val grid = GridLayout(this).apply {
+            columnCount = 2
+            rowCount = 3
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
+        root.addView(grid)
+
+        val languages = listOf(
+            GuestLanguage("sl", "🇸🇮", "Slovenščina"),
+            GuestLanguage("uk", "🇺🇦", "Ukrajinščina"),
+            GuestLanguage("hr", "🇭🇷", "Hrvaščina"),
+            GuestLanguage("sr", "🇷🇸", "Srbščina"),
+            GuestLanguage("en", "🇬🇧", "Angleščina"),
+            GuestLanguage("de", "🇩🇪", "Nemščina")
+        )
+
+        languages.forEach { language ->
+            val button = Button(this).apply {
+                text = "${language.flag}\n${language.name}"
+                textSize = 22f
+                setTextColor(0xFFFFFFFF.toInt())
+                gravity = Gravity.CENTER
+                includeFontPadding = false
+                backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    if (language.code == activeLang) 0xFFe94560.toInt() else 0xFF0f3460.toInt()
+                )
+                minWidth = 0
+                minHeight = 0
+                setPadding(dp(6), dp(6), dp(6), dp(6))
+                setOnClickListener {
+                    activeLang = language.code
+                    updateLanguageButton()
+                    renderTabs()
+                    renderPage(currentPageIndex)
+                    scheduleReturnToSlovenian()
+                    dialog.dismiss()
+                    Toast.makeText(
+                        this@CommunicationActivity,
+                        "Jezik gosta: ${language.name}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            val lp = GridLayout.LayoutParams().apply {
+                width = 0
+                height = 0
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                setMargins(dp(8), dp(8), dp(8), dp(8))
+            }
+            button.layoutParams = lp
+            grid.addView(button)
+        }
+
+        val close = Button(this).apply {
+            text = "ZAPRI"
+            textSize = 16f
+            setTextColor(0xFFFFFFFF.toInt())
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF333355.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(56)
+            ).apply { setMargins(0, dp(18), 0, 0) }
+            setOnClickListener { dialog.dismiss() }
+        }
+        root.addView(close)
+
+        dialog.setContentView(root)
+        dialog.show()
+    }
+
+    private fun scheduleReturnToSlovenian() {
+        handler.removeCallbacks(returnToSlovenianRunnable)
+
+        if (activeLang == "sl") return
+
+        val minutes = commPrefs.getGuestLanguageReturnMinutes().coerceAtLeast(1L)
+        handler.postDelayed(returnToSlovenianRunnable, minutes * 60L * 1000L)
+    }
+
+    private fun updateLanguageButton() {
+        btnLang.text = when (activeLang) {
+            "uk" -> "🇺🇦 UK"
+            "hr" -> "🇭🇷 HR"
+            "sr" -> "🇷🇸 SR"
+            "en" -> "🇬🇧 EN"
+            "de" -> "🇩🇪 DE"
+            else -> "🇸🇮 SL"
+        }
     }
 
     private fun renderTabs() {
@@ -177,8 +313,7 @@ class CommunicationActivity : AppCompatActivity() {
     }
 
     private fun createItemCell(item: CommItem): LinearLayout {
-        val visibleText = iconTextManager.getText(item.id).ifBlank { item.speechSl }
-        val labelText = item.labelSl
+        val speechText = iconTextManager.getText(item.id).ifBlank { item.speechSl }
 
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -189,7 +324,10 @@ class CommunicationActivity : AppCompatActivity() {
 
             val imgView = ImageView(this@CommunicationActivity).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0
+                ).apply {
                     weight = 1f
                     setMargins(8, 8, 8, 4)
                 }
@@ -205,7 +343,7 @@ class CommunicationActivity : AppCompatActivity() {
             addView(imgView)
 
             val label = TextView(this@CommunicationActivity).apply {
-                text = labelText
+                text = item.labelSl
                 textSize = 13f
                 setTextColor(0xFFFFFFFF.toInt())
                 gravity = Gravity.CENTER
@@ -219,7 +357,8 @@ class CommunicationActivity : AppCompatActivity() {
             addView(label)
 
             setOnClickListener {
-                speakWithOptionalTranslation(visibleText)
+                scheduleReturnToSlovenian()
+                speakWithOptionalTranslation(speechText)
             }
 
             setOnLongClickListener {
@@ -239,6 +378,9 @@ class CommunicationActivity : AppCompatActivity() {
             tvLastMessage.visibility = View.VISIBLE
             return
         }
+
+        tvLastMessage.text = "Prevajam..."
+        tvLastMessage.visibility = View.VISIBLE
 
         translateManager.translate(
             text = cleanText,
@@ -368,9 +510,20 @@ class CommunicationActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacks(returnToSlovenianRunnable)
         ttsManager.destroy()
         super.onDestroy()
     }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private data class GuestLanguage(
+        val code: String,
+        val flag: String,
+        val name: String
+    )
 
     companion object {
         private const val REQUEST_PICK_IMAGE = 201
