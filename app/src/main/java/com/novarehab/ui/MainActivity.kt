@@ -11,10 +11,15 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.view.GestureDetector
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.EditText
+import android.widget.GridLayout
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -53,36 +58,38 @@ class MainActivity : AppCompatActivity() {
 
     private val kioskHandler = Handler(Looper.getMainLooper())
     private val clockHandler = Handler(Looper.getMainLooper())
+    private val languageReturnHandler = Handler(Looper.getMainLooper())
     private var kioskRunnable: Runnable? = null
     private var clockRunnable: Runnable? = null
+    private var languageReturnRunnable: Runnable? = null
 
     private lateinit var speedGestureDetector: GestureDetector
 
     private val allCommItems = listOf(
-        Triple("pomoc", R.drawable.comm_pomoc, Pair("Potrebujem pomoč, prosim pridite", "Мені потрібна допомога, будь ласка")),
-        Triple("piti", R.drawable.comm_piti, Pair("Žejna sem, prinesite mi piti", "Я хочу пити")),
-        Triple("jesti", R.drawable.comm_jesti, Pair("Lačna sem, bi rada jedla", "Я голодна, хочу їсти")),
-        Triple("bolecina", R.drawable.comm_bolecina, Pair("Imam bolečine", "У мене болить")),
-        Triple("kopalnica", R.drawable.comm_kopalnica, Pair("Potrebujem v kopalnico", "Мені потрібно в туалет")),
-        Triple("dobro", R.drawable.comm_dobro, Pair("Dobro se počutim", "Я почуваюся добре")),
-        Triple("slabo", R.drawable.comm_slabo, Pair("Ne počutim se dobro", "Я погано почуваюся")),
-        Triple("utrujena", R.drawable.comm_utrujena, Pair("Utrujena sem, rada bi počivala", "Я втомилась")),
-        Triple("mraz", R.drawable.comm_mraz, Pair("Mrzlica mi je", "Мені холодно")),
-        Triple("vroce", R.drawable.comm_vroce, Pair("Vroče mi je", "Мені жарко")),
-        Triple("hvala", R.drawable.comm_hvala, Pair("Hvala lepa", "Дякую щиро")),
-        Triple("pridi_sem", R.drawable.comm_pridi_sem, Pair("Prosim pridi sem k meni", "Будь ласка, підійдіть до мене")),
-        Triple("pocakaj", R.drawable.comm_pocakaj, Pair("Počakaj prosim", "Зачекай будь ласка")),
-        Triple("zdravilo", R.drawable.comm_zdravilo, Pair("Čas je za zdravilo", "Час приймати ліки")),
-        Triple("telefon", R.drawable.comm_telefon, Pair("Prinesite mi telefon", "Принесіть телефон")),
-        Triple("tv", R.drawable.comm_tv, Pair("Vklopite televizijo", "Увімкніть телевізор")),
-        Triple("postelja", R.drawable.comm_postelja, Pair("Rada bi ležala", "Хочу лягти")),
-        Triple("okno", R.drawable.comm_okno, Pair("Odprite okno", "Відкрийте вікно")),
-        Triple("vesela", R.drawable.comm_vesela, Pair("Vesela sem", "Я рада")),
-        Triple("zalostna", R.drawable.comm_zalostna, Pair("Žalostna sem", "Мені сумно")),
-        Triple("jezna", R.drawable.comm_jezna, Pair("Jezna sem", "Я сердита")),
-        Triple("strah", R.drawable.comm_strah, Pair("Prestrašena sem", "Мені страшно")),
-        Triple("tesnoba", R.drawable.comm_tesnoba, Pair("Tesnobno se počutim", "Мені тривожно")),
-        Triple("objemi", R.drawable.comm_objemi, Pair("Bi me objel?", "Обійми мене"))
+        Triple("pomoc", R.drawable.comm_pomoc, Pair("Potrebujem pomoč, prosim pridite", "")),
+        Triple("piti", R.drawable.comm_piti, Pair("Žejna sem, prinesite mi piti", "")),
+        Triple("jesti", R.drawable.comm_jesti, Pair("Lačna sem, bi rada jedla", "")),
+        Triple("bolecina", R.drawable.comm_bolecina, Pair("Imam bolečine", "")),
+        Triple("kopalnica", R.drawable.comm_kopalnica, Pair("Potrebujem v kopalnico", "")),
+        Triple("dobro", R.drawable.comm_dobro, Pair("Dobro se počutim", "")),
+        Triple("slabo", R.drawable.comm_slabo, Pair("Ne počutim se dobro", "")),
+        Triple("utrujena", R.drawable.comm_utrujena, Pair("Utrujena sem, rada bi počivala", "")),
+        Triple("mraz", R.drawable.comm_mraz, Pair("Mrzlica mi je", "")),
+        Triple("vroce", R.drawable.comm_vroce, Pair("Vroče mi je", "")),
+        Triple("hvala", R.drawable.comm_hvala, Pair("Hvala lepa", "")),
+        Triple("pridi_sem", R.drawable.comm_pridi_sem, Pair("Prosim pridi sem k meni", "")),
+        Triple("pocakaj", R.drawable.comm_pocakaj, Pair("Počakaj prosim", "")),
+        Triple("zdravilo", R.drawable.comm_zdravilo, Pair("Čas je za zdravilo", "")),
+        Triple("telefon", R.drawable.comm_telefon, Pair("Prinesite mi telefon", "")),
+        Triple("tv", R.drawable.comm_tv, Pair("Vklopite televizijo", "")),
+        Triple("postelja", R.drawable.comm_postelja, Pair("Rada bi ležala", "")),
+        Triple("okno", R.drawable.comm_okno, Pair("Odprite okno", "")),
+        Triple("vesela", R.drawable.comm_vesela, Pair("Vesela sem", "")),
+        Triple("zalostna", R.drawable.comm_zalostna, Pair("Žalostna sem", "")),
+        Triple("jezna", R.drawable.comm_jezna, Pair("Jezna sem", "")),
+        Triple("strah", R.drawable.comm_strah, Pair("Prestrašena sem", "")),
+        Triple("tesnoba", R.drawable.comm_tesnoba, Pair("Tesnobno se počutim", "")),
+        Triple("objemi", R.drawable.comm_objemi, Pair("Bi me objel?", ""))
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         stats = StatsManager(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
-        activeLang = prefs.getDefaultSpeechLanguage()
+        activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
@@ -118,7 +125,9 @@ class MainActivity : AppCompatActivity() {
         setupBottomActionButtons()
         setupVolumeControls()
         setupClock()
+        setupGuestLanguageButton()
         updatePatientName()
+
         if (prefs.isAutoLanguageEnabled()) setupLanguageDetector()
         scheduleReports()
 
@@ -205,11 +214,7 @@ class MainActivity : AppCompatActivity() {
             binding.btnRadio6
         ).forEachIndexed { index, btn ->
             btn.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                if (index == currentStation && radioPlaying) {
-                    0xFFe94560.toInt()
-                } else {
-                    0xFF0f3460.toInt()
-                }
+                if (index == currentStation && radioPlaying) 0xFFe94560.toInt() else 0xFF0f3460.toInt()
             )
         }
     }
@@ -307,6 +312,10 @@ class MainActivity : AppCompatActivity() {
 
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 
+        if (activeLang != prefs.getDefaultSpeechLanguage().ifBlank { "sl" }) {
+            scheduleLanguageReturn()
+        }
+
         if (radioPlaying) {
             startService(Intent(this, RadioService::class.java).apply {
                 action = RadioService.ACTION_PAUSE_FOR_SPEECH
@@ -337,13 +346,123 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupGuestLanguageButton() {
+        binding.tvPatientName.visibility = View.VISIBLE
+        binding.tvPatientName.isClickable = true
+        binding.tvPatientName.isFocusable = true
+
+        binding.tvPatientName.setOnClickListener {
+            Toast.makeText(this, "Za spremembo jezika držite ime pacienta.", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.tvPatientName.setOnLongClickListener {
+            showGuestLanguageDialog()
+            true
+        }
+    }
+
+    private fun showGuestLanguageDialog() {
+        val languages = listOf(
+            LanguageChoice("sl", "SL", "Slovenščina"),
+            LanguageChoice("uk", "UK", "Ukrajinščina"),
+            LanguageChoice("hr", "HR", "Hrvaščina"),
+            LanguageChoice("sr", "SR", "Srbščina"),
+            LanguageChoice("en", "EN", "Angleščina"),
+            LanguageChoice("de", "DE", "Nemščina")
+        )
+
+        val wrapper = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 16, 24, 8)
+        }
+
+        val info = TextView(this).apply {
+            text = "Izberi jezik za gosta. Aplikacija se bo sama vrnila na privzeti jezik."
+            textSize = 16f
+            setPadding(0, 0, 0, 16)
+        }
+        wrapper.addView(info)
+
+        val grid = GridLayout(this).apply {
+            columnCount = 2
+            rowCount = 3
+        }
+
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("Jezik pogovora")
+            .setView(wrapper)
+            .setNegativeButton("Prekliči", null)
+            .create()
+
+        languages.forEach { lang ->
+            val button = Button(this).apply {
+                text = "${lang.shortName}\n${lang.fullName}"
+                textSize = 18f
+                gravity = Gravity.CENTER
+                isAllCaps = false
+                setOnClickListener {
+                    selectGuestLanguage(lang)
+                    dialog.dismiss()
+                }
+                layoutParams = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = 130
+                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    setMargins(8, 8, 8, 8)
+                }
+            }
+            grid.addView(button)
+        }
+
+        wrapper.addView(grid)
+        dialog.show()
+    }
+
+    private fun selectGuestLanguage(language: LanguageChoice) {
+        activeLang = language.code
+        updatePatientName()
+        setupCommPager()
+        scheduleLanguageReturn()
+        Toast.makeText(this, "Izbran jezik: ${language.fullName}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun scheduleLanguageReturn() {
+        languageReturnRunnable?.let { languageReturnHandler.removeCallbacks(it) }
+
+        val defaultLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
+        val minutes = prefs.getKioskReturnMinutes().coerceAtLeast(1L)
+
+        languageReturnRunnable = Runnable {
+            if (activeLang != defaultLang) {
+                activeLang = defaultLang
+                updatePatientName()
+                setupCommPager()
+                Toast.makeText(this, "Jezik je vrnjen na privzeti jezik.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        languageReturnHandler.postDelayed(languageReturnRunnable!!, minutes * 60 * 1000L)
+    }
+
+    private fun languageLabel(code: String): String = when (code) {
+        "uk" -> "UK"
+        "hr" -> "HR"
+        "sr" -> "SR"
+        "en" -> "EN"
+        "de" -> "DE"
+        else -> "SL"
+    }
+
     private fun setupLanguageDetector() {
         langDetector?.stop()
         langDetector = LanguageDetector(this) { detectedLang ->
             val allowed = setOf(prefs.getPatientLanguage1(), prefs.getPatientLanguage2())
             if (detectedLang in allowed) {
                 activeLang = detectedLang
-                prefs.saveDefaultSpeechLanguage(detectedLang)
+                updatePatientName()
+                setupCommPager()
+                scheduleLanguageReturn()
             }
         }
         langDetector?.start()
@@ -384,9 +503,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePatientName() {
-        val name = prefs.getPatientName()
-        binding.tvPatientName.text = name
-        binding.tvPatientName.visibility = if (name.isEmpty()) View.GONE else View.VISIBLE
+        val name = prefs.getPatientName().ifBlank { "JEZIK" }
+        binding.tvPatientName.text = "$name • ${languageLabel(activeLang)}"
+        binding.tvPatientName.visibility = View.VISIBLE
     }
 
     private fun setupVideoCallButton() {
@@ -499,7 +618,10 @@ class MainActivity : AppCompatActivity() {
                 startGps()
             }
 
-            if (grantResults.getOrNull(permissions.indexOf(Manifest.permission.RECORD_AUDIO)) == PackageManager.PERMISSION_GRANTED) {
+            if (
+                prefs.isAutoLanguageEnabled() &&
+                grantResults.getOrNull(permissions.indexOf(Manifest.permission.RECORD_AUDIO)) == PackageManager.PERMISSION_GRANTED
+            ) {
                 setupLanguageDetector()
             }
         }
@@ -521,8 +643,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        activeLang = prefs.getDefaultSpeechLanguage()
+        activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
         updatePatientName()
+        setupGuestLanguageButton()
         setupCommPager()
         updateRadioUI()
     }
@@ -538,7 +661,14 @@ class MainActivity : AppCompatActivity() {
         langDetector?.stop()
         kioskRunnable?.let { kioskHandler.removeCallbacks(it) }
         clockRunnable?.let { clockHandler.removeCallbacks(it) }
+        languageReturnRunnable?.let { languageReturnHandler.removeCallbacks(it) }
 
         super.onDestroy()
     }
+
+    data class LanguageChoice(
+        val code: String,
+        val shortName: String,
+        val fullName: String
+    )
 }
