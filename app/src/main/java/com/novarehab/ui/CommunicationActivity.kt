@@ -167,18 +167,18 @@ class CommunicationActivity : AppCompatActivity() {
         root.addView(grid)
 
         val languages = listOf(
-            GuestLanguage("sl", "🇸🇮", "Slovenščina"),
-            GuestLanguage("uk", "🇺🇦", "Ukrajinščina"),
-            GuestLanguage("hr", "🇭🇷", "Hrvaščina"),
-            GuestLanguage("sr", "🇷🇸", "Srbščina"),
-            GuestLanguage("en", "🇬🇧", "Angleščina"),
-            GuestLanguage("de", "🇩🇪", "Nemščina")
+            GuestLanguage("sl", "SL", "Slovenščina"),
+            GuestLanguage("uk", "UK", "Ukrajinščina"),
+            GuestLanguage("hr", "HR", "Hrvaščina"),
+            GuestLanguage("sr", "SR", "Srbščina"),
+            GuestLanguage("en", "EN", "Angleščina"),
+            GuestLanguage("de", "DE", "Nemščina")
         )
 
         languages.forEach { language ->
             val button = Button(this).apply {
-                text = "${language.flag}\n${language.name}"
-                textSize = 22f
+                text = "${language.shortName}\n${language.name}"
+                textSize = 19f
                 setTextColor(0xFFFFFFFF.toInt())
                 gravity = Gravity.CENTER
                 includeFontPadding = false
@@ -242,12 +242,12 @@ class CommunicationActivity : AppCompatActivity() {
 
     private fun updateLanguageButton() {
         btnLang.text = when (activeLang) {
-            "uk" -> "🇺🇦 UK"
-            "hr" -> "🇭🇷 HR"
-            "sr" -> "🇷🇸 SR"
-            "en" -> "🇬🇧 EN"
-            "de" -> "🇩🇪 DE"
-            else -> "🇸🇮 SL"
+            "uk" -> "UK"
+            "hr" -> "HR"
+            "sr" -> "SR"
+            "en" -> "EN"
+            "de" -> "DE"
+            else -> "JEZIK"
         }
     }
 
@@ -521,7 +521,7 @@ class CommunicationActivity : AppCompatActivity() {
 
     private data class GuestLanguage(
         val code: String,
-        val flag: String,
+        val shortName: String,
         val name: String
     )
 
