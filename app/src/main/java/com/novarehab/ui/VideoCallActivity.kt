@@ -1,7 +1,9 @@
 package com.novarehab.ui
 
+import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -10,36 +12,34 @@ import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.R
-import java.util.Locale
+import com.novarehab.utils.PrefsManager
+import java.io.File
 
-class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+class VideoCallActivity : AppCompatActivity() {
 
-    private lateinit var tvContactName: TextView
-    private lateinit var tvRoomInfo: TextView
-    private lateinit var tvSelectedMessage: TextView
-    private lateinit var gridAnswerIcons: GridLayout
+    private lateinit var prefs: PrefsManager
+    private lateinit var gridContacts: GridLayout
+    private lateinit var contactGridScreen: View
+    private lateinit var confirmScreen: View
+    private lateinit var callScreen: View
 
-    private var contactName: String = "Kontakt"
-    private var preferredLanguageCode: String = "sl"
-    private var contactId: String = "contact"
-    private var roomId: String = "room_contact"
+    private lateinit var imgConfirmContact: ImageView
+    private lateinit var tvConfirmName: TextView
+    private lateinit var tvConfirmLanguage: TextView
 
-    private var textToSpeech: TextToSpeech? = null
-    private var ttsReady = false
-    private var fallbackToastShown = false
+    private lateinit var imgCallContact: ImageView
+    private lateinit var tvCallName: TextView
+    private lateinit var tvCallStatus: TextView
 
-    private val answers = listOf(
-        VideoAnswer("hear_you", R.drawable.comm_dobro, "Slišim te.", "Я тебе чую."),
-        VideoAnswer("not_hear_you", R.drawable.comm_slabo, "Ne slišim te.", "Я тебе не чую."),
-        VideoAnswer("wait", R.drawable.comm_pocakaj, "Počakaj prosim.", "Зачекай, будь ласка."),
-        VideoAnswer("yes", R.drawable.comm_dobro, "Da.", "Так."),
-        VideoAnswer("no", R.drawable.comm_slabo, "Ne.", "Ні."),
-        VideoAnswer("thanks", R.drawable.comm_hvala, "Hvala.", "Дякую."),
-        VideoAnswer("help", R.drawable.comm_pomoc, "Potrebujem pomoč.", "Мені потрібна допомога."),
-        VideoAnswer("goodbye", R.drawable.comm_vesela, "Nasvidenje.", "До побачення.")
+    private val handler = Handler(Looper.getMainLooper())
+    private var selectedContact: VideoContact? = null
+
+    private data class VideoContact(
+        val index: Int,
+        val name: String,
+        val language: String
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,154 +50,184 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         setContentView(R.layout.activity_video_call)
 
-        contactName = intent.getStringExtra(RehabCallExtras.EXTRA_CONTACT_NAME) ?: "Kontakt"
-        preferredLanguageCode = intent.getStringExtra(RehabCallExtras.EXTRA_PREFERRED_LANGUAGE_CODE) ?: "sl"
-        contactId = intent.getStringExtra(RehabCallExtras.EXTRA_CONTACT_ID) ?: "contact"
-        roomId = intent.getStringExtra(RehabCallExtras.EXTRA_ROOM_ID) ?: "room_$contactId"
+        prefs = PrefsManager(this)
 
-        tvContactName = findViewById(R.id.tvContactName)
-        tvRoomInfo = findViewById(R.id.tvRoomInfo)
-        tvSelectedMessage = findViewById(R.id.tvSelectedMessage)
-        gridAnswerIcons = findViewById(R.id.gridAnswerIcons)
+        contactGridScreen = findViewById(R.id.contactGridScreen)
+        confirmScreen = findViewById(R.id.confirmScreen)
+        callScreen = findViewById(R.id.callScreen)
+        gridContacts = findViewById(R.id.gridContacts)
 
-        tvRoomInfo.visibility = View.GONE
+        imgConfirmContact = findViewById(R.id.imgConfirmContact)
+        tvConfirmName = findViewById(R.id.tvConfirmName)
+        tvConfirmLanguage = findViewById(R.id.tvConfirmLanguage)
 
-        findViewById<Button>(R.id.btnBack).setOnClickListener {
+        imgCallContact = findViewById(R.id.imgCallContact)
+        tvCallName = findViewById(R.id.tvCallName)
+        tvCallStatus = findViewById(R.id.tvCallStatus)
+
+        findViewById<Button>(R.id.btnVideoBack).setOnClickListener {
             finish()
         }
 
-        tvContactName.text = contactName
-
-        textToSpeech = TextToSpeech(this, this)
-
-        renderAnswerIcons()
-    }
-
-    override fun onInit(status: Int) {
-        ttsReady = status == TextToSpeech.SUCCESS
-        if (ttsReady) {
-            applyTtsLanguage()
+        findViewById<Button>(R.id.btnCancelCall).setOnClickListener {
+            showContactGrid()
         }
+
+        findViewById<Button>(R.id.btnStartCall).setOnClickListener {
+            showCallState()
+        }
+
+        findViewById<Button>(R.id.btnEndCall).setOnClickListener {
+            showContactGrid()
+        }
+
+        renderContacts()
+        showContactGrid()
     }
 
-    private fun renderAnswerIcons() {
-        gridAnswerIcons.removeAllViews()
+    private fun renderContacts() {
+        gridContacts.removeAllViews()
 
-        answers.forEach { answer ->
-            val cell = createAnswerCell(answer)
+        val savedContacts = prefs.getContacts()
+
+        for (index in 0 until 6) {
+            val saved = savedContacts.getOrNull(index)
+            val contact = VideoContact(
+                index = index,
+                name = saved?.name?.trim().orEmpty().ifBlank { "Kontakt ${index + 1}" },
+                language = saved?.language?.trim().orEmpty().ifBlank { "sl" }
+            )
+
+            val cell = createContactCell(contact)
             val params = GridLayout.LayoutParams().apply {
                 width = 0
                 height = 0
                 columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
                 rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                setMargins(dp(6), dp(6), dp(6), dp(6))
+                setMargins(dp(8), dp(8), dp(8), dp(8))
             }
+
             cell.layoutParams = params
-            gridAnswerIcons.addView(cell)
+            gridContacts.addView(cell)
         }
     }
 
-    private fun createAnswerCell(answer: VideoAnswer): LinearLayout {
-        val visibleText = answerText(answer)
-
+    private fun createContactCell(contact: VideoContact): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(8), dp(8), dp(8), dp(8))
-            setBackgroundColor(0xFF0F3460.toInt())
+            setBackgroundColor(0xFF16213E.toInt())
             isClickable = true
             isFocusable = true
 
             addView(ImageView(this@VideoCallActivity).apply {
-                setImageResource(answer.iconRes)
-                scaleType = ImageView.ScaleType.FIT_CENTER
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     0,
                     1f
                 ).apply {
-                    setMargins(dp(8), dp(6), dp(8), dp(4))
+                    setMargins(dp(10), dp(8), dp(10), dp(4))
                 }
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                loadContactImage(this, contact.index)
             })
 
             addView(TextView(this@VideoCallActivity).apply {
-                text = visibleText
-                textSize = 20f
+                text = contact.name
+                textSize = 24f
                 setTextColor(0xFFFFFFFF.toInt())
                 gravity = Gravity.CENTER
                 setTypeface(null, android.graphics.Typeface.BOLD)
-                maxLines = 3
+                maxLines = 2
                 includeFontPadding = false
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    setMargins(dp(4), dp(2), dp(4), dp(6))
+                    setMargins(dp(4), dp(4), dp(4), dp(4))
+                }
+            })
+
+            addView(TextView(this@VideoCallActivity).apply {
+                text = languageLabel(contact.language)
+                textSize = 18f
+                setTextColor(0xFFB8D8FF.toInt())
+                gravity = Gravity.CENTER
+                includeFontPadding = false
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(dp(4), dp(2), dp(4), dp(8))
                 }
             })
 
             setOnClickListener {
-                showAndSpeak(answer)
+                showConfirm(contact)
             }
         }
     }
 
-    private fun showAndSpeak(answer: VideoAnswer) {
-        val text = answerText(answer)
-        tvSelectedMessage.text = text
-        tvSelectedMessage.visibility = View.VISIBLE
-        speak(text)
+    private fun showContactGrid() {
+        handler.removeCallbacksAndMessages(null)
+        selectedContact = null
+
+        contactGridScreen.visibility = View.VISIBLE
+        confirmScreen.visibility = View.GONE
+        callScreen.visibility = View.GONE
     }
 
-    private fun answerText(answer: VideoAnswer): String {
-        return when (preferredLanguageCode.lowercase()) {
-            "uk" -> answer.textUk
-            else -> answer.textSl
-        }
+    private fun showConfirm(contact: VideoContact) {
+        selectedContact = contact
+
+        loadContactImage(imgConfirmContact, contact.index)
+        tvConfirmName.text = contact.name
+        tvConfirmLanguage.text = languageLabel(contact.language)
+
+        contactGridScreen.visibility = View.GONE
+        confirmScreen.visibility = View.VISIBLE
+        callScreen.visibility = View.GONE
     }
 
-    private fun speak(text: String) {
-        if (!ttsReady) {
-            Toast.makeText(this, "Govor še ni pripravljen", Toast.LENGTH_SHORT).show()
-            return
-        }
+    private fun showCallState() {
+        val contact = selectedContact ?: return
 
-        applyTtsLanguage()
+        loadContactImage(imgCallContact, contact.index)
+        tvCallName.text = contact.name
+        tvCallStatus.text = "Kličem..."
 
-        textToSpeech?.speak(
-            text,
-            TextToSpeech.QUEUE_FLUSH,
-            null,
-            "video_answer_${System.currentTimeMillis()}"
-        )
-    }
+        contactGridScreen.visibility = View.GONE
+        confirmScreen.visibility = View.GONE
+        callScreen.visibility = View.VISIBLE
 
-    private fun applyTtsLanguage() {
-        val wantedLocale = when (preferredLanguageCode.lowercase()) {
-            "uk" -> Locale("uk", "UA")
-            "en" -> Locale.ENGLISH
-            "de" -> Locale.GERMAN
-            "hr" -> Locale("hr", "HR")
-            "sr" -> Locale("sr", "RS")
-            else -> Locale("sl", "SI")
-        }
-
-        val result = textToSpeech?.setLanguage(wantedLocale)
-
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            if (!fallbackToastShown) {
-                Toast.makeText(
-                    this,
-                    "Izbrani glas ni nameščen. Uporabljam slovenski glas.",
-                    Toast.LENGTH_LONG
-                ).show()
-                fallbackToastShown = true
+        handler.removeCallbacksAndMessages(null)
+        handler.postDelayed({
+            if (callScreen.visibility == View.VISIBLE) {
+                tvCallStatus.text = "Klic vzpostavljen"
             }
-            textToSpeech?.setLanguage(Locale("sl", "SI"))
-        }
+        }, 1500L)
+    }
 
-        textToSpeech?.setSpeechRate(0.9f)
-        textToSpeech?.setPitch(1.0f)
+    private fun loadContactImage(imageView: ImageView, index: Int) {
+        val file = File(getExternalFilesDir(null), "contacts/contact_$index.png")
+        if (file.exists()) {
+            imageView.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
+        } else {
+            imageView.setImageResource(R.drawable.ic_contact_default)
+            imageView.setColorFilter(0xFFB8D8FF.toInt())
+        }
+    }
+
+    private fun languageLabel(code: String): String {
+        return when (code.lowercase()) {
+            "uk" -> "Ukrajinščina"
+            "en" -> "Angleščina"
+            "de" -> "Nemščina"
+            "hr" -> "Hrvaščina"
+            "sr" -> "Srbščina"
+            else -> "Slovenščina"
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -216,9 +246,7 @@ class VideoCallActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
-        textToSpeech?.stop()
-        textToSpeech?.shutdown()
-        textToSpeech = null
+        handler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
 
