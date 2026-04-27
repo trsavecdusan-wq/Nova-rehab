@@ -206,7 +206,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(spinnerTtsTestLanguage)
 
         panel.addView(TextView(this).apply {
-            text = "Vrsta glasu:"
+            text = "Znacaj glasu:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -214,7 +214,7 @@ class SettingsActivity : AppCompatActivity() {
             adapter = ArrayAdapter(
                 this@SettingsActivity,
                 android.R.layout.simple_spinner_item,
-                arrayOf("Zenski glas", "Moski glas")
+                arrayOf("Naravni/topel", "Globji/mirnejsi", "Mehek/nezen")
             ).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
@@ -230,7 +230,7 @@ class SettingsActivity : AppCompatActivity() {
             adapter = ArrayAdapter(
                 this@SettingsActivity,
                 android.R.layout.simple_spinner_item,
-                arrayOf("Pocasi", "Normalno", "Hitreje")
+                arrayOf("Zelo pocasi", "Pocasi", "Mirno", "Naravno", "Malo hitreje")
             ).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
@@ -246,7 +246,7 @@ class SettingsActivity : AppCompatActivity() {
             adapter = ArrayAdapter(
                 this@SettingsActivity,
                 android.R.layout.simple_spinner_item,
-                arrayOf("Normalno", "Glasno", "Najglasneje")
+                arrayOf("Glasno", "Zelo glasno", "Najglasneje")
             ).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
@@ -313,7 +313,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupOpenAiKeyField() {
         binding.etOpenAiKey.apply {
-            hint = "OpenAI API ključ se lahko nalozi iz datoteke api"
+            hint = "OpenAI API kljuc se lahko nalozi iz datoteke api"
             isEnabled = true
             isFocusable = true
             isFocusableInTouchMode = true
@@ -440,25 +440,36 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.etOpenAiKey.setText(prefs.getOpenAiKey())
 
-        val voices = arrayOf("marin", "cedar", "nova", "shimmer", "coral", "sage", "onyx", "echo")
+        val voices = arrayOf("marin", "cedar", "nova", "coral", "shimmer", "sage", "onyx", "echo")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
         voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerTtsVoice.adapter = voiceAdapter
         binding.spinnerTtsVoice.setSelection(voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
 
         spinnerTtsTestLanguage.setSelection(langIndex(prefs.getTtsTestLanguage()))
-        spinnerTtsVoiceGender.setSelection(if (prefs.getTtsVoiceGender() == "moski") 1 else 0)
-        spinnerTtsSpeed.setSelection(
-            when {
-                prefs.getTtsSpeed() < 0.85f -> 0
-                prefs.getTtsSpeed() > 1.02f -> 2
-                else -> 1
+
+        spinnerTtsVoiceGender.setSelection(
+            when (prefs.getTtsVoiceGender()) {
+                "globok" -> 1
+                "mehek" -> 2
+                else -> 0
             }
         )
+
+        spinnerTtsSpeed.setSelection(
+            when {
+                prefs.getTtsSpeed() <= 0.82f -> 0
+                prefs.getTtsSpeed() <= 0.86f -> 1
+                prefs.getTtsSpeed() <= 0.90f -> 2
+                prefs.getTtsSpeed() <= 0.96f -> 3
+                else -> 4
+            }
+        )
+
         spinnerTtsVolume.setSelection(
             when {
                 prefs.getTtsVolume() >= 1.0f -> 2
-                prefs.getTtsVolume() >= 0.82f -> 1
+                prefs.getTtsVolume() >= 0.9f -> 1
                 else -> 0
             }
         )
@@ -599,20 +610,26 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun saveSpeechQualitySettings() {
         val lang = langCode(spinnerTtsTestLanguage.selectedItemPosition)
-        val gender = if (spinnerTtsVoiceGender.selectedItemPosition == 1) "moski" else "zenski"
+        val character = when (spinnerTtsVoiceGender.selectedItemPosition) {
+            1 -> "globok"
+            2 -> "mehek"
+            else -> "naravni"
+        }
         val speed = when (spinnerTtsSpeed.selectedItemPosition) {
-            0 -> 0.78f
-            2 -> 1.08f
-            else -> 0.92f
+            0 -> 0.82f
+            1 -> 0.86f
+            2 -> 0.90f
+            3 -> 0.96f
+            else -> 1.02f
         }
         val volume = when (spinnerTtsVolume.selectedItemPosition) {
-            0 -> 0.72f
-            1 -> 0.88f
+            0 -> 0.9f
+            1 -> 0.98f
             else -> 1.0f
         }
 
         prefs.saveTtsTestLanguage(lang)
-        prefs.saveTtsVoiceGender(gender)
+        prefs.saveTtsVoiceGender(character)
         prefs.saveTtsSpeed(speed)
         prefs.saveTtsVolume(volume)
         prefs.saveTtsVoice(selectedVoice())
@@ -622,7 +639,11 @@ class SettingsActivity : AppCompatActivity() {
         val selected = binding.spinnerTtsVoice.selectedItem?.toString()?.trim().orEmpty()
         if (selected.isNotBlank()) return selected
 
-        return if (spinnerTtsVoiceGender.selectedItemPosition == 1) "cedar" else "marin"
+        return when (spinnerTtsVoiceGender.selectedItemPosition) {
+            1 -> "cedar"
+            2 -> "nova"
+            else -> "marin"
+        }
     }
 
     private fun testTextForLanguage(lang: String): String {
@@ -637,10 +658,10 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun speechStyleFor(lang: String): String {
-        val gender = if (spinnerTtsVoiceGender.selectedItemPosition == 1) {
-            "Use a calm, warm male voice."
-        } else {
-            "Use a calm, warm female voice."
+        val character = when (spinnerTtsVoiceGender.selectedItemPosition) {
+            1 -> "Use a deeper, calm, grounded voice. Speak clearly and warmly."
+            2 -> "Use a soft, gentle, caring voice. Speak clearly and warmly."
+            else -> "Use a natural, warm, friendly voice. Speak clearly and calmly."
         }
 
         val languageStyle = when (lang) {
@@ -653,7 +674,7 @@ class SettingsActivity : AppCompatActivity() {
             else -> "Speak naturally, clearly, warmly and calmly."
         }
 
-        return "$gender $languageStyle Suitable for rehabilitation communication. Keep the voice easy to understand even over quiet background radio."
+        return "$character $languageStyle Speak slightly slower than normal conversation, with strong articulation and enough presence to be heard clearly on a tablet speaker. Suitable for rehabilitation communication."
     }
 
     private fun pickApiFile() {
