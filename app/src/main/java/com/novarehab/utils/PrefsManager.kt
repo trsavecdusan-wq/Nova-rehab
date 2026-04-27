@@ -50,6 +50,12 @@ class PrefsManager(context: Context) {
     fun getKioskReturnMinutes(): Long = prefs.getLong("kiosk_return_minutes", 5L)
     fun saveKioskReturnMinutes(m: Long) = prefs.edit().putLong("kiosk_return_minutes", m).apply()
 
+    fun getGuestLanguageReturnMinutes(): Long =
+        prefs.getLong("guest_language_return_minutes", 15L).coerceIn(1L, 240L)
+
+    fun saveGuestLanguageReturnMinutes(minutes: Long) =
+        prefs.edit().putLong("guest_language_return_minutes", minutes.coerceIn(1L, 240L)).apply()
+
     fun getOpenAiKey(): String = prefs.getString("openai_key", "") ?: ""
     fun saveOpenAiKey(key: String) = prefs.edit().putString("openai_key", key).apply()
 
