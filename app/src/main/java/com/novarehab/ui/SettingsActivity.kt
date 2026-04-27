@@ -39,6 +39,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerPatientLang1: Spinner
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
+    private lateinit var spinnerTtsTestLanguage: Spinner
+    private lateinit var spinnerTtsVoiceGender: Spinner
+    private lateinit var spinnerTtsSpeed: Spinner
+    private lateinit var spinnerTtsVolume: Spinner
     private lateinit var switchAutoLanguage: Switch
     private lateinit var tvAppVersion: TextView
     private lateinit var btnExportBackup: Button
@@ -52,6 +56,7 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
         prefs = PrefsManager(this)
         addLanguageSettingsPanel()
+        addTtsQualityPanel()
         addBackupAndVersionPanel()
         setupOpenAiKeyField()
         loadSettings()
@@ -175,6 +180,80 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(autoRow)
 
         rootLayout.addView(panel, 5)
+    }
+
+    private fun addTtsQualityPanel() {
+        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 16)
+        }
+
+        panel.addView(TextView(this).apply {
+            text = "Kakovost govora"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+
+        panel.addView(TextView(this).apply {
+            text = "Testni jezik govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerTtsTestLanguage = newLangSpinner()
+        panel.addView(spinnerTtsTestLanguage)
+
+        panel.addView(TextView(this).apply {
+            text = "Vrsta glasu:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerTtsVoiceGender = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                arrayOf("Zenski glas", "Moski glas")
+            ).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        }
+        panel.addView(spinnerTtsVoiceGender)
+
+        panel.addView(TextView(this).apply {
+            text = "Hitrost govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerTtsSpeed = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                arrayOf("Pocasi", "Normalno", "Hitreje")
+            ).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        }
+        panel.addView(spinnerTtsSpeed)
+
+        panel.addView(TextView(this).apply {
+            text = "Glasnost govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerTtsVolume = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                arrayOf("Normalno", "Glasno", "Najglasneje")
+            ).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        }
+        panel.addView(spinnerTtsVolume)
+
+        rootLayout.addView(panel, 6)
     }
 
     private fun addBackupAndVersionPanel() {
@@ -361,11 +440,28 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.etOpenAiKey.setText(prefs.getOpenAiKey())
 
-        val voices = arrayOf("nova", "shimmer", "alloy", "echo", "fable", "onyx")
+        val voices = arrayOf("marin", "cedar", "nova", "shimmer", "coral", "sage", "onyx", "echo")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
         voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerTtsVoice.adapter = voiceAdapter
         binding.spinnerTtsVoice.setSelection(voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
+
+        spinnerTtsTestLanguage.setSelection(langIndex(prefs.getTtsTestLanguage()))
+        spinnerTtsVoiceGender.setSelection(if (prefs.getTtsVoiceGender() == "moski") 1 else 0)
+        spinnerTtsSpeed.setSelection(
+            when {
+                prefs.getTtsSpeed() < 0.85f -> 0
+                prefs.getTtsSpeed() > 1.02f -> 2
+                else -> 1
+            }
+        )
+        spinnerTtsVolume.setSelection(
+            when {
+                prefs.getTtsVolume() >= 1.0f -> 2
+                prefs.getTtsVolume() >= 0.82f -> 1
+                else -> 0
+            }
+        )
 
         binding.etGmailUser.setText(prefs.getGmailUser())
         binding.etGmailPass.setText(prefs.getGmailAppPassword())
@@ -417,20 +513,33 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.btnTestTts.setOnClickListener {
+            saveSpeechQualitySettings()
+
             if (binding.etOpenAiKey.text.toString().trim().isBlank()) {
                 loadOpenAiKeyFromDownload(false)
             }
 
             prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
-            val voice = binding.spinnerTtsVoice.selectedItem.toString()
-            prefs.saveTtsVoice(voice)
 
             val key = prefs.getOpenAiKey()
+            val lang = prefs.getTtsTestLanguage()
+            val voice = selectedVoice()
+            val speed = prefs.getTtsSpeed()
+            val volume = prefs.getTtsVolume()
+            val text = testTextForLanguage(lang)
+
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
-            tts.speak("Zdravo, to je test govora aplikacije Rehab.", "sl", key, voice) {
-                tts.destroy()
-            }
+            tts.speak(
+                text = text,
+                language = lang,
+                apiKey = key,
+                voice = voice,
+                speed = speed,
+                volume = volume,
+                style = speechStyleFor(lang),
+                onDone = { tts.destroy() }
+            )
         }
 
         binding.btnInstallTts.setOnClickListener {
@@ -486,6 +595,65 @@ class SettingsActivity : AppCompatActivity() {
         btnImportBackup.setOnClickListener {
             importBackup()
         }
+    }
+
+    private fun saveSpeechQualitySettings() {
+        val lang = langCode(spinnerTtsTestLanguage.selectedItemPosition)
+        val gender = if (spinnerTtsVoiceGender.selectedItemPosition == 1) "moski" else "zenski"
+        val speed = when (spinnerTtsSpeed.selectedItemPosition) {
+            0 -> 0.78f
+            2 -> 1.08f
+            else -> 0.92f
+        }
+        val volume = when (spinnerTtsVolume.selectedItemPosition) {
+            0 -> 0.72f
+            1 -> 0.88f
+            else -> 1.0f
+        }
+
+        prefs.saveTtsTestLanguage(lang)
+        prefs.saveTtsVoiceGender(gender)
+        prefs.saveTtsSpeed(speed)
+        prefs.saveTtsVolume(volume)
+        prefs.saveTtsVoice(selectedVoice())
+    }
+
+    private fun selectedVoice(): String {
+        val selected = binding.spinnerTtsVoice.selectedItem?.toString()?.trim().orEmpty()
+        if (selected.isNotBlank()) return selected
+
+        return if (spinnerTtsVoiceGender.selectedItemPosition == 1) "cedar" else "marin"
+    }
+
+    private fun testTextForLanguage(lang: String): String {
+        return when (lang) {
+            "uk" -> "Привіт, це тест голосу. Я говоритиму спокійно, чітко і природно."
+            "en" -> "Hello, this is a speech test. I will speak clearly, warmly, and naturally."
+            "de" -> "Hallo, das ist ein Sprachtest. Ich spreche ruhig, klar und natürlich."
+            "hr" -> "Pozdrav, ovo je test govora. Govorit cu mirno, jasno i prirodno."
+            "sr" -> "Pozdrav, ovo je test govora. Govoricu mirno, jasno i prirodno."
+            else -> "Zdravo, to je test govora. Govorila bom mirno, jasno in naravno."
+        }
+    }
+
+    private fun speechStyleFor(lang: String): String {
+        val gender = if (spinnerTtsVoiceGender.selectedItemPosition == 1) {
+            "Use a calm, warm male voice."
+        } else {
+            "Use a calm, warm female voice."
+        }
+
+        val languageStyle = when (lang) {
+            "sl" -> "Speak Slovenian naturally, with clear articulation and a soft caring tone."
+            "uk" -> "Speak Ukrainian naturally, with clear articulation and a soft caring tone."
+            "en" -> "Speak English naturally, with clear articulation and a soft caring tone."
+            "de" -> "Speak German naturally, with clear articulation and a soft caring tone."
+            "hr" -> "Speak Croatian naturally, with clear articulation and a soft caring tone."
+            "sr" -> "Speak Serbian naturally, with clear articulation and a soft caring tone."
+            else -> "Speak naturally, clearly, warmly and calmly."
+        }
+
+        return "$gender $languageStyle Suitable for rehabilitation communication. Keep the voice easy to understand even over quiet background radio."
     }
 
     private fun pickApiFile() {
@@ -711,7 +879,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
-        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
+        saveSpeechQualitySettings()
 
         prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
         prefs.saveGmailAppPassword(binding.etGmailPass.text.toString().trim())
