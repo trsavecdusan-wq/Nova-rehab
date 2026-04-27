@@ -25,8 +25,8 @@ class OpenAiTtsManager(private val context: Context) {
     private val cacheDir = File(context.filesDir, "tts_cache").also { it.mkdirs() }
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(8, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(12, TimeUnit.SECONDS)
+        .readTimeout(35, TimeUnit.SECONDS)
         .build()
 
     init {
@@ -57,21 +57,56 @@ class OpenAiTtsManager(private val context: Context) {
         voice: String,
         onDone: () -> Unit = {}
     ) {
+        speak(
+            text = text,
+            language = language,
+            apiKey = apiKey,
+            voice = voice,
+            speed = 0.92f,
+            volume = 1.0f,
+            style = "Speak clearly, warmly, calmly and naturally. Use a gentle rehabilitation assistant voice. Keep the speech easy to understand, with good articulation and a natural Slovenian rhythm when speaking Slovenian.",
+            onDone = onDone
+        )
+    }
+
+    fun speak(
+        text: String,
+        language: String,
+        apiKey: String,
+        voice: String,
+        speed: Float,
+        volume: Float,
+        style: String,
+        onDone: () -> Unit = {}
+    ) {
         val clean = text.trim()
         if (clean.isEmpty()) {
             onDone()
             return
         }
 
-        val cache = File(cacheDir, cacheName(clean, language, voice))
+        val safeVoice = normalizeVoice(voice)
+        val safeSpeed = speed.coerceIn(0.65f, 1.25f)
+        val safeVolume = volume.coerceIn(0.2f, 1.0f)
+        val cache = File(cacheDir, cacheName(clean, language, safeVoice, safeSpeed, style))
 
         if (cache.exists() && cache.length() > 1024) {
-            playFile(cache, onDone)
+            playFile(cache, safeVolume, onDone)
             return
         }
 
         if (apiKey.isNotBlank() && isOnline()) {
-            speakOpenAI(clean, language, apiKey, voice, cache, onDone)
+            speakOpenAI(
+                text = clean,
+                language = language,
+                apiKey = apiKey,
+                voice = safeVoice,
+                speed = safeSpeed,
+                volume = safeVolume,
+                style = style,
+                cache = cache,
+                onDone = onDone
+            )
         } else {
             speakAndroid(clean, language, onDone)
         }
@@ -82,33 +117,40 @@ class OpenAiTtsManager(private val context: Context) {
         language: String,
         apiKey: String,
         voice: String,
+        speed: Float,
+        volume: Float,
+        style: String,
         cache: File,
         onDone: () -> Unit
     ) {
         Thread {
             try {
-                val body = JSONObject().apply {
-                    put("model", "tts-1")
+                val bodyJson = JSONObject().apply {
+                    put("model", "gpt-4o-mini-tts")
                     put("input", text)
-                    put("voice", voice.ifBlank { "nova" })
-                }.toString().toRequestBody("application/json".toMediaType())
+                    put("voice", voice)
+                    put("speed", speed)
+                    put("instructions", style)
+                    put("response_format", "mp3")
+                }
 
                 val request = Request.Builder()
                     .url("https://api.openai.com/v1/audio/speech")
                     .header("Authorization", "Bearer $apiKey")
-                    .post(body)
+                    .header("Content-Type", "application/json")
+                    .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
                     .build()
 
-                val response = http.newCall(request).execute()
-
-                if (response.isSuccessful) {
-                    val bytes = response.body?.bytes()
-                    if (bytes != null && bytes.size > 1024) {
-                        cache.writeBytes(bytes)
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                            playFile(cache, onDone)
+                http.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val bytes = response.body?.bytes()
+                        if (bytes != null && bytes.size > 1024) {
+                            cache.writeBytes(bytes)
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                playFile(cache, volume, onDone)
+                            }
+                            return@Thread
                         }
-                        return@Thread
                     }
                 }
             } catch (_: Exception) {
@@ -184,6 +226,11 @@ class OpenAiTtsManager(private val context: Context) {
                 Locale("sl", "SI")
             )
 
+            "de" -> listOf(
+                Locale.GERMANY,
+                Locale("de", "DE")
+            )
+
             "en", "english" -> listOf(
                 Locale.US,
                 Locale.UK,
@@ -191,9 +238,8 @@ class OpenAiTtsManager(private val context: Context) {
             )
 
             else -> listOf(
-                Locale("sl", "SI"),
-                Locale("hr", "HR"),
-                Locale("sr", "RS")
+                Locale(language),
+                Locale( language, "")
             )
         }
 
@@ -210,17 +256,18 @@ class OpenAiTtsManager(private val context: Context) {
         tts?.setLanguage(Locale("sl", "SI"))
     }
 
-    private fun playFile(file: File, onDone: () -> Unit) {
+    private fun playFile(file: File, volume: Float, onDone: () -> Unit) {
         try {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                         .build()
                 )
                 setDataSource(file.absolutePath)
+                setVolume(volume, volume)
                 prepare()
                 start()
                 setOnCompletionListener {
@@ -252,8 +299,23 @@ class OpenAiTtsManager(private val context: Context) {
         }
     }
 
-    private fun cacheName(text: String, language: String, voice: String): String {
-        return "${text.hashCode()}_${language}_${voice.ifBlank { "nova" }}.mp3"
+    private fun normalizeVoice(voice: String): String {
+        return when (voice.trim().lowercase()) {
+            "alloy", "ash", "ballad", "coral", "echo", "fable", "nova",
+            "onyx", "sage", "shimmer", "verse", "marin", "cedar" -> voice.trim().lowercase()
+            else -> "marin"
+        }
+    }
+
+    private fun cacheName(
+        text: String,
+        language: String,
+        voice: String,
+        speed: Float,
+        style: String
+    ): String {
+        val key = "${text}_${language}_${voice}_${speed}_${style}".hashCode()
+        return "${key}_${language}_${voice}.mp3"
     }
 
     fun stop() {
