@@ -28,7 +28,6 @@ class PrefsManager(context: Context) {
     private val prefs = context.getSharedPreferences("nova_rehab_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
 
-    // povečano zato, da aplikacija prepiše stare shranjene radijske postaje
     private val STATIONS_VERSION = 10
 
     fun getPin(): String = prefs.getString("pin", "1234") ?: "1234"
@@ -89,6 +88,33 @@ class PrefsManager(context: Context) {
         prefs.edit().putInt("comm_icons_per_page", safe).apply()
     }
 
+    fun getTtsVoice(): String = prefs.getString("tts_voice", "marin") ?: "marin"
+    fun saveTtsVoice(voice: String) = prefs.edit().putString("tts_voice", voice).apply()
+
+    fun getTtsTestLanguage(): String =
+        prefs.getString("tts_test_language", "sl") ?: "sl"
+
+    fun saveTtsTestLanguage(lang: String) =
+        prefs.edit().putString("tts_test_language", lang).apply()
+
+    fun getTtsVoiceGender(): String =
+        prefs.getString("tts_voice_gender", "zenski") ?: "zenski"
+
+    fun saveTtsVoiceGender(gender: String) =
+        prefs.edit().putString("tts_voice_gender", gender).apply()
+
+    fun getTtsSpeed(): Float =
+        prefs.getFloat("tts_speed", 0.92f).coerceIn(0.65f, 1.25f)
+
+    fun saveTtsSpeed(speed: Float) =
+        prefs.edit().putFloat("tts_speed", speed.coerceIn(0.65f, 1.25f)).apply()
+
+    fun getTtsVolume(): Float =
+        prefs.getFloat("tts_volume", 1.0f).coerceIn(0.2f, 1.0f)
+
+    fun saveTtsVolume(volume: Float) =
+        prefs.edit().putFloat("tts_volume", volume.coerceIn(0.2f, 1.0f)).apply()
+
     fun getCustomCommIcons(): List<CustomCommIcon> {
         val json = prefs.getString("custom_comm_icons", null) ?: return emptyList()
         return try {
@@ -102,9 +128,6 @@ class PrefsManager(context: Context) {
     fun saveCustomCommIcons(items: List<CustomCommIcon>) {
         prefs.edit().putString("custom_comm_icons", gson.toJson(items)).apply()
     }
-
-    fun getTtsVoice(): String = prefs.getString("tts_voice", "nova") ?: "nova"
-    fun saveTtsVoice(voice: String) = prefs.edit().putString("tts_voice", voice).apply()
 
     fun getGmailUser(): String = prefs.getString("gmail_user", "") ?: ""
     fun saveGmailUser(email: String) = prefs.edit().putString("gmail_user", email).apply()
@@ -188,8 +211,8 @@ class PrefsManager(context: Context) {
         Contact("Ata", "", "", "sl"),
         Contact("Sestra", "", "", "sl"),
         Contact("Brat", "", "", "sl"),
-        Contact("Zdravnik", "", "👩‍⚕️", "sl"),
-        Contact("Skrbnik", "", "👤", "sl")
+        Contact("Zdravnik", "", "", "sl"),
+        Contact("Skrbnik", "", "", "sl")
     )
 
     private fun defaultStations(): List<RadioStation> = listOf(
