@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="#1A1A2E">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="NovaRehab Companion"
+        android:textColor="#E94560"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Povezano z Lano"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvContactInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Kontakt"
+        android:textColor="#B8D8FF"
+        android:textSize="22sp"
+        android:gravity="center"
+        android:layout_marginBottom="48dp" />
+
+    <Button
+        android:id="@+id/btnAcceptCall"
+        android:layout_width="match_parent"
+        android:layout_height="78dp"
+        android:text="SPREJMI KLIC"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:backgroundTint="#1B8F3A"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="18dp" />
+
+    <Button
+        android:id="@+id/btnRejectCall"
+        android:layout_width="match_parent"
+        android:layout_height="78dp"
+        android:text="ZAVRNI KLIC"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:backgroundTint="#B71C1C"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="18dp" />
+
+    <Button
+        android:id="@+id/btnCallLana"
+        android:layout_width="match_parent"
+        android:layout_height="78dp"
+        android:text="POKLIČI LANO"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:backgroundTint="#0F3460"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
