@@ -27,7 +27,6 @@ class PrefsManager(context: Context) {
 
     private val prefs = context.getSharedPreferences("nova_rehab_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
-
     private val STATIONS_VERSION = 10
 
     fun getPin(): String = prefs.getString("pin", "1234") ?: "1234"
@@ -98,22 +97,22 @@ class PrefsManager(context: Context) {
         prefs.edit().putString("tts_test_language", lang).apply()
 
     fun getTtsVoiceGender(): String =
-        prefs.getString("tts_voice_gender", "zenski") ?: "zenski"
+        prefs.getString("tts_voice_gender", "naravni") ?: "naravni"
 
     fun saveTtsVoiceGender(gender: String) =
         prefs.edit().putString("tts_voice_gender", gender).apply()
 
     fun getTtsSpeed(): Float =
-        prefs.getFloat("tts_speed", 0.92f).coerceIn(0.65f, 1.25f)
+        prefs.getFloat("tts_speed", 0.88f).coerceIn(0.80f, 1.06f)
 
     fun saveTtsSpeed(speed: Float) =
-        prefs.edit().putFloat("tts_speed", speed.coerceIn(0.65f, 1.25f)).apply()
+        prefs.edit().putFloat("tts_speed", speed.coerceIn(0.80f, 1.06f)).apply()
 
     fun getTtsVolume(): Float =
-        prefs.getFloat("tts_volume", 1.0f).coerceIn(0.2f, 1.0f)
+        prefs.getFloat("tts_volume", 1.0f).coerceIn(0.7f, 1.0f)
 
     fun saveTtsVolume(volume: Float) =
-        prefs.edit().putFloat("tts_volume", volume.coerceIn(0.2f, 1.0f)).apply()
+        prefs.edit().putFloat("tts_volume", volume.coerceIn(0.7f, 1.0f)).apply()
 
     fun getCustomCommIcons(): List<CustomCommIcon> {
         val json = prefs.getString("custom_comm_icons", null) ?: return emptyList()
