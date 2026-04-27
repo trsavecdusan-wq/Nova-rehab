@@ -236,7 +236,7 @@ class CommunicationActivity : AppCompatActivity() {
 
         if (activeLang == "sl") return
 
-        val minutes = commPrefs.getGuestLanguageReturnMinutes().coerceAtLeast(1L)
+        val minutes = commPrefs.getKioskReturnMinutes().coerceAtLeast(1L)
         handler.postDelayed(returnToSlovenianRunnable, minutes * 60L * 1000L)
     }
 
