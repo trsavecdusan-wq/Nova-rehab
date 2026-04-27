@@ -44,6 +44,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnExportBackup: Button
     private lateinit var btnImportBackup: Button
     private lateinit var btnLoadApiFromDownload: Button
+    private lateinit var btnPickApiFile: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -185,18 +186,25 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         panel.addView(TextView(this).apply {
-            text = "Varnostna kopija"
+            text = "Varnostna kopija in API"
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
 
         btnLoadApiFromDownload = Button(this).apply {
-            text = "NALOZI API KLJUC IZ DOWNLOAD/API.TXT"
+            text = "NALOZI API KLJUC IZ DOWNLOAD/API"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
         }
         panel.addView(btnLoadApiFromDownload)
+
+        btnPickApiFile = Button(this).apply {
+            text = "IZBERI API DATOTEKO"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF6A1B9A.toInt())
+        }
+        panel.addView(btnPickApiFile)
 
         btnExportBackup = Button(this).apply {
             text = "SHRANI VARNOSTNO KOPIJO"
@@ -226,7 +234,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupOpenAiKeyField() {
         binding.etOpenAiKey.apply {
-            hint = "Vnesi OpenAI API ključ"
+            hint = "OpenAI API ključ se lahko nalozi iz datoteke api"
             isEnabled = true
             isFocusable = true
             isFocusableInTouchMode = true
@@ -343,7 +351,7 @@ class SettingsActivity : AppCompatActivity() {
                     pendingImageIndex = i
                     startActivityForResult(
                         Intent(Intent.ACTION_PICK).apply { type = "image/*" },
-                        301
+                        REQUEST_CONTACT_IMAGE
                     )
                 }
             }
@@ -466,6 +474,10 @@ class SettingsActivity : AppCompatActivity() {
             loadOpenAiKeyFromDownload(true)
         }
 
+        btnPickApiFile.setOnClickListener {
+            pickApiFile()
+        }
+
         btnExportBackup.setOnClickListener {
             saveSettings()
             exportBackup(true)
@@ -476,6 +488,39 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun pickApiFile() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(
+                Intent.EXTRA_MIME_TYPES,
+                arrayOf("text/plain", "application/octet-stream", "application/json")
+            )
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
+        startActivityForResult(intent, REQUEST_API_FILE)
+    }
+
+    private fun saveApiKeyFromText(text: String, showToast: Boolean): Boolean {
+        val key = cleanApiKey(text)
+        if (key.isBlank()) {
+            if (showToast) {
+                Toast.makeText(this, "API kljuc v datoteki ni najden", Toast.LENGTH_LONG).show()
+            }
+            return false
+        }
+
+        prefs.saveOpenAiKey(key)
+        binding.etOpenAiKey.setText(key)
+
+        if (showToast) {
+            Toast.makeText(this, "OpenAI API kljuc je shranjen", Toast.LENGTH_LONG).show()
+        }
+
+        return true
+    }
+
     private fun loadOpenAiKeyFromDownload(showToast: Boolean): Boolean {
         val key = readOpenAiKeyFromDownload()
 
@@ -483,7 +528,7 @@ class SettingsActivity : AppCompatActivity() {
             if (showToast) {
                 Toast.makeText(
                     this,
-                    "Datoteka Download/api.txt ali Download/api ni najdena",
+                    "Datoteka Download/api ali Download/api.txt ni najdena. Uporabi IZBERI API DATOTEKO.",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -496,7 +541,7 @@ class SettingsActivity : AppCompatActivity() {
         if (showToast) {
             Toast.makeText(
                 this,
-                "OpenAI API kljuc je nalozen iz Download/api.txt",
+                "OpenAI API kljuc je nalozen iz Download/api",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -571,27 +616,28 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun cleanApiKey(text: String): String {
-        val cleaned = text
+        val normalized = text
             .replace("\uFEFF", "")
             .replace("\r", "\n")
+
+        val firstLine = normalized
             .lines()
             .map { it.trim() }
             .firstOrNull { it.isNotBlank() }
             ?: ""
 
-        if (cleaned.startsWith("sk-")) return cleaned
+        if (firstLine.startsWith("sk-")) return firstLine
 
-        val start = text.indexOf("sk-")
+        val start = normalized.indexOf("sk-")
         if (start >= 0) {
-            return text.substring(start)
-                .replace("\r", "\n")
+            return normalized.substring(start)
                 .lines()
                 .firstOrNull()
                 ?.trim()
                 ?: ""
         }
 
-        return cleaned
+        return firstLine
     }
 
     private fun saveSettings() {
@@ -708,7 +754,29 @@ class SettingsActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
+        if (requestCode == REQUEST_API_FILE && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+
+            try {
+                val flags = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(uri, flags)
+            } catch (e: Exception) {
+            }
+
+            try {
+                val text = contentResolver.openInputStream(uri)?.use { input ->
+                    input.readBytes().toString(Charsets.UTF_8)
+                } ?: ""
+
+                saveApiKeyFromText(text, true)
+            } catch (e: Exception) {
+                Toast.makeText(this, "API datoteke ni bilo mogoce prebrati", Toast.LENGTH_LONG).show()
+            }
+
+            return
+        }
+
+        if (requestCode == REQUEST_CONTACT_IMAGE && resultCode == RESULT_OK && pendingImageIndex >= 0) {
             val uri = data?.data ?: return
 
             try {
@@ -1051,5 +1119,10 @@ class SettingsActivity : AppCompatActivity() {
         } catch (e: Exception) {
             "Verzija APK: ni znana"
         }
+    }
+
+    companion object {
+        private const val REQUEST_CONTACT_IMAGE = 301
+        private const val REQUEST_API_FILE = 777
     }
 }
