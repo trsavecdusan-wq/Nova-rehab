@@ -45,6 +45,8 @@ jobs:
           test -f build.gradle
           test -f app/build.gradle
           test -f app/src/main/AndroidManifest.xml
+          test -f companion/build.gradle
+          test -f companion/src/main/AndroidManifest.xml
 
       - name: Build debug APK
         run: ./gradlew --no-daemon clean assembleDebug --stacktrace
@@ -52,6 +54,8 @@ jobs:
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NovaRehab-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: NovaRehab-debug-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            companion/build/outputs/apk/debug/*.apk
           if-no-files-found: error
