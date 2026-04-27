@@ -1,14 +1,18 @@
 package com.novarehab.ui
 
 import android.Manifest
+import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.view.GestureDetector
 import android.view.Gravity
@@ -36,6 +40,7 @@ import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -106,6 +111,8 @@ class MainActivity : AppCompatActivity() {
         translateManager = OpenAiTranslateManager(this)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
 
+        loadOpenAiKeyFromDownloadIfNeeded()
+
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 val r = tts?.setLanguage(Locale("sl", "SI"))
@@ -126,7 +133,7 @@ class MainActivity : AppCompatActivity() {
         setupVolumeControls()
         setupClock()
         setupGuestLanguageButton()
-        updatePatientName()
+        updateLanguageFlag()
 
         if (prefs.isAutoLanguageEnabled()) setupLanguageDetector()
         scheduleReports()
@@ -310,8 +317,6 @@ class MainActivity : AppCompatActivity() {
     fun speakComm(text: String, sourceLang: String = "sl") {
         if (text.isEmpty()) return
 
-        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
-
         if (activeLang != prefs.getDefaultSpeechLanguage().ifBlank { "sl" }) {
             scheduleLanguageReturn()
         }
@@ -323,10 +328,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         val targetLang = activeLang
-        val apiKey = prefs.getOpenAiKey()
+        var apiKey = prefs.getOpenAiKey()
+
+        if (apiKey.isBlank()) {
+            loadOpenAiKeyFromDownloadIfNeeded()
+            apiKey = prefs.getOpenAiKey()
+        }
+
         val voice = prefs.getTtsVoice()
 
         fun speakFinal(finalText: String) {
+            Toast.makeText(this, finalText, Toast.LENGTH_SHORT).show()
+
             ttsManager.speak(finalText, targetLang, apiKey, voice) {
                 if (radioPlaying) {
                     startService(Intent(this, RadioService::class.java).apply {
@@ -334,12 +347,22 @@ class MainActivity : AppCompatActivity() {
                     })
                 }
             }
+
             stats.log(StatEvent.COMM_ICON, finalText.take(30))
         }
 
-        if (sourceLang != targetLang && apiKey.isNotBlank()) {
-            translateManager.translate(text, targetLang, apiKey) { translated ->
-                speakFinal(translated)
+        if (targetLang != "sl") {
+            if (apiKey.isBlank()) {
+                Toast.makeText(
+                    this,
+                    "API kljuc ni nalozen, zato govor ostane slovenski.",
+                    Toast.LENGTH_LONG
+                ).show()
+                speakFinal(text)
+            } else {
+                translateManager.translate(text, targetLang, apiKey) { translated ->
+                    speakFinal(translated.ifBlank { text })
+                }
             }
         } else {
             speakFinal(text)
@@ -350,9 +373,11 @@ class MainActivity : AppCompatActivity() {
         binding.tvPatientName.visibility = View.VISIBLE
         binding.tvPatientName.isClickable = true
         binding.tvPatientName.isFocusable = true
+        binding.tvPatientName.textSize = 30f
+        binding.tvPatientName.gravity = Gravity.CENTER
 
         binding.tvPatientName.setOnClickListener {
-            Toast.makeText(this, "Za spremembo jezika držite ime pacienta.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Za spremembo jezika držite zastavo.", Toast.LENGTH_SHORT).show()
         }
 
         binding.tvPatientName.setOnLongClickListener {
@@ -362,14 +387,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showGuestLanguageDialog() {
-        val languages = listOf(
-            LanguageChoice("sl", "SL", "Slovenščina"),
-            LanguageChoice("uk", "UK", "Ukrajinščina"),
-            LanguageChoice("hr", "HR", "Hrvaščina"),
-            LanguageChoice("sr", "SR", "Srbščina"),
-            LanguageChoice("en", "EN", "Angleščina"),
-            LanguageChoice("de", "DE", "Nemščina")
-        )
+        val languages = visibleLanguageChoices()
 
         val wrapper = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -377,7 +395,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val info = TextView(this).apply {
-            text = "Izberi jezik za gosta. Aplikacija se bo sama vrnila na privzeti jezik."
+            text = "Izberi jezik pogovora."
             textSize = 16f
             setPadding(0, 0, 0, 16)
         }
@@ -385,19 +403,19 @@ class MainActivity : AppCompatActivity() {
 
         val grid = GridLayout(this).apply {
             columnCount = 2
-            rowCount = 3
+            rowCount = 1
         }
 
         val dialog = android.app.AlertDialog.Builder(this)
-            .setTitle("Jezik pogovora")
+            .setTitle("Jezik")
             .setView(wrapper)
             .setNegativeButton("Prekliči", null)
             .create()
 
         languages.forEach { lang ->
             val button = Button(this).apply {
-                text = "${lang.shortName}\n${lang.fullName}"
-                textSize = 18f
+                text = "${lang.flag}\n${lang.fullName}"
+                textSize = 20f
                 gravity = Gravity.CENTER
                 isAllCaps = false
                 setOnClickListener {
@@ -406,7 +424,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = 0
-                    height = 130
+                    height = 150
                     columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     setMargins(8, 8, 8, 8)
@@ -419,9 +437,28 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    private fun visibleLanguageChoices(): List<LanguageChoice> {
+        val first = prefs.getPatientLanguage1().ifBlank { "sl" }
+        val second = prefs.getPatientLanguage2().ifBlank { "uk" }
+
+        val choices = mutableListOf<LanguageChoice>()
+        choices.add(languageChoice(first))
+
+        if (second != first) {
+            choices.add(languageChoice(second))
+        }
+
+        if (choices.size < 2) {
+            val fallback = if (first == "sl") "uk" else "sl"
+            choices.add(languageChoice(fallback))
+        }
+
+        return choices.take(2)
+    }
+
     private fun selectGuestLanguage(language: LanguageChoice) {
         activeLang = language.code
-        updatePatientName()
+        updateLanguageFlag()
         setupCommPager()
         scheduleLanguageReturn()
         Toast.makeText(this, "Izbran jezik: ${language.fullName}", Toast.LENGTH_SHORT).show()
@@ -436,7 +473,7 @@ class MainActivity : AppCompatActivity() {
         languageReturnRunnable = Runnable {
             if (activeLang != defaultLang) {
                 activeLang = defaultLang
-                updatePatientName()
+                updateLanguageFlag()
                 setupCommPager()
                 Toast.makeText(this, "Jezik je vrnjen na privzeti jezik.", Toast.LENGTH_SHORT).show()
             }
@@ -445,13 +482,20 @@ class MainActivity : AppCompatActivity() {
         languageReturnHandler.postDelayed(languageReturnRunnable!!, minutes * 60 * 1000L)
     }
 
-    private fun languageLabel(code: String): String = when (code) {
-        "uk" -> "UK"
-        "hr" -> "HR"
-        "sr" -> "SR"
-        "en" -> "EN"
-        "de" -> "DE"
-        else -> "SL"
+    private fun updateLanguageFlag() {
+        binding.tvPatientName.text = languageChoice(activeLang).flag
+        binding.tvPatientName.visibility = View.VISIBLE
+    }
+
+    private fun languageChoice(code: String): LanguageChoice {
+        return when (code) {
+            "uk" -> LanguageChoice("uk", "🇺🇦", "Ukrajinščina")
+            "en" -> LanguageChoice("en", "🇬🇧", "Angleščina")
+            "de" -> LanguageChoice("de", "🇩🇪", "Nemščina")
+            "hr" -> LanguageChoice("hr", "🇭🇷", "Hrvaščina")
+            "sr" -> LanguageChoice("sr", "🇷🇸", "Srbščina")
+            else -> LanguageChoice("sl", "🇸🇮", "Slovenščina")
+        }
     }
 
     private fun setupLanguageDetector() {
@@ -460,7 +504,7 @@ class MainActivity : AppCompatActivity() {
             val allowed = setOf(prefs.getPatientLanguage1(), prefs.getPatientLanguage2())
             if (detectedLang in allowed) {
                 activeLang = detectedLang
-                updatePatientName()
+                updateLanguageFlag()
                 setupCommPager()
                 scheduleLanguageReturn()
             }
@@ -502,12 +546,6 @@ class MainActivity : AppCompatActivity() {
         clockHandler.post(clockRunnable!!)
     }
 
-    private fun updatePatientName() {
-        val name = prefs.getPatientName().ifBlank { "JEZIK" }
-        binding.tvPatientName.text = "$name • ${languageLabel(activeLang)}"
-        binding.tvPatientName.visibility = View.VISIBLE
-    }
-
     private fun setupVideoCallButton() {
         binding.btnVideoCall.setOnClickListener {
             if (radioPlaying) stopRadio()
@@ -536,6 +574,96 @@ class MainActivity : AppCompatActivity() {
         if (prefs.getReportMail1().isNotEmpty() || prefs.getReportMail2().isNotEmpty()) {
             ReportWorker.scheduleDaily(this, hour)
         }
+    }
+
+    private fun loadOpenAiKeyFromDownloadIfNeeded() {
+        if (prefs.getOpenAiKey().isNotBlank()) return
+
+        val key = findApiKeyInDownload()
+        if (key.isNotBlank()) {
+            prefs.saveOpenAiKey(key)
+        }
+    }
+
+    private fun findApiKeyInDownload(): String {
+        val direct = findApiKeyDirectFile()
+        if (direct.isNotBlank()) return direct
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return findApiKeyInMediaStore()
+        }
+
+        return ""
+    }
+
+    private fun findApiKeyDirectFile(): String {
+        val download = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val candidates = listOf(
+            File(download, "api"),
+            File(download, "api.txt"),
+            File(download, "API"),
+            File(download, "API.txt")
+        )
+
+        candidates.forEach { file ->
+            try {
+                if (file.exists() && file.isFile) {
+                    val key = cleanApiKey(file.readText(Charsets.UTF_8))
+                    if (key.isNotBlank()) return key
+                }
+            } catch (e: Exception) {
+            }
+        }
+
+        return ""
+    }
+
+    private fun findApiKeyInMediaStore(): String {
+        val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        val cursor = contentResolver.query(
+            collection,
+            arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME),
+            "${MediaStore.MediaColumns.DISPLAY_NAME}=? OR ${MediaStore.MediaColumns.DISPLAY_NAME}=?",
+            arrayOf("api", "api.txt"),
+            "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
+        )
+
+        cursor?.use {
+            while (it.moveToNext()) {
+                val id = it.getLong(0)
+                val uri = ContentUris.withAppendedId(collection, id)
+                try {
+                    val text = contentResolver.openInputStream(uri)?.use { input ->
+                        input.readBytes().toString(Charsets.UTF_8)
+                    } ?: ""
+                    val key = cleanApiKey(text)
+                    if (key.isNotBlank()) return key
+                } catch (e: Exception) {
+                }
+            }
+        }
+
+        return ""
+    }
+
+    private fun cleanApiKey(text: String): String {
+        val normalized = text
+            .replace("\uFEFF", "")
+            .replace("\r", "\n")
+
+        val start = normalized.indexOf("sk-")
+        if (start >= 0) {
+            return normalized.substring(start)
+                .lines()
+                .firstOrNull()
+                ?.trim()
+                ?: ""
+        }
+
+        return normalized.lines()
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() }
+            ?: ""
     }
 
     override fun onBackPressed() {
@@ -643,9 +771,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        loadOpenAiKeyFromDownloadIfNeeded()
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
-        updatePatientName()
         setupGuestLanguageButton()
+        updateLanguageFlag()
         setupCommPager()
         updateRadioUI()
     }
@@ -668,7 +797,7 @@ class MainActivity : AppCompatActivity() {
 
     data class LanguageChoice(
         val code: String,
-        val shortName: String,
+        val flag: String,
         val fullName: String
     )
 }
