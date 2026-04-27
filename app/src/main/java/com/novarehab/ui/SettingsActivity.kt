@@ -35,6 +35,7 @@ class SettingsActivity : AppCompatActivity() {
     private val contactLangSpinners = mutableListOf<Spinner>()
     private val contactImageButtons = mutableListOf<ImageButton>()
     private var pendingImageIndex = -1
+
     private lateinit var spinnerDefaultSpeechLang: Spinner
     private lateinit var spinnerPatientLang1: Spinner
     private lateinit var spinnerPatientLang2: Spinner
@@ -44,6 +45,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerTtsSpeed: Spinner
     private lateinit var spinnerTtsVolume: Spinner
     private lateinit var switchAutoLanguage: Switch
+
     private lateinit var tvAppVersion: TextView
     private lateinit var btnExportBackup: Button
     private lateinit var btnImportBackup: Button
@@ -655,47 +657,42 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun selectedVoice(): String {
-        val selected = binding.spinnerTtsVoice.selectedItem?.toString()?.trim().orEmpty()
-        if (selected.isNotBlank()) return selected
-
-        return when (spinnerTtsVoiceCharacter.selectedItemPosition) {
-            1 -> "cedar"
-            2 -> "nova"
-            3 -> "marin"
-            else -> "marin"
-        }
-    }
-
-    private fun testTextForLanguage(lang: String): String {
-        return when (lang) {
-            "uk" -> "Привіт, це тест голосу. Я говоритиму спокійно, чітко і природно. Якщо мене добре чути, голос je pripravljen za uporabo."
-            "en" -> "Hello, this is a speech test. I will speak clearly, warmly, and naturally. This voice should be easy to understand on the tablet."
-            "de" -> "Hallo, das ist ein Sprachtest. Ich spreche ruhig, klar und natürlich. Die Stimme soll gut verständlich sein."
-            "hr" -> "Pozdrav, ovo je test govora. Govorit cu mirno, jasno i prirodno, tako da me se dobro razumije."
-            "sr" -> "Pozdrav, ovo je test govora. Govoricu mirno, jasno i prirodno, tako da me se dobro razume."
-            else -> "Zdravo, to je test govora. Govorila bom mirno, jasno in naravno. Če me dobro slišiš, je ta glas primeren za Lano."
+        val chosen = binding.spinnerTtsVoice.selectedItem?.toString() ?: "marin"
+        return when (prefs.getTtsVoiceGender()) {
+            "globok" -> if (chosen == "marin") "cedar" else chosen
+            "mehek" -> if (chosen == "cedar" || chosen == "onyx") "shimmer" else chosen
+            "jasen" -> if (chosen == "marin") "sage" else chosen
+            else -> chosen
         }
     }
 
     private fun speechStyleFor(lang: String): String {
-        val character = when (spinnerTtsVoiceCharacter.selectedItemPosition) {
-            1 -> "Use a deeper, calm, grounded voice. Speak clearly and warmly."
-            2 -> "Use a soft, gentle, caring voice. Speak clearly and warmly."
-            3 -> "Use a very clear, present, well articulated voice for a tablet speaker."
-            else -> "Use a natural, warm, friendly voice. Speak clearly and calmly."
+        val character = when (prefs.getTtsVoiceGender()) {
+            "globok" -> "Speak calmly, warmly, and a little deeper."
+            "mehek" -> "Speak gently, softly, and reassuringly."
+            "jasen" -> "Speak very clearly, slowly, and with excellent articulation."
+            else -> "Speak naturally, warmly, and calmly."
         }
 
-        val languageStyle = when (lang) {
-            "sl" -> "Speak Slovenian naturally, with clear articulation and a soft caring tone."
-            "uk" -> "Speak Ukrainian naturally, with clear articulation and a soft caring tone."
-            "en" -> "Speak English naturally, with clear articulation and a soft caring tone."
-            "de" -> "Speak German naturally, with clear articulation and a soft caring tone."
-            "hr" -> "Speak Croatian naturally, with clear articulation and a soft caring tone."
-            "sr" -> "Speak Serbian naturally, with clear articulation and a soft caring tone."
-            else -> "Speak naturally, clearly, warmly and calmly."
+        val languageInstruction = when (lang) {
+            "uk" -> "Use natural Ukrainian pronunciation."
+            "en" -> "Use natural English pronunciation."
+            "de" -> "Use natural German pronunciation."
+            "hr" -> "Use natural Croatian pronunciation."
+            "sr" -> "Use natural Serbian pronunciation."
+            else -> "Use natural Slovenian pronunciation."
         }
 
-        return "$character $languageStyle Speak slightly slower than normal conversation, with strong articulation and enough presence to be heard clearly on a tablet speaker. Suitable for rehabilitation communication."
+        return "$character $languageInstruction"
+    }
+
+    private fun testTextForLanguage(lang: String): String = when (lang) {
+        "uk" -> "Dobryj den. Ce je test govora. Govor naj bo miren, jasen in naraven."
+        "en" -> "Hello. This is a speech test. The voice should be calm, clear, and natural."
+        "de" -> "Guten Tag. Das ist ein Sprachtest. Die Stimme soll ruhig, klar und natuerlich sein."
+        "hr" -> "Dobar dan. Ovo je test govora. Glas treba biti miran, jasan i prirodan."
+        "sr" -> "Dobar dan. Ovo je test govora. Glas treba da bude miran, jasan i prirodan."
+        else -> "Zdravo, to je test govora. Govorila bom mirno, jasno in naravno."
     }
 
     private fun pickApiFile() {
@@ -704,7 +701,7 @@ class SettingsActivity : AppCompatActivity() {
             type = "*/*"
             putExtra(
                 Intent.EXTRA_MIME_TYPES,
-                arrayOf("text/plain", "application/octet-stream", "application/json")
+                arrayOf("text/plain", "application/json")
             )
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
@@ -1048,7 +1045,7 @@ class SettingsActivity : AppCompatActivity() {
             if (uri == null) {
                 Toast.makeText(
                     this,
-                    "Varnostna kopija ni najdena v Documents/RehabBackup",
+                    "Varnostna kopija ni najdena. Pritisni SHRANI VARNOSTNO KOPIJO ali preveri Documents/RehabBackup.",
                     Toast.LENGTH_LONG
                 ).show()
                 return
@@ -1277,14 +1274,52 @@ class SettingsActivity : AppCompatActivity() {
     private fun findBackupInputUri(): Uri? {
         val fileName = "rehab_settings_backup.json"
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val collection = MediaStore.Files.getContentUri("external")
-            val relativePath = Environment.DIRECTORY_DOCUMENTS + "/RehabBackup/"
-            val projection = arrayOf(MediaStore.MediaColumns._ID)
+        val direct = findBackupDirectFile(fileName)
+        if (direct != null) return direct
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val exact = findBackupInMediaStoreExact(fileName)
+            if (exact != null) return exact
+
+            val broad = findBackupInMediaStoreBroad(fileName)
+            if (broad != null) return broad
+        }
+
+        return null
+    }
+
+    private fun findBackupDirectFile(fileName: String): Uri? {
+        val documents = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        val candidates = listOf(
+            File(File(documents, "RehabBackup"), fileName),
+            File(File(documents, "rehabbackup"), fileName),
+            File(File(documents, "Rehabbackup"), fileName),
+            File(File(documents, "REHABBACKUP"), fileName)
+        )
+
+        candidates.forEach { file ->
+            try {
+                if (file.exists() && file.isFile) return Uri.fromFile(file)
+            } catch (e: Exception) {
+            }
+        }
+
+        return null
+    }
+
+    private fun findBackupInMediaStoreExact(fileName: String): Uri? {
+        val collection = MediaStore.Files.getContentUri("external")
+        val relativePaths = arrayOf(
+            Environment.DIRECTORY_DOCUMENTS + "/RehabBackup/",
+            Environment.DIRECTORY_DOCUMENTS + "/rehabbackup/",
+            Environment.DIRECTORY_DOCUMENTS + "/Rehabbackup/",
+            Environment.DIRECTORY_DOCUMENTS + "/REHABBACKUP/"
+        )
+
+        relativePaths.forEach { relativePath ->
             val cursor = contentResolver.query(
                 collection,
-                projection,
+                arrayOf(MediaStore.MediaColumns._ID),
                 "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
                 arrayOf(fileName, relativePath),
                 "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
@@ -1293,21 +1328,59 @@ class SettingsActivity : AppCompatActivity() {
             cursor?.use {
                 if (it.moveToFirst()) {
                     val id = it.getLong(0)
-                    ContentUris.withAppendedId(collection, id)
-                } else {
-                    null
+                    return ContentUris.withAppendedId(collection, id)
                 }
             }
-        } else {
-            val file = File(
-                File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "RehabBackup"
-                ),
-                fileName
-            )
-            if (file.exists()) Uri.fromFile(file) else null
         }
+
+        return null
+    }
+
+    private fun findBackupInMediaStoreBroad(fileName: String): Uri? {
+        val collection = MediaStore.Files.getContentUri("external")
+
+        val cursor = contentResolver.query(
+            collection,
+            arrayOf(
+                MediaStore.MediaColumns._ID,
+                MediaStore.MediaColumns.DISPLAY_NAME,
+                MediaStore.MediaColumns.RELATIVE_PATH
+            ),
+            "${MediaStore.MediaColumns.DISPLAY_NAME}=?",
+            arrayOf(fileName),
+            "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
+        )
+
+        cursor?.use {
+            while (it.moveToNext()) {
+                val id = it.getLong(0)
+                val displayName = it.getString(1) ?: ""
+                val path = it.getString(2) ?: ""
+
+                if (displayName.equals(fileName, ignoreCase = true) &&
+                    path.contains("RehabBackup", ignoreCase = true)
+                ) {
+                    return ContentUris.withAppendedId(collection, id)
+                }
+            }
+        }
+
+        val fallbackCursor = contentResolver.query(
+            collection,
+            arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME),
+            "${MediaStore.MediaColumns.DISPLAY_NAME}=?",
+            arrayOf(fileName),
+            "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
+        )
+
+        fallbackCursor?.use {
+            if (it.moveToFirst()) {
+                val id = it.getLong(0)
+                return ContentUris.withAppendedId(collection, id)
+            }
+        }
+
+        return null
     }
 
     private fun getAppVersionText(): String {
