@@ -32,6 +32,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: PrefsManager
+
     private val contactLangSpinners = mutableListOf<Spinner>()
     private val contactImageButtons = mutableListOf<ImageButton>()
     private var pendingImageIndex = -1
@@ -41,16 +42,15 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
     private lateinit var spinnerTtsTestLanguage: Spinner
-    private lateinit var spinnerTtsVoiceCharacter: Spinner
     private lateinit var spinnerTtsSpeed: Spinner
     private lateinit var spinnerTtsVolume: Spinner
     private lateinit var switchAutoLanguage: Switch
 
-    private lateinit var tvAppVersion: TextView
-    private lateinit var btnExportBackup: Button
-    private lateinit var btnImportBackup: Button
     private lateinit var btnLoadApiFromDownload: Button
     private lateinit var btnPickApiFile: Button
+    private lateinit var btnExportBackup: Button
+    private lateinit var btnImportBackup: Button
+    private lateinit var tvAppVersion: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,10 +58,9 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
         prefs = PrefsManager(this)
 
-        addTtsQualityPanel()
+        addSpeechPanel()
         addLanguageSettingsPanel()
-        addBackupAndVersionPanel()
-
+        addBackupPanel()
         setupOpenAiKeyField()
         loadSettings()
         setupButtons()
@@ -107,7 +106,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun addTtsQualityPanel() {
+    private fun addSpeechPanel() {
         val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
 
         val panel = LinearLayout(this).apply {
@@ -118,14 +117,8 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(TextView(this).apply {
             text = "Kakovost govora"
             setTextColor(0xFFFFFFFF.toInt())
-            textSize = 16f
+            textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
-        })
-
-        panel.addView(TextView(this).apply {
-            text = "Te nastavitve vplivajo na TEST GOVORA in na govor ikon."
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
         })
 
         panel.addView(TextView(this).apply {
@@ -135,27 +128,6 @@ class SettingsActivity : AppCompatActivity() {
         })
         spinnerTtsTestLanguage = newLangSpinner()
         panel.addView(spinnerTtsTestLanguage)
-
-        panel.addView(TextView(this).apply {
-            text = "Znacaj glasu:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerTtsVoiceCharacter = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                arrayOf(
-                    "Naravni in topel",
-                    "Mirnejsi in globlji",
-                    "Mehak in nezen",
-                    "Zelo jasen za razumevanje"
-                )
-            ).also {
-                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-        }
-        panel.addView(spinnerTtsVoiceCharacter)
 
         panel.addView(TextView(this).apply {
             text = "Hitrost govora:"
@@ -190,7 +162,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(spinnerTtsVolume)
 
         val anchor = rootLayout.indexOfChild(binding.spinnerTtsVoice)
-        val insertIndex = if (anchor >= 0) anchor + 1 else 8
+        val insertIndex = if (anchor >= 0) anchor + 1 else rootLayout.childCount.coerceAtMost(8)
         rootLayout.addView(panel, insertIndex)
     }
 
@@ -271,11 +243,11 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(autoRow)
 
         val anchor = rootLayout.indexOfChild(binding.etPatientName)
-        val insertIndex = if (anchor >= 0) anchor + 1 else 12
+        val insertIndex = if (anchor >= 0) anchor + 1 else rootLayout.childCount.coerceAtMost(12)
         rootLayout.addView(panel, insertIndex)
     }
 
-    private fun addBackupAndVersionPanel() {
+    private fun addBackupPanel() {
         val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
 
         val panel = LinearLayout(this).apply {
@@ -332,7 +304,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupOpenAiKeyField() {
         binding.etOpenAiKey.apply {
-            hint = "OpenAI API kljuc se lahko nalozi iz datoteke api"
+            hint = "Vnesi OpenAI API kljuc"
             isEnabled = true
             isFocusable = true
             isFocusableInTouchMode = true
@@ -466,16 +438,6 @@ class SettingsActivity : AppCompatActivity() {
         binding.spinnerTtsVoice.setSelection(voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
 
         spinnerTtsTestLanguage.setSelection(langIndex(prefs.getTtsTestLanguage()))
-
-        spinnerTtsVoiceCharacter.setSelection(
-            when (prefs.getTtsVoiceGender()) {
-                "globok" -> 1
-                "mehek" -> 2
-                "jasen" -> 3
-                else -> 0
-            }
-        )
-
         spinnerTtsSpeed.setSelection(
             when {
                 prefs.getTtsSpeed() <= 0.82f -> 0
@@ -485,7 +447,6 @@ class SettingsActivity : AppCompatActivity() {
                 else -> 4
             }
         )
-
         spinnerTtsVolume.setSelection(
             when {
                 prefs.getTtsVolume() >= 1.0f -> 2
@@ -544,7 +505,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.btnTestTts.setOnClickListener {
-            saveSpeechQualitySettings()
+            saveSpeechSettings()
 
             if (binding.etOpenAiKey.text.toString().trim().isBlank()) {
                 loadOpenAiKeyFromDownload(false)
@@ -554,15 +515,14 @@ class SettingsActivity : AppCompatActivity() {
 
             val key = prefs.getOpenAiKey()
             val lang = prefs.getTtsTestLanguage()
-            val voice = selectedVoice()
+            val voice = binding.spinnerTtsVoice.selectedItem?.toString() ?: "marin"
             val speed = prefs.getTtsSpeed()
             val volume = prefs.getTtsVolume()
-            val text = testTextForLanguage(lang)
 
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speak(
-                text = text,
+                text = testTextForLanguage(lang),
                 language = lang,
                 apiKey = key,
                 voice = voice,
@@ -628,155 +588,100 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveSpeechQualitySettings() {
-        val lang = langCode(spinnerTtsTestLanguage.selectedItemPosition)
-        val character = when (spinnerTtsVoiceCharacter.selectedItemPosition) {
-            1 -> "globok"
-            2 -> "mehek"
-            3 -> "jasen"
-            else -> "naravni"
-        }
-        val speed = when (spinnerTtsSpeed.selectedItemPosition) {
-            0 -> 0.82f
-            1 -> 0.86f
-            2 -> 0.90f
-            3 -> 0.96f
-            else -> 1.02f
-        }
-        val volume = when (spinnerTtsVolume.selectedItemPosition) {
-            0 -> 0.9f
-            1 -> 0.98f
-            else -> 1.0f
-        }
-
-        prefs.saveTtsTestLanguage(lang)
-        prefs.saveTtsVoiceGender(character)
-        prefs.saveTtsSpeed(speed)
-        prefs.saveTtsVolume(volume)
-        prefs.saveTtsVoice(selectedVoice())
-    }
-
-    private fun selectedVoice(): String {
-        val chosen = binding.spinnerTtsVoice.selectedItem?.toString() ?: "marin"
-        return when (prefs.getTtsVoiceGender()) {
-            "globok" -> if (chosen == "marin") "cedar" else chosen
-            "mehek" -> if (chosen == "cedar" || chosen == "onyx") "shimmer" else chosen
-            "jasen" -> if (chosen == "marin") "sage" else chosen
-            else -> chosen
-        }
-    }
-
-    private fun speechStyleFor(lang: String): String {
-        val character = when (prefs.getTtsVoiceGender()) {
-            "globok" -> "Speak calmly, warmly, and a little deeper."
-            "mehek" -> "Speak gently, softly, and reassuringly."
-            "jasen" -> "Speak very clearly, slowly, and with excellent articulation."
-            else -> "Speak naturally, warmly, and calmly."
-        }
-
-        val languageInstruction = when (lang) {
-            "uk" -> "Use natural Ukrainian pronunciation."
-            "en" -> "Use natural English pronunciation."
-            "de" -> "Use natural German pronunciation."
-            "hr" -> "Use natural Croatian pronunciation."
-            "sr" -> "Use natural Serbian pronunciation."
-            else -> "Use natural Slovenian pronunciation."
-        }
-
-        return "$character $languageInstruction"
+    private fun saveSpeechSettings() {
+        prefs.saveTtsTestLanguage(langCode(spinnerTtsTestLanguage.selectedItemPosition))
+        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem?.toString() ?: "marin")
+        prefs.saveTtsSpeed(
+            when (spinnerTtsSpeed.selectedItemPosition) {
+                0 -> 0.82f
+                1 -> 0.86f
+                2 -> 0.90f
+                3 -> 0.96f
+                else -> 1.02f
+            }
+        )
+        prefs.saveTtsVolume(
+            when (spinnerTtsVolume.selectedItemPosition) {
+                0 -> 0.9f
+                1 -> 0.98f
+                else -> 1.0f
+            }
+        )
     }
 
     private fun testTextForLanguage(lang: String): String = when (lang) {
-        "uk" -> "Dobryj den. Ce je test govora. Govor naj bo miren, jasen in naraven."
-        "en" -> "Hello. This is a speech test. The voice should be calm, clear, and natural."
-        "de" -> "Guten Tag. Das ist ein Sprachtest. Die Stimme soll ruhig, klar und natuerlich sein."
-        "hr" -> "Dobar dan. Ovo je test govora. Glas treba biti miran, jasan i prirodan."
-        "sr" -> "Dobar dan. Ovo je test govora. Glas treba da bude miran, jasan i prirodan."
-        else -> "Zdravo, to je test govora. Govorila bom mirno, jasno in naravno."
+        "uk" -> "Dobryi den. Tse test holosu dlia komunikatsii."
+        "en" -> "Hello. This is a speech test for communication."
+        "de" -> "Hallo. Das ist ein Sprachtest fuer die Kommunikation."
+        "hr" -> "Dobar dan. Ovo je test govora za komunikaciju."
+        "sr" -> "Dobar dan. Ovo je test govora za komunikaciju."
+        else -> "Pozdravljeni. To je test slovenskega govora za komunikacijo."
+    }
+
+    private fun speechStyleFor(lang: String): String {
+        return when (lang) {
+            "uk" -> "Speak clearly, warmly and naturally in Ukrainian. Use a calm rehabilitation assistant voice."
+            "en" -> "Speak clearly, warmly and naturally in English. Use a calm rehabilitation assistant voice."
+            "de" -> "Speak clearly, warmly and naturally in German. Use a calm rehabilitation assistant voice."
+            "hr" -> "Speak clearly, warmly and naturally in Croatian. Use a calm rehabilitation assistant voice."
+            "sr" -> "Speak clearly, warmly and naturally in Serbian. Use a calm rehabilitation assistant voice."
+            else -> "Speak clearly, warmly, calmly and naturally in Slovenian. Use a gentle rehabilitation assistant voice. Keep the speech easy to understand."
+        }
     }
 
     private fun pickApiFile() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "*/*"
-            putExtra(
-                Intent.EXTRA_MIME_TYPES,
-                arrayOf("text/plain", "application/json")
-            )
+            type = "text/*"
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         }
         startActivityForResult(intent, REQUEST_API_FILE)
     }
 
-    private fun saveApiKeyFromText(text: String, showToast: Boolean): Boolean {
-        val key = cleanApiKey(text)
-        if (key.isBlank()) {
+    private fun loadOpenAiKeyFromDownload(showToast: Boolean) {
+        val key = findApiKeyInDownload()
+        if (key.isNotBlank()) {
+            binding.etOpenAiKey.setText(key)
+            prefs.saveOpenAiKey(key)
             if (showToast) {
-                Toast.makeText(this, "API kljuc v datoteki ni najden", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "API kljuc je nalozen iz Download/api.", Toast.LENGTH_LONG).show()
             }
-            return false
-        }
-
-        prefs.saveOpenAiKey(key)
-        binding.etOpenAiKey.setText(key)
-
-        if (showToast) {
-            Toast.makeText(this, "OpenAI API kljuc je shranjen", Toast.LENGTH_LONG).show()
-        }
-
-        return true
-    }
-
-    private fun loadOpenAiKeyFromDownload(showToast: Boolean): Boolean {
-        val key = readOpenAiKeyFromDownload()
-
-        if (key.isBlank()) {
-            if (showToast) {
-                Toast.makeText(
-                    this,
-                    "Datoteka Download/api ali Download/api.txt ni najdena. Uporabi IZBERI API DATOTEKO.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-            return false
-        }
-
-        prefs.saveOpenAiKey(key)
-        binding.etOpenAiKey.setText(key)
-
-        if (showToast) {
+        } else if (showToast) {
             Toast.makeText(
                 this,
-                "OpenAI API kljuc je nalozen iz Download/api",
+                "API datoteka ni najdena. Shrani datoteko kot Download/api ali Download/api.txt.",
                 Toast.LENGTH_LONG
             ).show()
         }
-
-        return true
     }
 
-    private fun readOpenAiKeyFromDownload(): String {
-        val direct = readOpenAiKeyDirectly()
+    private fun findApiKeyInDownload(): String {
+        val direct = findApiKeyDirectFile()
         if (direct.isNotBlank()) return direct
 
-        val mediaStore = readOpenAiKeyFromMediaStore()
-        if (mediaStore.isNotBlank()) return mediaStore
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val media = findApiKeyInMediaStore()
+            if (media.isNotBlank()) return media
+        }
 
         return ""
     }
 
-    private fun readOpenAiKeyDirectly(): String {
-        val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    private fun findApiKeyDirectFile(): String {
+        val download = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val candidates = listOf(
-            File(downloadDir, "api.txt"),
-            File(downloadDir, "api")
+            File(download, "api"),
+            File(download, "api.txt"),
+            File(download, "API"),
+            File(download, "API.txt")
         )
 
         candidates.forEach { file ->
             try {
                 if (file.exists() && file.isFile) {
-                    return cleanApiKey(file.readText(Charsets.UTF_8))
+                    val key = cleanApiKey(file.readText(Charsets.UTF_8))
+                    if (key.isNotBlank()) return key
                 }
             } catch (e: Exception) {
             }
@@ -785,20 +690,13 @@ class SettingsActivity : AppCompatActivity() {
         return ""
     }
 
-    private fun readOpenAiKeyFromMediaStore(): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ""
-
+    private fun findApiKeyInMediaStore(): String {
         val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL)
-        val projection = arrayOf(
-            MediaStore.MediaColumns._ID,
-            MediaStore.MediaColumns.DISPLAY_NAME
-        )
-
         val cursor = contentResolver.query(
             collection,
-            projection,
+            arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME),
             "${MediaStore.MediaColumns.DISPLAY_NAME}=? OR ${MediaStore.MediaColumns.DISPLAY_NAME}=?",
-            arrayOf("api.txt", "api"),
+            arrayOf("api", "api.txt"),
             "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
         )
 
@@ -806,12 +704,10 @@ class SettingsActivity : AppCompatActivity() {
             while (it.moveToNext()) {
                 val id = it.getLong(0)
                 val uri = ContentUris.withAppendedId(collection, id)
-
                 try {
                     val text = contentResolver.openInputStream(uri)?.use { input ->
                         input.readBytes().toString(Charsets.UTF_8)
                     } ?: ""
-
                     val key = cleanApiKey(text)
                     if (key.isNotBlank()) return key
                 } catch (e: Exception) {
@@ -827,14 +723,6 @@ class SettingsActivity : AppCompatActivity() {
             .replace("\uFEFF", "")
             .replace("\r", "\n")
 
-        val firstLine = normalized
-            .lines()
-            .map { it.trim() }
-            .firstOrNull { it.isNotBlank() }
-            ?: ""
-
-        if (firstLine.startsWith("sk-")) return firstLine
-
         val start = normalized.indexOf("sk-")
         if (start >= 0) {
             return normalized.substring(start)
@@ -844,7 +732,10 @@ class SettingsActivity : AppCompatActivity() {
                 ?: ""
         }
 
-        return firstLine
+        return normalized.lines()
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() }
+            ?: ""
     }
 
     private fun saveSettings() {
@@ -866,11 +757,11 @@ class SettingsActivity : AppCompatActivity() {
         )
 
         val stations = mutableListOf<RadioStation>()
-        nameF.forEachIndexed { i, f ->
-            val n = f.text.toString().trim()
-            val u = urlF[i].text.toString().trim()
-            if (n.isNotEmpty() && u.isNotEmpty()) {
-                stations.add(RadioStation(n, u))
+        nameF.forEachIndexed { i, field ->
+            val name = field.text.toString().trim()
+            val url = urlF[i].text.toString().trim()
+            if (name.isNotEmpty() && url.isNotEmpty()) {
+                stations.add(RadioStation(name, url))
             }
         }
         prefs.saveRadioStations(stations)
@@ -893,23 +784,11 @@ class SettingsActivity : AppCompatActivity() {
         )
 
         val contacts = mutableListOf<Contact>()
-        nameC.forEachIndexed { i, f ->
-            val n = f.text.toString().trim()
-            val p = phoneC[i].text.toString().trim()
-            val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) {
-                "uk"
-            } else {
-                "sl"
-            }
-
-            contacts.add(
-                Contact(
-                    n.ifEmpty { "Kontakt ${i + 1}" },
-                    p,
-                    "",
-                    lang
-                )
-            )
+        nameC.forEachIndexed { i, field ->
+            val name = field.text.toString().trim()
+            val phone = phoneC[i].text.toString().trim()
+            val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) "uk" else "sl"
+            contacts.add(Contact(name.ifEmpty { "Kontakt ${i + 1}" }, phone, "", lang))
         }
         prefs.saveContacts(contacts)
 
@@ -918,7 +797,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
-        saveSpeechQualitySettings()
+        saveSpeechSettings()
 
         prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
         prefs.saveGmailAppPassword(binding.etGmailPass.text.toString().trim())
@@ -945,6 +824,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
         prefs.savePatientLanguage2(langCode(spinnerPatientLang2.selectedItemPosition))
         prefs.saveAutoLanguageEnabled(switchAutoLanguage.isChecked)
+
         prefs.saveServerIp(binding.etServerIp.text.toString().trim())
         prefs.saveServerPort(binding.etServerPort.text.toString().trim())
         prefs.saveKioskReturnMinutes(binding.etKioskMinutes.text.toString().trim().toLongOrNull() ?: 5L)
@@ -955,7 +835,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         exportBackup(false)
-        Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Nastavitve shranjene.", Toast.LENGTH_SHORT).show()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -963,7 +843,6 @@ class SettingsActivity : AppCompatActivity() {
 
         if (requestCode == REQUEST_API_FILE && resultCode == RESULT_OK) {
             val uri = data?.data ?: return
-
             try {
                 val flags = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
                 contentResolver.takePersistableUriPermission(uri, flags)
@@ -974,18 +853,22 @@ class SettingsActivity : AppCompatActivity() {
                 val text = contentResolver.openInputStream(uri)?.use { input ->
                     input.readBytes().toString(Charsets.UTF_8)
                 } ?: ""
-
-                saveApiKeyFromText(text, true)
+                val key = cleanApiKey(text)
+                if (key.isNotBlank()) {
+                    binding.etOpenAiKey.setText(key)
+                    prefs.saveOpenAiKey(key)
+                    Toast.makeText(this, "API kljuc je nalozen.", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "V datoteki ni API kljuca.", Toast.LENGTH_LONG).show()
+                }
             } catch (e: Exception) {
-                Toast.makeText(this, "API datoteke ni bilo mogoce prebrati", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "API datoteke ni bilo mogoce prebrati: ${e.message}", Toast.LENGTH_LONG).show()
             }
-
             return
         }
 
         if (requestCode == REQUEST_CONTACT_IMAGE && resultCode == RESULT_OK && pendingImageIndex >= 0) {
             val uri = data?.data ?: return
-
             try {
                 val dir = File(getExternalFilesDir(null), "contacts")
                 dir.mkdirs()
@@ -996,9 +879,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-                val bmp = BitmapFactory.decodeFile(
-                    File(dir, "contact_$pendingImageIndex.png").absolutePath
-                )
+                val bmp = BitmapFactory.decodeFile(File(dir, "contact_$pendingImageIndex.png").absolutePath)
                 contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
             } catch (e: Exception) {
             }
@@ -1008,7 +889,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun exportBackup(showToast: Boolean) {
         try {
             val json = JSONObject()
-            json.put("backupVersion", 1)
+            json.put("backupVersion", 2)
             json.put("exportedAt", System.currentTimeMillis())
             json.put("appVersion", getAppVersionText())
             json.put("novaRehabPrefs", prefsToJson("nova_rehab_prefs"))
@@ -1016,15 +897,17 @@ class SettingsActivity : AppCompatActivity() {
             json.put("stats", exportStats())
             json.put("files", exportExternalFiles())
 
-            val uri = createBackupOutputUri() ?: throw IllegalStateException("Backup file not available")
+            val uri = createBackupOutputUri()
+                ?: throw IllegalStateException("Datoteke za shranjevanje ni mogoce ustvariti")
+
             contentResolver.openOutputStream(uri, "w")?.use { output ->
                 output.write(json.toString(2).toByteArray(Charsets.UTF_8))
-            } ?: throw IllegalStateException("Backup output not available")
+            } ?: throw IllegalStateException("Datoteke ni mogoce odpreti za pisanje")
 
             if (showToast) {
                 Toast.makeText(
                     this,
-                    "Varnostna kopija shranjena v Documents/RehabBackup",
+                    "Varnostna kopija shranjena v Documents/RehabBackup.",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -1032,7 +915,7 @@ class SettingsActivity : AppCompatActivity() {
             if (showToast) {
                 Toast.makeText(
                     this,
-                    "Varnostne kopije ni bilo mogoce shraniti",
+                    "Varnostne kopije ni bilo mogoce shraniti: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
             }
@@ -1045,7 +928,7 @@ class SettingsActivity : AppCompatActivity() {
             if (uri == null) {
                 Toast.makeText(
                     this,
-                    "Varnostna kopija ni najdena. Pritisni SHRANI VARNOSTNO KOPIJO ali preveri Documents/RehabBackup.",
+                    "Varnostna kopija ni najdena. Iscem Documents/RehabBackup/rehab_settings_backup.json.",
                     Toast.LENGTH_LONG
                 ).show()
                 return
@@ -1053,18 +936,32 @@ class SettingsActivity : AppCompatActivity() {
 
             val jsonText = contentResolver.openInputStream(uri)?.use { input ->
                 input.readBytes().toString(Charsets.UTF_8)
-            } ?: ""
+            } ?: throw IllegalStateException("Datoteke ni mogoce prebrati")
+
+            if (jsonText.isBlank()) {
+                throw IllegalStateException("Datoteka je prazna")
+            }
 
             val json = JSONObject(jsonText)
-            restorePrefs("nova_rehab_prefs", json.optJSONObject("novaRehabPrefs") ?: JSONObject())
-            restorePrefs("icon_texts", json.optJSONObject("iconTextsPrefs") ?: JSONObject())
+
+            val mainPrefs = json.optJSONObject("novaRehabPrefs")
+                ?: json.optJSONObject("settings")
+                ?: JSONObject()
+
+            val iconPrefs = json.optJSONObject("iconTextsPrefs")
+                ?: json.optJSONObject("iconTexts")
+                ?: JSONObject()
+
+            restorePrefs("nova_rehab_prefs", mainPrefs)
+            restorePrefs("icon_texts", iconPrefs)
             restoreStats(json.optJSONArray("stats") ?: JSONArray())
             restoreExternalFiles(json.optJSONObject("files") ?: JSONObject())
 
+            prefs = PrefsManager(this)
             loadSettings()
-            Toast.makeText(this, "Varnostna kopija obnovljena", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Varnostna kopija obnovljena.", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Obnova ni uspela", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Obnova ni uspela: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1113,21 +1010,32 @@ class SettingsActivity : AppCompatActivity() {
         val keys = json.keys()
         while (keys.hasNext()) {
             val key = keys.next()
-            val item = json.optJSONObject(key) ?: continue
+            val item = json.optJSONObject(key)
 
-            when (item.optString("type")) {
-                "String" -> editor.putString(key, item.optString("value", ""))
-                "Int" -> editor.putInt(key, item.optInt("value", 0))
-                "Long" -> editor.putLong(key, item.optLong("value", 0L))
-                "Float" -> editor.putFloat(key, item.optDouble("value", 0.0).toFloat())
-                "Boolean" -> editor.putBoolean(key, item.optBoolean("value", false))
-                "StringSet" -> {
-                    val array = item.optJSONArray("value") ?: JSONArray()
-                    val set = mutableSetOf<String>()
-                    for (i in 0 until array.length()) {
-                        set.add(array.optString(i))
+            if (item != null && item.has("type")) {
+                when (item.optString("type")) {
+                    "String" -> editor.putString(key, item.optString("value", ""))
+                    "Int" -> editor.putInt(key, item.optInt("value", 0))
+                    "Long" -> editor.putLong(key, item.optLong("value", 0L))
+                    "Float" -> editor.putFloat(key, item.optDouble("value", 0.0).toFloat())
+                    "Boolean" -> editor.putBoolean(key, item.optBoolean("value", false))
+                    "StringSet" -> {
+                        val array = item.optJSONArray("value") ?: JSONArray()
+                        val set = mutableSetOf<String>()
+                        for (i in 0 until array.length()) {
+                            set.add(array.optString(i))
+                        }
+                        editor.putStringSet(key, set)
                     }
-                    editor.putStringSet(key, set)
+                }
+            } else {
+                val raw = json.opt(key)
+                when (raw) {
+                    is String -> editor.putString(key, raw)
+                    is Int -> editor.putInt(key, raw)
+                    is Long -> editor.putLong(key, raw)
+                    is Double -> editor.putFloat(key, raw.toFloat())
+                    is Boolean -> editor.putBoolean(key, raw)
                 }
             }
         }
@@ -1338,7 +1246,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun findBackupInMediaStoreBroad(fileName: String): Uri? {
         val collection = MediaStore.Files.getContentUri("external")
-
         val cursor = contentResolver.query(
             collection,
             arrayOf(
@@ -1357,26 +1264,12 @@ class SettingsActivity : AppCompatActivity() {
                 val displayName = it.getString(1) ?: ""
                 val path = it.getString(2) ?: ""
 
-                if (displayName.equals(fileName, ignoreCase = true) &&
+                if (
+                    displayName.equals(fileName, ignoreCase = true) &&
                     path.contains("RehabBackup", ignoreCase = true)
                 ) {
                     return ContentUris.withAppendedId(collection, id)
                 }
-            }
-        }
-
-        val fallbackCursor = contentResolver.query(
-            collection,
-            arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME),
-            "${MediaStore.MediaColumns.DISPLAY_NAME}=?",
-            arrayOf(fileName),
-            "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
-        )
-
-        fallbackCursor?.use {
-            if (it.moveToFirst()) {
-                val id = it.getLong(0)
-                return ContentUris.withAppendedId(collection, id)
             }
         }
 
