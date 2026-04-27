@@ -1,14 +1,19 @@
 package com.novarehab.ui
 
+import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.text.InputType
-import android.view.WindowManager
-import android.view.inputmethod.InputMethodManager
+import android.util.Base64
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.databinding.ActivitySettingsBinding
@@ -16,7 +21,12 @@ import com.novarehab.service.ReportWorker
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.RadioStation
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -30,6 +40,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
     private lateinit var switchAutoLanguage: Switch
+    private lateinit var tvAppVersion: TextView
+    private lateinit var btnExportBackup: Button
+    private lateinit var btnImportBackup: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,8 +50,9 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
         prefs = PrefsManager(this)
         addLanguageSettingsPanel()
-        loadSettings()
+        addBackupAndVersionPanel()
         setupOpenAiKeyField()
+        loadSettings()
         setupButtons()
     }
 
@@ -160,20 +174,59 @@ class SettingsActivity : AppCompatActivity() {
         rootLayout.addView(panel, 5)
     }
 
+    private fun addBackupAndVersionPanel() {
+        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 16)
+        }
+
+        panel.addView(TextView(this).apply {
+            text = "Varnostna kopija"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+
+        btnExportBackup = Button(this).apply {
+            text = "SHRANI VARNOSTNO KOPIJO"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF1B5E20.toInt())
+        }
+        panel.addView(btnExportBackup)
+
+        btnImportBackup = Button(this).apply {
+            text = "OBNOVI VARNOSTNO KOPIJO"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF0F3460.toInt())
+        }
+        panel.addView(btnImportBackup)
+
+        tvAppVersion = TextView(this).apply {
+            text = getAppVersionText()
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+            setPadding(0, 12, 0, 0)
+        }
+        panel.addView(tvAppVersion)
+
+        val insertIndex = (rootLayout.childCount - 1).coerceAtLeast(0)
+        rootLayout.addView(panel, insertIndex)
+    }
+
     private fun setupOpenAiKeyField() {
         binding.etOpenAiKey.apply {
             hint = "Vnesi OpenAI API ključ"
             isEnabled = true
-            isFocusable = false
-            isFocusableInTouchMode = false
+            isFocusable = true
+            isFocusableInTouchMode = true
             isClickable = true
             isLongClickable = true
             setSingleLine(true)
-            setOnClickListener { showOpenAiKeyDialog() }
-            setOnLongClickListener {
-                showOpenAiKeyDialog()
-                true
-            }
+            inputType = InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
+                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         }
     }
 
@@ -239,6 +292,8 @@ class SettingsActivity : AppCompatActivity() {
 
         contactLangSpinners.clear()
         contactImageButtons.clear()
+        langC.forEach { it.removeAllViews() }
+        imgC.forEach { it.removeAllViews() }
 
         contacts.forEachIndexed { i, contact ->
             if (i < nameF.size) {
@@ -287,7 +342,7 @@ class SettingsActivity : AppCompatActivity() {
             contactImageButtons.add(imgBtn)
         }
 
-        binding.etOpenAiKey.setText(maskApiKey(prefs.getOpenAiKey()))
+        binding.etOpenAiKey.setText(prefs.getOpenAiKey())
 
         val voices = arrayOf("nova", "shimmer", "alloy", "echo", "fable", "onyx")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
@@ -326,6 +381,8 @@ class SettingsActivity : AppCompatActivity() {
         binding.etServerPort.setText(prefs.getServerPort())
         binding.etNewPin.setText("")
         binding.etKioskMinutes.setText(prefs.getKioskReturnMinutes().toString())
+
+        tvAppVersion.text = getAppVersionText()
     }
 
     private fun setupButtons() {
@@ -343,6 +400,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.btnTestTts.setOnClickListener {
+            prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
             val voice = binding.spinnerTtsVoice.selectedItem.toString()
             prefs.saveTtsVoice(voice)
 
@@ -390,74 +448,14 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
-    }
 
-    private fun showOpenAiKeyDialog() {
-        val input = EditText(this).apply {
-            setText(prefs.getOpenAiKey())
-            hint = "Vnesi OpenAI API ključ"
-            inputType = InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
-                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-            setSingleLine(false)
-            minLines = 3
-            maxLines = 6
-            setSelectAllOnFocus(false)
-            setPadding(24, 16, 24, 16)
+        btnExportBackup.setOnClickListener {
+            saveSettings()
+            exportBackup(true)
         }
 
-        val dialog = android.app.AlertDialog.Builder(this)
-            .setTitle("OpenAI API ključ")
-            .setView(input)
-            .setPositiveButton("Shrani") { _, _ ->
-                val key = input.text.toString().trim()
-                prefs.saveOpenAiKey(key)
-                binding.etOpenAiKey.setText(maskApiKey(key))
-                Toast.makeText(this, "OpenAI kljuc shranjen", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Preklici", null)
-            .create()
-
-        dialog.setOnShowListener {
-            input.requestFocus()
-            dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-            input.postDelayed({
-                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
-            }, 250L)
-        }
-
-        dialog.show()
-    }
-
-    private fun maskApiKey(key: String): String {
-        if (key.isBlank()) return ""
-        if (key.length <= 12) return "********"
-        return key.take(7) + "..." + key.takeLast(4)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
-            val uri = data?.data ?: return
-
-            try {
-                val dir = File(getExternalFilesDir(null), "contacts")
-                dir.mkdirs()
-
-                contentResolver.openInputStream(uri)?.use { input ->
-                    File(dir, "contact_$pendingImageIndex.png").outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-
-                val bmp = BitmapFactory.decodeFile(
-                    File(dir, "contact_$pendingImageIndex.png").absolutePath
-                )
-                contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
-            } catch (e: Exception) {
-            }
+        btnImportBackup.setOnClickListener {
+            importBackup()
         }
     }
 
@@ -527,6 +525,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         prefs.saveContacts(contacts)
 
+        prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
         prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
 
         prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
@@ -563,6 +562,355 @@ class SettingsActivity : AppCompatActivity() {
             prefs.savePin(pin)
         }
 
+        exportBackup(false)
         Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
+            val uri = data?.data ?: return
+
+            try {
+                val dir = File(getExternalFilesDir(null), "contacts")
+                dir.mkdirs()
+
+                contentResolver.openInputStream(uri)?.use { input ->
+                    File(dir, "contact_$pendingImageIndex.png").outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                val bmp = BitmapFactory.decodeFile(
+                    File(dir, "contact_$pendingImageIndex.png").absolutePath
+                )
+                contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    private fun exportBackup(showToast: Boolean) {
+        try {
+            val json = JSONObject()
+            json.put("backupVersion", 1)
+            json.put("exportedAt", System.currentTimeMillis())
+            json.put("appVersion", getAppVersionText())
+            json.put("novaRehabPrefs", prefsToJson("nova_rehab_prefs"))
+            json.put("iconTextsPrefs", prefsToJson("icon_texts"))
+            json.put("stats", exportStats())
+            json.put("files", exportExternalFiles())
+
+            val uri = createBackupOutputUri() ?: throw IllegalStateException("Backup file not available")
+            contentResolver.openOutputStream(uri, "w")?.use { output ->
+                output.write(json.toString(2).toByteArray(Charsets.UTF_8))
+            } ?: throw IllegalStateException("Backup output not available")
+
+            if (showToast) {
+                Toast.makeText(
+                    this,
+                    "Varnostna kopija shranjena v Documents/RehabBackup",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        } catch (e: Exception) {
+            if (showToast) {
+                Toast.makeText(
+                    this,
+                    "Varnostne kopije ni bilo mogoce shraniti",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    private fun importBackup() {
+        try {
+            val uri = findBackupInputUri()
+            if (uri == null) {
+                Toast.makeText(
+                    this,
+                    "Varnostna kopija ni najdena v Documents/RehabBackup",
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
+
+            val jsonText = contentResolver.openInputStream(uri)?.use { input ->
+                input.readBytes().toString(Charsets.UTF_8)
+            } ?: ""
+
+            val json = JSONObject(jsonText)
+            restorePrefs("nova_rehab_prefs", json.optJSONObject("novaRehabPrefs") ?: JSONObject())
+            restorePrefs("icon_texts", json.optJSONObject("iconTextsPrefs") ?: JSONObject())
+            restoreStats(json.optJSONArray("stats") ?: JSONArray())
+            restoreExternalFiles(json.optJSONObject("files") ?: JSONObject())
+
+            loadSettings()
+            Toast.makeText(this, "Varnostna kopija obnovljena", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Obnova ni uspela", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun prefsToJson(name: String): JSONObject {
+        val source = getSharedPreferences(name, Context.MODE_PRIVATE)
+        val json = JSONObject()
+
+        source.all.forEach { entry ->
+            val item = JSONObject()
+            when (val value = entry.value) {
+                is String -> {
+                    item.put("type", "String")
+                    item.put("value", value)
+                }
+                is Int -> {
+                    item.put("type", "Int")
+                    item.put("value", value)
+                }
+                is Long -> {
+                    item.put("type", "Long")
+                    item.put("value", value)
+                }
+                is Float -> {
+                    item.put("type", "Float")
+                    item.put("value", value.toDouble())
+                }
+                is Boolean -> {
+                    item.put("type", "Boolean")
+                    item.put("value", value)
+                }
+                is Set<*> -> {
+                    item.put("type", "StringSet")
+                    item.put("value", JSONArray(value.filterIsInstance<String>()))
+                }
+            }
+            json.put(entry.key, item)
+        }
+
+        return json
+    }
+
+    private fun restorePrefs(name: String, json: JSONObject) {
+        val editor = getSharedPreferences(name, Context.MODE_PRIVATE).edit()
+        editor.clear()
+
+        val keys = json.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val item = json.optJSONObject(key) ?: continue
+
+            when (item.optString("type")) {
+                "String" -> editor.putString(key, item.optString("value", ""))
+                "Int" -> editor.putInt(key, item.optInt("value", 0))
+                "Long" -> editor.putLong(key, item.optLong("value", 0L))
+                "Float" -> editor.putFloat(key, item.optDouble("value", 0.0).toFloat())
+                "Boolean" -> editor.putBoolean(key, item.optBoolean("value", false))
+                "StringSet" -> {
+                    val array = item.optJSONArray("value") ?: JSONArray()
+                    val set = mutableSetOf<String>()
+                    for (i in 0 until array.length()) {
+                        set.add(array.optString(i))
+                    }
+                    editor.putStringSet(key, set)
+                }
+            }
+        }
+
+        editor.apply()
+    }
+
+    private fun exportStats(): JSONArray {
+        val result = JSONArray()
+        val dbFile = getDatabasePath("nova_stats.db")
+        if (!dbFile.exists()) return result
+
+        var db: SQLiteDatabase? = null
+        try {
+            db = SQLiteDatabase.openDatabase(
+                dbFile.absolutePath,
+                null,
+                SQLiteDatabase.OPEN_READONLY
+            )
+
+            val cursor = db.rawQuery(
+                "SELECT event, value, timestamp FROM stats ORDER BY id ASC",
+                null
+            )
+
+            cursor.use {
+                while (it.moveToNext()) {
+                    result.put(
+                        JSONObject()
+                            .put("event", it.getString(0))
+                            .put("value", it.getString(1))
+                            .put("timestamp", it.getLong(2))
+                    )
+                }
+            }
+        } catch (e: Exception) {
+        } finally {
+            db?.close()
+        }
+
+        return result
+    }
+
+    private fun restoreStats(array: JSONArray) {
+        val db = openOrCreateDatabase("nova_stats.db", Context.MODE_PRIVATE, null)
+
+        try {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS stats (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event TEXT NOT NULL,
+                    value TEXT DEFAULT '',
+                    timestamp INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_timestamp ON stats(timestamp)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_event ON stats(event)")
+            db.delete("stats", null, null)
+
+            for (i in 0 until array.length()) {
+                val item = array.optJSONObject(i) ?: continue
+                val values = ContentValues().apply {
+                    put("event", item.optString("event", ""))
+                    put("value", item.optString("value", ""))
+                    put("timestamp", item.optLong("timestamp", System.currentTimeMillis()))
+                }
+                db.insert("stats", null, values)
+            }
+        } catch (e: Exception) {
+        } finally {
+            db.close()
+        }
+    }
+
+    private fun exportExternalFiles(): JSONObject {
+        val json = JSONObject()
+        val base = getExternalFilesDir(null) ?: return json
+        collectFiles(base, base, json)
+        return json
+    }
+
+    private fun collectFiles(base: File, dir: File, json: JSONObject) {
+        dir.listFiles()?.forEach { file ->
+            if (file.isDirectory) {
+                collectFiles(base, file, json)
+            } else if (file.isFile && file.length() <= 5L * 1024L * 1024L) {
+                val relativePath = base.toURI().relativize(file.toURI()).path
+                val encoded = Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
+                json.put(relativePath, encoded)
+            }
+        }
+    }
+
+    private fun restoreExternalFiles(json: JSONObject) {
+        val base = getExternalFilesDir(null) ?: return
+        val keys = json.keys()
+
+        while (keys.hasNext()) {
+            val relativePath = keys.next()
+            val encoded = json.optString(relativePath, "")
+            if (encoded.isBlank()) continue
+
+            try {
+                val target = File(base, relativePath)
+                target.parentFile?.mkdirs()
+                target.writeBytes(Base64.decode(encoded, Base64.DEFAULT))
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    private fun createBackupOutputUri(): Uri? {
+        val fileName = "rehab_settings_backup.json"
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val collection = MediaStore.Files.getContentUri("external")
+            val relativePath = Environment.DIRECTORY_DOCUMENTS + "/RehabBackup/"
+
+            contentResolver.delete(
+                collection,
+                "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
+                arrayOf(fileName, relativePath)
+            )
+
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+            }
+
+            contentResolver.insert(collection, values)
+        } else {
+            val dir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                "RehabBackup"
+            )
+            dir.mkdirs()
+            Uri.fromFile(File(dir, fileName))
+        }
+    }
+
+    private fun findBackupInputUri(): Uri? {
+        val fileName = "rehab_settings_backup.json"
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val collection = MediaStore.Files.getContentUri("external")
+            val relativePath = Environment.DIRECTORY_DOCUMENTS + "/RehabBackup/"
+            val projection = arrayOf(MediaStore.MediaColumns._ID)
+
+            val cursor = contentResolver.query(
+                collection,
+                projection,
+                "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
+                arrayOf(fileName, relativePath),
+                "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
+            )
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val id = it.getLong(0)
+                    ContentUris.withAppendedId(collection, id)
+                } else {
+                    null
+                }
+            }
+        } else {
+            val file = File(
+                File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                    "RehabBackup"
+                ),
+                fileName
+            )
+            if (file.exists()) Uri.fromFile(file) else null
+        }
+    }
+
+    private fun getAppVersionText(): String {
+        return try {
+            val info = packageManager.getPackageInfo(packageName, 0)
+            val versionName = info.versionName ?: "?"
+            val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            }
+            val date = SimpleDateFormat(
+                "dd.MM.yyyy HH:mm",
+                Locale.getDefault()
+            ).format(Date(info.lastUpdateTime))
+
+            "Verzija APK: $versionName ($versionCode)\nDatum in ura namestitve: $date"
+        } catch (e: Exception) {
+            "Verzija APK: ni znana"
+        }
     }
 }
