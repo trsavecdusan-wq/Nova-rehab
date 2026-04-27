@@ -119,17 +119,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center"
         android:background="#1A1A2E"
-        android:padding="24dp"
+        android:padding="12dp"
         android:visibility="gone">
-
-        <ImageView
-            android:id="@+id/imgCallContact"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
-            android:scaleType="fitCenter"
-            android:layout_marginBottom="22dp" />
 
         <TextView
             android:id="@+id/tvCallName"
@@ -137,11 +129,12 @@
             android:layout_height="wrap_content"
             android:text="Kontakt"
             android:textColor="#FFFFFF"
-            android:textSize="34sp"
+            android:textSize="28sp"
             android:textStyle="bold"
             android:gravity="center"
             android:maxLines="2"
-            android:layout_marginBottom="14dp" />
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:id="@+id/tvCallStatus"
@@ -149,20 +142,47 @@
             android:layout_height="wrap_content"
             android:text="Kličem..."
             android:textColor="#B8D8FF"
-            android:textSize="28sp"
+            android:textSize="22sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginBottom="54dp" />
+            android:layout_marginBottom="8dp" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#050510">
+
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/remoteVideoRenderer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/localVideoRenderer"
+                android:layout_width="120dp"
+                android:layout_height="160dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="12dp" />
+
+        </FrameLayout>
+
+        <ImageView
+            android:id="@+id/imgCallContact"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btnEndCall"
             android:layout_width="match_parent"
-            android:layout_height="86dp"
+            android:layout_height="82dp"
             android:text="PREKINI KLIC"
             android:textSize="28sp"
             android:textStyle="bold"
             android:backgroundTint="#B71C1C"
-            android:textColor="#FFFFFF" />
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="12dp" />
 
     </LinearLayout>
 
