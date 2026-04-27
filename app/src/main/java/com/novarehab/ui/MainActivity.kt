@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -373,11 +372,13 @@ class MainActivity : AppCompatActivity() {
         binding.tvPatientName.visibility = View.VISIBLE
         binding.tvPatientName.isClickable = true
         binding.tvPatientName.isFocusable = true
-        binding.tvPatientName.textSize = 30f
+        binding.tvPatientName.textSize = 18f
         binding.tvPatientName.gravity = Gravity.CENTER
+        binding.tvPatientName.setSingleLine(false)
+        binding.tvPatientName.maxLines = 2
 
         binding.tvPatientName.setOnClickListener {
-            Toast.makeText(this, "Za spremembo jezika držite zastavo.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Za spremembo jezika držite zastavo z imenom.", Toast.LENGTH_SHORT).show()
         }
 
         binding.tvPatientName.setOnLongClickListener {
@@ -483,7 +484,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateLanguageFlag() {
-        binding.tvPatientName.text = languageChoice(activeLang).flag
+        val patientName = prefs.getPatientName().ifBlank { "Lana" }
+        val language = languageChoice(activeLang)
+        binding.tvPatientName.text = "${language.flag}\n$patientName"
         binding.tvPatientName.visibility = View.VISIBLE
     }
 
