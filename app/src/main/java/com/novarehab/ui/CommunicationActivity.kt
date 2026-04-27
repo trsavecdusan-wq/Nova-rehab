@@ -36,10 +36,10 @@ class CommunicationActivity : AppCompatActivity() {
             finish()
         }
 
-        findViewById<Button?>(R.id.btnAddPage)?.visibility = View.GONE
-        findViewById<Button?>(R.id.btnLangToggle)?.visibility = View.GONE
-        findViewById<View?>(R.id.tvLastMessage)?.visibility = View.GONE
-        findViewById<View?>(R.id.tabScrollView)?.visibility = View.GONE
+        findViewById<Button>(R.id.btnAddPage)?.visibility = View.GONE
+        findViewById<Button>(R.id.btnLangToggle)?.visibility = View.GONE
+        findViewById<View>(R.id.tvLastMessage)?.visibility = View.GONE
+        findViewById<View>(R.id.tabScrollView)?.visibility = View.GONE
 
         renderContacts()
     }
@@ -147,10 +147,10 @@ class CommunicationActivity : AppCompatActivity() {
         roomId: String
     ) {
         val intent = Intent(this, VideoCallActivity::class.java).apply {
-            putExtra("contactName", contactName)
-            putExtra("preferredLanguageCode", preferredLanguageCode)
-            putExtra("contactId", contactId)
-            putExtra("roomId", roomId)
+            putExtra(RehabCallExtras.EXTRA_CONTACT_NAME, contactName)
+            putExtra(RehabCallExtras.EXTRA_PREFERRED_LANGUAGE_CODE, preferredLanguageCode)
+            putExtra(RehabCallExtras.EXTRA_CONTACT_ID, contactId)
+            putExtra(RehabCallExtras.EXTRA_ROOM_ID, roomId)
         }
         startActivity(intent)
     }
