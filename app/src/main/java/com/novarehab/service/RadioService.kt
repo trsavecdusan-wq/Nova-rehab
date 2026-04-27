@@ -57,7 +57,7 @@ class RadioService : Service() {
 
             ACTION_PAUSE_FOR_SPEECH,
             ACTION_DUCK -> {
-                player?.volume = 0.04f
+                player?.volume = 0.01f
             }
 
             ACTION_RESUME_AFTER_SPEECH,
