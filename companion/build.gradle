@@ -18,6 +18,10 @@ android {
         // Same signing key is required for future upgrades.
     }
 
+    buildFeatures {
+        buildConfig true
+    }
+
     flavorDimensions "contact"
 
     productFlavors {
