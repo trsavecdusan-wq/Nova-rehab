@@ -33,3 +33,27 @@ android {
         jvmTarget = '17'
     }
 }
+
+tasks.register("copyNamedCompanionDebugApks") {
+    dependsOn("assembleDebug")
+
+    doLast {
+        def sourceApk = file("$buildDir/outputs/apk/debug/companion-debug.apk")
+        def outputDir = file("$buildDir/outputs/apk/contacts/debug")
+        def contactIds = ["zana", "dedek", "inna", "julija", "kuma", "dusan"]
+
+        if (!sourceApk.exists()) {
+            throw new GradleException("Companion debug APK was not created: ${sourceApk}")
+        }
+
+        outputDir.mkdirs()
+
+        contactIds.each { contactId ->
+            copy {
+                from sourceApk
+                into outputDir
+                rename { "companion-${contactId}-debug.apk" }
+            }
+        }
+    }
+}
