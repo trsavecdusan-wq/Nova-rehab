@@ -1,19 +1,11 @@
 package com.novarehab.ui
 
-import android.content.ContentUris
-import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
+import android.provider.Settings
+import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
-import android.text.InputType
-import android.util.Base64
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.databinding.ActivitySettingsBinding
@@ -21,18 +13,13 @@ import com.novarehab.service.ReportWorker
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.RadioStation
-import org.json.JSONArray
-import org.json.JSONObject
+import com.novarehab.utils.UpdateManager
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: PrefsManager
-
     private val contactLangSpinners = mutableListOf<Spinner>()
     private val contactImageButtons = mutableListOf<ImageButton>()
     private var pendingImageIndex = -1
@@ -41,16 +28,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerPatientLang1: Spinner
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
-    private lateinit var spinnerTtsTestLanguage: Spinner
-    private lateinit var spinnerTtsSpeed: Spinner
-    private lateinit var spinnerTtsVolume: Spinner
     private lateinit var switchAutoLanguage: Switch
-
-    private lateinit var btnLoadApiFromDownload: Button
-    private lateinit var btnPickApiFile: Button
-    private lateinit var btnExportBackup: Button
-    private lateinit var btnImportBackup: Button
-    private lateinit var tvAppVersion: TextView
+    private lateinit var btnCheckUpdateNow: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,22 +37,19 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
         prefs = PrefsManager(this)
 
-        addSpeechPanel()
         addLanguageSettingsPanel()
-        addBackupPanel()
-        setupOpenAiKeyField()
+        addUpdateSettingsPanel()
         loadSettings()
         setupButtons()
-        loadOpenAiKeyFromDownload(false)
     }
 
     private fun langOptions() = arrayOf(
-        "Slovenscina",
-        "Ukrajinscina",
-        "Anglescina",
-        "Nemscina",
-        "Hrvanscina",
-        "Srbscina"
+        "🇸🇮 Slovenščina",
+        "🇺🇦 Ukrajinščina",
+        "🇬🇧 Angleščina",
+        "🇩🇪 Nemščina",
+        "🇭🇷 Hrvaščina",
+        "🇷🇸 Srbščina"
     )
 
     private fun langCode(position: Int): String = when (position) {
@@ -106,66 +82,6 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun addSpeechPanel() {
-        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
-
-        val panel = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 8, 0, 16)
-        }
-
-        panel.addView(TextView(this).apply {
-            text = "Kakovost govora"
-            setTextColor(0xFFFFFFFF.toInt())
-            textSize = 15f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-        })
-
-        panel.addView(TextView(this).apply {
-            text = "Testni jezik govora:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerTtsTestLanguage = newLangSpinner()
-        panel.addView(spinnerTtsTestLanguage)
-
-        panel.addView(TextView(this).apply {
-            text = "Hitrost govora:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerTtsSpeed = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                arrayOf("Zelo pocasi", "Pocasi", "Mirno", "Naravno", "Malo hitreje")
-            ).also {
-                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-        }
-        panel.addView(spinnerTtsSpeed)
-
-        panel.addView(TextView(this).apply {
-            text = "Glasnost govora:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerTtsVolume = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                arrayOf("Glasno", "Zelo glasno", "Najglasneje")
-            ).also {
-                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-        }
-        panel.addView(spinnerTtsVolume)
-
-        val anchor = rootLayout.indexOfChild(binding.spinnerTtsVoice)
-        val insertIndex = if (anchor >= 0) anchor + 1 else rootLayout.childCount.coerceAtMost(8)
-        rootLayout.addView(panel, insertIndex)
-    }
-
     private fun addLanguageSettingsPanel() {
         val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
 
@@ -182,7 +98,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         panel.addView(TextView(this).apply {
-            text = "Stevilo komunikacijskih ikon na stran:"
+            text = "Število komunikacijskih ikon na stran:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -242,12 +158,10 @@ class SettingsActivity : AppCompatActivity() {
         autoRow.addView(switchAutoLanguage)
         panel.addView(autoRow)
 
-        val anchor = rootLayout.indexOfChild(binding.etPatientName)
-        val insertIndex = if (anchor >= 0) anchor + 1 else rootLayout.childCount.coerceAtMost(12)
-        rootLayout.addView(panel, insertIndex)
+        rootLayout.addView(panel, 5)
     }
 
-    private fun addBackupPanel() {
+    private fun addUpdateSettingsPanel() {
         val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
 
         val panel = LinearLayout(this).apply {
@@ -256,65 +170,22 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         panel.addView(TextView(this).apply {
-            text = "Varnostna kopija in API"
+            text = "Posodobitve aplikacije"
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
 
-        btnLoadApiFromDownload = Button(this).apply {
-            text = "NALOZI API KLJUC IZ DOWNLOAD/API"
-            setTextColor(0xFFFFFFFF.toInt())
-            setBackgroundColor(0xFF4A1942.toInt())
-        }
-        panel.addView(btnLoadApiFromDownload)
-
-        btnPickApiFile = Button(this).apply {
-            text = "IZBERI API DATOTEKO"
-            setTextColor(0xFFFFFFFF.toInt())
-            setBackgroundColor(0xFF6A1B9A.toInt())
-        }
-        panel.addView(btnPickApiFile)
-
-        btnExportBackup = Button(this).apply {
-            text = "SHRANI VARNOSTNO KOPIJO"
+        btnCheckUpdateNow = Button(this).apply {
+            text = "PREVERI POSODOBITEV"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF1B5E20.toInt())
+            textSize = 15f
         }
-        panel.addView(btnExportBackup)
-
-        btnImportBackup = Button(this).apply {
-            text = "OBNOVI VARNOSTNO KOPIJO"
-            setTextColor(0xFFFFFFFF.toInt())
-            setBackgroundColor(0xFF0F3460.toInt())
-        }
-        panel.addView(btnImportBackup)
-
-        tvAppVersion = TextView(this).apply {
-            text = getAppVersionText()
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-            setPadding(0, 12, 0, 0)
-        }
-        panel.addView(tvAppVersion)
+        panel.addView(btnCheckUpdateNow)
 
         val insertIndex = (rootLayout.childCount - 1).coerceAtLeast(0)
         rootLayout.addView(panel, insertIndex)
-    }
-
-    private fun setupOpenAiKeyField() {
-        binding.etOpenAiKey.apply {
-            hint = "Vnesi OpenAI API kljuc"
-            isEnabled = true
-            isFocusable = true
-            isFocusableInTouchMode = true
-            isClickable = true
-            isLongClickable = true
-            setSingleLine(true)
-            inputType = InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
-                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-        }
     }
 
     private fun loadSettings() {
@@ -393,10 +264,11 @@ class SettingsActivity : AppCompatActivity() {
             val contact = contacts.getOrNull(i)
 
             val spinner = Spinner(this).apply {
+                val opts = arrayOf("🇸🇮 Slovenščina", "🇺🇦 Ukrajinščina")
                 adapter = ArrayAdapter(
                     this@SettingsActivity,
                     android.R.layout.simple_spinner_item,
-                    arrayOf("Slovenscina", "Ukrajinscina")
+                    opts
                 ).also {
                     it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 }
@@ -406,7 +278,7 @@ class SettingsActivity : AppCompatActivity() {
             contactLangSpinners.add(spinner)
 
             val imgBtn = ImageButton(this).apply {
-                val f = File(getExternalFilesDir(null), "contacts/contact_$i.png")
+                val f = File(getExternalFilesDir(null), "contacts/contact_${i + 1}.png")
                 if (f.exists()) {
                     setImageBitmap(BitmapFactory.decodeFile(f.absolutePath))
                 } else {
@@ -421,7 +293,7 @@ class SettingsActivity : AppCompatActivity() {
                     pendingImageIndex = i
                     startActivityForResult(
                         Intent(Intent.ACTION_PICK).apply { type = "image/*" },
-                        REQUEST_CONTACT_IMAGE
+                        301
                     )
                 }
             }
@@ -431,29 +303,11 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.etOpenAiKey.setText(prefs.getOpenAiKey())
 
-        val voices = arrayOf("marin", "cedar", "nova", "coral", "shimmer", "sage", "onyx", "echo")
+        val voices = arrayOf("nova", "shimmer", "alloy", "echo", "fable", "onyx")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
         voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerTtsVoice.adapter = voiceAdapter
         binding.spinnerTtsVoice.setSelection(voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
-
-        spinnerTtsTestLanguage.setSelection(langIndex(prefs.getTtsTestLanguage()))
-        spinnerTtsSpeed.setSelection(
-            when {
-                prefs.getTtsSpeed() <= 0.82f -> 0
-                prefs.getTtsSpeed() <= 0.86f -> 1
-                prefs.getTtsSpeed() <= 0.90f -> 2
-                prefs.getTtsSpeed() <= 0.96f -> 3
-                else -> 4
-            }
-        )
-        spinnerTtsVolume.setSelection(
-            when {
-                prefs.getTtsVolume() >= 1.0f -> 2
-                prefs.getTtsVolume() >= 0.9f -> 1
-                else -> 0
-            }
-        )
 
         binding.etGmailUser.setText(prefs.getGmailUser())
         binding.etGmailPass.setText(prefs.getGmailAppPassword())
@@ -486,8 +340,6 @@ class SettingsActivity : AppCompatActivity() {
         binding.etServerPort.setText(prefs.getServerPort())
         binding.etNewPin.setText("")
         binding.etKioskMinutes.setText(prefs.getKioskReturnMinutes().toString())
-
-        tvAppVersion.text = getAppVersionText()
     }
 
     private fun setupButtons() {
@@ -504,33 +356,18 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, IconSettingsActivity::class.java))
         }
 
+        btnCheckUpdateNow.setOnClickListener {
+            UpdateManager.checkForUpdateNow(this)
+        }
+
         binding.btnTestTts.setOnClickListener {
-            saveSpeechSettings()
-
-            if (binding.etOpenAiKey.text.toString().trim().isBlank()) {
-                loadOpenAiKeyFromDownload(false)
-            }
-
-            prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
-
-            val key = prefs.getOpenAiKey()
-            val lang = prefs.getTtsTestLanguage()
-            val voice = binding.spinnerTtsVoice.selectedItem?.toString() ?: "marin"
-            val speed = prefs.getTtsSpeed()
-            val volume = prefs.getTtsVolume()
-
+            val key = binding.etOpenAiKey.text.toString().trim()
+            val voice = binding.spinnerTtsVoice.selectedItem.toString()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
-            tts.speak(
-                text = testTextForLanguage(lang),
-                language = lang,
-                apiKey = key,
-                voice = voice,
-                speed = speed,
-                volume = volume,
-                style = speechStyleFor(lang),
-                onDone = { tts.destroy() }
-            )
+            tts.speak("Zdravo, to je test govora aplikacije Nova Rehab.", "sl", key, voice) {
+                tts.destroy()
+            }
         }
 
         binding.btnInstallTts.setOnClickListener {
@@ -538,24 +375,14 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
                 Toast.makeText(
                     this,
-                    "Ce slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
+                    "Če slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
                     Toast.LENGTH_LONG
                 ).show()
             } catch (e: Exception) {
                 try {
-                    startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("market://search?q=RHVoice&c=apps")
-                        )
-                    )
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=RHVoice&c=apps")))
                 } catch (e2: Exception) {
-                    startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://play.google.com/store/search?q=RHVoice&c=apps")
-                        )
-                    )
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/search?q=RHVoice&c=apps")))
                 }
             }
         }
@@ -565,177 +392,35 @@ class SettingsActivity : AppCompatActivity() {
             ReportWorker.schedule(this, prefs.getReportHour())
             Toast.makeText(
                 this,
-                "Porocilo bo poslano ob ${prefs.getReportHour()}:00",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-
-        btnLoadApiFromDownload.setOnClickListener {
-            loadOpenAiKeyFromDownload(true)
-        }
-
-        btnPickApiFile.setOnClickListener {
-            pickApiFile()
-        }
-
-        btnExportBackup.setOnClickListener {
-            saveSettings()
-            exportBackup(true)
-        }
-
-        btnImportBackup.setOnClickListener {
-            importBackup()
-        }
-    }
-
-    private fun saveSpeechSettings() {
-        prefs.saveTtsTestLanguage(langCode(spinnerTtsTestLanguage.selectedItemPosition))
-        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem?.toString() ?: "marin")
-        prefs.saveTtsSpeed(
-            when (spinnerTtsSpeed.selectedItemPosition) {
-                0 -> 0.82f
-                1 -> 0.86f
-                2 -> 0.90f
-                3 -> 0.96f
-                else -> 1.02f
-            }
-        )
-        prefs.saveTtsVolume(
-            when (spinnerTtsVolume.selectedItemPosition) {
-                0 -> 0.9f
-                1 -> 0.98f
-                else -> 1.0f
-            }
-        )
-    }
-
-    private fun testTextForLanguage(lang: String): String = when (lang) {
-        "uk" -> "Dobryi den. Tse test holosu dlia komunikatsii."
-        "en" -> "Hello. This is a speech test for communication."
-        "de" -> "Hallo. Das ist ein Sprachtest fuer die Kommunikation."
-        "hr" -> "Dobar dan. Ovo je test govora za komunikaciju."
-        "sr" -> "Dobar dan. Ovo je test govora za komunikaciju."
-        else -> "Pozdravljeni. To je test slovenskega govora za komunikacijo."
-    }
-
-    private fun speechStyleFor(lang: String): String {
-        return when (lang) {
-            "uk" -> "Speak clearly, warmly and naturally in Ukrainian. Use a calm rehabilitation assistant voice."
-            "en" -> "Speak clearly, warmly and naturally in English. Use a calm rehabilitation assistant voice."
-            "de" -> "Speak clearly, warmly and naturally in German. Use a calm rehabilitation assistant voice."
-            "hr" -> "Speak clearly, warmly and naturally in Croatian. Use a calm rehabilitation assistant voice."
-            "sr" -> "Speak clearly, warmly and naturally in Serbian. Use a calm rehabilitation assistant voice."
-            else -> "Speak clearly, warmly, calmly and naturally in Slovenian. Use a gentle rehabilitation assistant voice. Keep the speech easy to understand."
-        }
-    }
-
-    private fun pickApiFile() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/*"
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        }
-        startActivityForResult(intent, REQUEST_API_FILE)
-    }
-
-    private fun loadOpenAiKeyFromDownload(showToast: Boolean) {
-        val key = findApiKeyInDownload()
-        if (key.isNotBlank()) {
-            binding.etOpenAiKey.setText(key)
-            prefs.saveOpenAiKey(key)
-            if (showToast) {
-                Toast.makeText(this, "API kljuc je nalozen iz Download/api.", Toast.LENGTH_LONG).show()
-            }
-        } else if (showToast) {
-            Toast.makeText(
-                this,
-                "API datoteka ni najdena. Shrani datoteko kot Download/api ali Download/api.txt.",
+                "Poročilo bo poslano ob ${prefs.getReportHour()}:00",
                 Toast.LENGTH_LONG
             ).show()
         }
     }
 
-    private fun findApiKeyInDownload(): String {
-        val direct = findApiKeyDirectFile()
-        if (direct.isNotBlank()) return direct
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val media = findApiKeyInMediaStore()
-            if (media.isNotBlank()) return media
-        }
+        if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
+            val uri = data?.data ?: return
 
-        return ""
-    }
-
-    private fun findApiKeyDirectFile(): String {
-        val download = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val candidates = listOf(
-            File(download, "api"),
-            File(download, "api.txt"),
-            File(download, "API"),
-            File(download, "API.txt")
-        )
-
-        candidates.forEach { file ->
             try {
-                if (file.exists() && file.isFile) {
-                    val key = cleanApiKey(file.readText(Charsets.UTF_8))
-                    if (key.isNotBlank()) return key
+                val dir = File(getExternalFilesDir(null), "contacts")
+                dir.mkdirs()
+
+                contentResolver.openInputStream(uri)?.use { input ->
+                    File(dir, "contact_${pendingImageIndex + 1}.png").outputStream().use { output ->
+                        input.copyTo(output)
+                    }
                 }
+
+                val bmp = BitmapFactory.decodeFile(
+                    File(dir, "contact_${pendingImageIndex + 1}.png").absolutePath
+                )
+                contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
             } catch (e: Exception) {
             }
         }
-
-        return ""
-    }
-
-    private fun findApiKeyInMediaStore(): String {
-        val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL)
-        val cursor = contentResolver.query(
-            collection,
-            arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME),
-            "${MediaStore.MediaColumns.DISPLAY_NAME}=? OR ${MediaStore.MediaColumns.DISPLAY_NAME}=?",
-            arrayOf("api", "api.txt"),
-            "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
-        )
-
-        cursor?.use {
-            while (it.moveToNext()) {
-                val id = it.getLong(0)
-                val uri = ContentUris.withAppendedId(collection, id)
-                try {
-                    val text = contentResolver.openInputStream(uri)?.use { input ->
-                        input.readBytes().toString(Charsets.UTF_8)
-                    } ?: ""
-                    val key = cleanApiKey(text)
-                    if (key.isNotBlank()) return key
-                } catch (e: Exception) {
-                }
-            }
-        }
-
-        return ""
-    }
-
-    private fun cleanApiKey(text: String): String {
-        val normalized = text
-            .replace("\uFEFF", "")
-            .replace("\r", "\n")
-
-        val start = normalized.indexOf("sk-")
-        if (start >= 0) {
-            return normalized.substring(start)
-                .lines()
-                .firstOrNull()
-                ?.trim()
-                ?: ""
-        }
-
-        return normalized.lines()
-            .map { it.trim() }
-            .firstOrNull { it.isNotBlank() }
-            ?: ""
     }
 
     private fun saveSettings() {
@@ -783,21 +468,19 @@ class SettingsActivity : AppCompatActivity() {
             binding.etContact6Phone
         )
 
+        val emojis = listOf("👩", "👨", "👧", "🧑", "👨‍⚕️", "🧑‍💼")
         val contacts = mutableListOf<Contact>()
+
         nameC.forEachIndexed { i, field ->
             val name = field.text.toString().trim()
             val phone = phoneC[i].text.toString().trim()
             val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) "uk" else "sl"
-            contacts.add(Contact(name.ifEmpty { "Kontakt ${i + 1}" }, phone, "", lang))
+            contacts.add(Contact(name.ifEmpty { "Kontakt ${i + 1}" }, phone, emojis.getOrElse(i) { "👤" }, lang))
         }
         prefs.saveContacts(contacts)
 
-        if (binding.etOpenAiKey.text.toString().trim().isBlank()) {
-            loadOpenAiKeyFromDownload(false)
-        }
-
         prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
-        saveSpeechSettings()
+        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
 
         prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
         prefs.saveGmailAppPassword(binding.etGmailPass.text.toString().trim())
@@ -834,471 +517,6 @@ class SettingsActivity : AppCompatActivity() {
             prefs.savePin(pin)
         }
 
-        exportBackup(false)
-        Toast.makeText(this, "Nastavitve shranjene.", Toast.LENGTH_SHORT).show()
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == REQUEST_API_FILE && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-            try {
-                val flags = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
-                contentResolver.takePersistableUriPermission(uri, flags)
-            } catch (e: Exception) {
-            }
-
-            try {
-                val text = contentResolver.openInputStream(uri)?.use { input ->
-                    input.readBytes().toString(Charsets.UTF_8)
-                } ?: ""
-                val key = cleanApiKey(text)
-                if (key.isNotBlank()) {
-                    binding.etOpenAiKey.setText(key)
-                    prefs.saveOpenAiKey(key)
-                    Toast.makeText(this, "API kljuc je nalozen.", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(this, "V datoteki ni API kljuca.", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this, "API datoteke ni bilo mogoce prebrati: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-            return
-        }
-
-        if (requestCode == REQUEST_CONTACT_IMAGE && resultCode == RESULT_OK && pendingImageIndex >= 0) {
-            val uri = data?.data ?: return
-            try {
-                val dir = File(getExternalFilesDir(null), "contacts")
-                dir.mkdirs()
-
-                contentResolver.openInputStream(uri)?.use { input ->
-                    File(dir, "contact_$pendingImageIndex.png").outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-
-                val bmp = BitmapFactory.decodeFile(File(dir, "contact_$pendingImageIndex.png").absolutePath)
-                contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
-            } catch (e: Exception) {
-            }
-        }
-    }
-
-    private fun exportBackup(showToast: Boolean) {
-        try {
-            val json = JSONObject()
-            json.put("backupVersion", 2)
-            json.put("exportedAt", System.currentTimeMillis())
-            json.put("appVersion", getAppVersionText())
-            json.put("novaRehabPrefs", prefsToJson("nova_rehab_prefs"))
-            json.put("iconTextsPrefs", prefsToJson("icon_texts"))
-            json.put("stats", exportStats())
-            json.put("files", exportExternalFiles())
-
-            val uri = createBackupOutputUri()
-                ?: throw IllegalStateException("Datoteke za shranjevanje ni mogoce ustvariti")
-
-            contentResolver.openOutputStream(uri, "w")?.use { output ->
-                output.write(json.toString(2).toByteArray(Charsets.UTF_8))
-            } ?: throw IllegalStateException("Datoteke ni mogoce odpreti za pisanje")
-
-            if (showToast) {
-                Toast.makeText(
-                    this,
-                    "Varnostna kopija shranjena v Documents/RehabBackup.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        } catch (e: Exception) {
-            if (showToast) {
-                Toast.makeText(
-                    this,
-                    "Varnostne kopije ni bilo mogoce shraniti: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    }
-
-    private fun importBackup() {
-        try {
-            val uri = findBackupInputUri()
-            if (uri == null) {
-                Toast.makeText(
-                    this,
-                    "Varnostna kopija ni najdena. Iscem Documents/RehabBackup/rehab_settings_backup.json.",
-                    Toast.LENGTH_LONG
-                ).show()
-                return
-            }
-
-            val jsonText = contentResolver.openInputStream(uri)?.use { input ->
-                input.readBytes().toString(Charsets.UTF_8)
-            } ?: throw IllegalStateException("Datoteke ni mogoce prebrati")
-
-            if (jsonText.isBlank()) {
-                throw IllegalStateException("Datoteka je prazna")
-            }
-
-            val json = JSONObject(jsonText)
-
-            val mainPrefs = json.optJSONObject("novaRehabPrefs")
-                ?: json.optJSONObject("settings")
-                ?: JSONObject()
-
-            val iconPrefs = json.optJSONObject("iconTextsPrefs")
-                ?: json.optJSONObject("iconTexts")
-                ?: JSONObject()
-
-            restorePrefs("nova_rehab_prefs", mainPrefs)
-            restorePrefs("icon_texts", iconPrefs)
-            restoreStats(json.optJSONArray("stats") ?: JSONArray())
-            restoreExternalFiles(json.optJSONObject("files") ?: JSONObject())
-
-            prefs = PrefsManager(this)
-            loadSettings()
-            Toast.makeText(this, "Varnostna kopija obnovljena.", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Obnova ni uspela: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun prefsToJson(name: String): JSONObject {
-        val source = getSharedPreferences(name, Context.MODE_PRIVATE)
-        val json = JSONObject()
-
-        source.all.forEach { entry ->
-            val item = JSONObject()
-            when (val value = entry.value) {
-                is String -> {
-                    item.put("type", "String")
-                    item.put("value", value)
-                }
-                is Int -> {
-                    item.put("type", "Int")
-                    item.put("value", value)
-                }
-                is Long -> {
-                    item.put("type", "Long")
-                    item.put("value", value)
-                }
-                is Float -> {
-                    item.put("type", "Float")
-                    item.put("value", value.toDouble())
-                }
-                is Boolean -> {
-                    item.put("type", "Boolean")
-                    item.put("value", value)
-                }
-                is Set<*> -> {
-                    item.put("type", "StringSet")
-                    item.put("value", JSONArray(value.filterIsInstance<String>()))
-                }
-            }
-            json.put(entry.key, item)
-        }
-
-        return json
-    }
-
-    private fun restorePrefs(name: String, json: JSONObject) {
-        val editor = getSharedPreferences(name, Context.MODE_PRIVATE).edit()
-        editor.clear()
-
-        val keys = json.keys()
-        while (keys.hasNext()) {
-            val key = keys.next()
-            val item = json.optJSONObject(key)
-
-            if (item != null && item.has("type")) {
-                when (item.optString("type")) {
-                    "String" -> editor.putString(key, item.optString("value", ""))
-                    "Int" -> editor.putInt(key, item.optInt("value", 0))
-                    "Long" -> editor.putLong(key, item.optLong("value", 0L))
-                    "Float" -> editor.putFloat(key, item.optDouble("value", 0.0).toFloat())
-                    "Boolean" -> editor.putBoolean(key, item.optBoolean("value", false))
-                    "StringSet" -> {
-                        val array = item.optJSONArray("value") ?: JSONArray()
-                        val set = mutableSetOf<String>()
-                        for (i in 0 until array.length()) {
-                            set.add(array.optString(i))
-                        }
-                        editor.putStringSet(key, set)
-                    }
-                }
-            } else {
-                val raw = json.opt(key)
-                when (raw) {
-                    is String -> editor.putString(key, raw)
-                    is Int -> editor.putInt(key, raw)
-                    is Long -> editor.putLong(key, raw)
-                    is Double -> editor.putFloat(key, raw.toFloat())
-                    is Boolean -> editor.putBoolean(key, raw)
-                }
-            }
-        }
-
-        editor.apply()
-    }
-
-    private fun exportStats(): JSONArray {
-        val result = JSONArray()
-        val dbFile = getDatabasePath("nova_stats.db")
-        if (!dbFile.exists()) return result
-
-        var db: SQLiteDatabase? = null
-        try {
-            db = SQLiteDatabase.openDatabase(
-                dbFile.absolutePath,
-                null,
-                SQLiteDatabase.OPEN_READONLY
-            )
-
-            val cursor = db.rawQuery(
-                "SELECT event, value, timestamp FROM stats ORDER BY id ASC",
-                null
-            )
-
-            cursor.use {
-                while (it.moveToNext()) {
-                    result.put(
-                        JSONObject()
-                            .put("event", it.getString(0))
-                            .put("value", it.getString(1))
-                            .put("timestamp", it.getLong(2))
-                    )
-                }
-            }
-        } catch (e: Exception) {
-        } finally {
-            db?.close()
-        }
-
-        return result
-    }
-
-    private fun restoreStats(array: JSONArray) {
-        val db = openOrCreateDatabase("nova_stats.db", Context.MODE_PRIVATE, null)
-
-        try {
-            db.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS stats (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    event TEXT NOT NULL,
-                    value TEXT DEFAULT '',
-                    timestamp INTEGER NOT NULL
-                )
-                """.trimIndent()
-            )
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_timestamp ON stats(timestamp)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_event ON stats(event)")
-            db.delete("stats", null, null)
-
-            for (i in 0 until array.length()) {
-                val item = array.optJSONObject(i) ?: continue
-                val values = ContentValues().apply {
-                    put("event", item.optString("event", ""))
-                    put("value", item.optString("value", ""))
-                    put("timestamp", item.optLong("timestamp", System.currentTimeMillis()))
-                }
-                db.insert("stats", null, values)
-            }
-        } catch (e: Exception) {
-        } finally {
-            db.close()
-        }
-    }
-
-    private fun exportExternalFiles(): JSONObject {
-        val json = JSONObject()
-        val base = getExternalFilesDir(null) ?: return json
-        collectFiles(base, base, json)
-        return json
-    }
-
-    private fun collectFiles(base: File, dir: File, json: JSONObject) {
-        dir.listFiles()?.forEach { file ->
-            if (file.isDirectory) {
-                collectFiles(base, file, json)
-            } else if (file.isFile && file.length() <= 5L * 1024L * 1024L) {
-                val relativePath = base.toURI().relativize(file.toURI()).path
-                val encoded = Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
-                json.put(relativePath, encoded)
-            }
-        }
-    }
-
-    private fun restoreExternalFiles(json: JSONObject) {
-        val base = getExternalFilesDir(null) ?: return
-        val keys = json.keys()
-
-        while (keys.hasNext()) {
-            val relativePath = keys.next()
-            val encoded = json.optString(relativePath, "")
-            if (encoded.isBlank()) continue
-
-            try {
-                val target = File(base, relativePath)
-                target.parentFile?.mkdirs()
-                target.writeBytes(Base64.decode(encoded, Base64.DEFAULT))
-            } catch (e: Exception) {
-            }
-        }
-    }
-
-    private fun createBackupOutputUri(): Uri? {
-        val fileName = "rehab_settings_backup.json"
-
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val collection = MediaStore.Files.getContentUri("external")
-            val relativePath = Environment.DIRECTORY_DOCUMENTS + "/RehabBackup/"
-
-            contentResolver.delete(
-                collection,
-                "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
-                arrayOf(fileName, relativePath)
-            )
-
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-            }
-
-            contentResolver.insert(collection, values)
-        } else {
-            val dir = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                "RehabBackup"
-            )
-            dir.mkdirs()
-            Uri.fromFile(File(dir, fileName))
-        }
-    }
-
-    private fun findBackupInputUri(): Uri? {
-        val fileName = "rehab_settings_backup.json"
-
-        val direct = findBackupDirectFile(fileName)
-        if (direct != null) return direct
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val exact = findBackupInMediaStoreExact(fileName)
-            if (exact != null) return exact
-
-            val broad = findBackupInMediaStoreBroad(fileName)
-            if (broad != null) return broad
-        }
-
-        return null
-    }
-
-    private fun findBackupDirectFile(fileName: String): Uri? {
-        val documents = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-        val candidates = listOf(
-            File(File(documents, "RehabBackup"), fileName),
-            File(File(documents, "rehabbackup"), fileName),
-            File(File(documents, "Rehabbackup"), fileName),
-            File(File(documents, "REHABBACKUP"), fileName)
-        )
-
-        candidates.forEach { file ->
-            try {
-                if (file.exists() && file.isFile) return Uri.fromFile(file)
-            } catch (e: Exception) {
-            }
-        }
-
-        return null
-    }
-
-    private fun findBackupInMediaStoreExact(fileName: String): Uri? {
-        val collection = MediaStore.Files.getContentUri("external")
-        val relativePaths = arrayOf(
-            Environment.DIRECTORY_DOCUMENTS + "/RehabBackup/",
-            Environment.DIRECTORY_DOCUMENTS + "/rehabbackup/",
-            Environment.DIRECTORY_DOCUMENTS + "/Rehabbackup/",
-            Environment.DIRECTORY_DOCUMENTS + "/REHABBACKUP/"
-        )
-
-        relativePaths.forEach { relativePath ->
-            val cursor = contentResolver.query(
-                collection,
-                arrayOf(MediaStore.MediaColumns._ID),
-                "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
-                arrayOf(fileName, relativePath),
-                "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
-            )
-
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val id = it.getLong(0)
-                    return ContentUris.withAppendedId(collection, id)
-                }
-            }
-        }
-
-        return null
-    }
-
-    private fun findBackupInMediaStoreBroad(fileName: String): Uri? {
-        val collection = MediaStore.Files.getContentUri("external")
-        val cursor = contentResolver.query(
-            collection,
-            arrayOf(
-                MediaStore.MediaColumns._ID,
-                MediaStore.MediaColumns.DISPLAY_NAME,
-                MediaStore.MediaColumns.RELATIVE_PATH
-            ),
-            "${MediaStore.MediaColumns.DISPLAY_NAME}=?",
-            arrayOf(fileName),
-            "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
-        )
-
-        cursor?.use {
-            while (it.moveToNext()) {
-                val id = it.getLong(0)
-                val displayName = it.getString(1) ?: ""
-                val path = it.getString(2) ?: ""
-
-                if (
-                    displayName.equals(fileName, ignoreCase = true) &&
-                    path.contains("RehabBackup", ignoreCase = true)
-                ) {
-                    return ContentUris.withAppendedId(collection, id)
-                }
-            }
-        }
-
-        return null
-    }
-
-    private fun getAppVersionText(): String {
-        return try {
-            val info = packageManager.getPackageInfo(packageName, 0)
-            val versionName = info.versionName ?: "?"
-            val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                info.longVersionCode
-            } else {
-                @Suppress("DEPRECATION")
-                info.versionCode.toLong()
-            }
-            val date = SimpleDateFormat(
-                "dd.MM.yyyy HH:mm",
-                Locale.getDefault()
-            ).format(Date(info.lastUpdateTime))
-
-            "Verzija APK: $versionName ($versionCode)\nDatum in ura namestitve: $date"
-        } catch (e: Exception) {
-            "Verzija APK: ni znana"
-        }
-    }
-
-    companion object {
-        private const val REQUEST_CONTACT_IMAGE = 301
-        private const val REQUEST_API_FILE = 777
+        Toast.makeText(this, "Nastavitve shranjene ✓", Toast.LENGTH_SHORT).show()
     }
 }
