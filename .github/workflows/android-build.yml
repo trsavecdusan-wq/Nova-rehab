@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main, master ]
 
+permissions:
+  contents: write
+
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
@@ -48,8 +51,8 @@ jobs:
           test -f companion/build.gradle
           test -f companion/src/main/AndroidManifest.xml
 
-      - name: Build debug APK
-        run: ./gradlew --no-daemon clean assembleDebug --stacktrace
+      - name: Build debug APKs
+        run: ./gradlew --no-daemon clean :app:assembleDebug :companion:copyNamedCompanionDebugApks --stacktrace
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
@@ -57,5 +60,18 @@ jobs:
           name: NovaRehab-debug-apks
           path: |
             app/build/outputs/apk/debug/*.apk
-            companion/build/outputs/apk/debug/*.apk
+            companion/build/outputs/apk/**/*.apk
           if-no-files-found: error
+
+      - name: Upload APKs to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: novarehab-companion-latest
+          name: NovaRehab Companion APKs
+          make_latest: true
+          overwrite_files: true
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            companion/build/outputs/apk/**/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
