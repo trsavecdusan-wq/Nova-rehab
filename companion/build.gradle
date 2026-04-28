@@ -13,6 +13,94 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        // TODO: Before real use, configure release signing keystore.
+        // Same signing key is required for future upgrades.
+    }
+
+    flavorDimensions "contact"
+
+    productFlavors {
+        zana {
+            dimension "contact"
+            applicationId "com.novarehab.companion.zana"
+            resValue "string", "app_name", "Companion Zana"
+            buildConfigField "String", "CONTACT_ID", "\"zana\""
+            buildConfigField "String", "CONTACT_NAME", "\"Žana\""
+            buildConfigField "String", "ROOM_ID", "\"lana-zana\""
+            buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"sl\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-zana.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-zana-debug.apk\""
+        }
+
+        dedek {
+            dimension "contact"
+            applicationId "com.novarehab.companion.dedek"
+            resValue "string", "app_name", "Companion Dedek"
+            buildConfigField "String", "CONTACT_ID", "\"dedek\""
+            buildConfigField "String", "CONTACT_NAME", "\"Dedek\""
+            buildConfigField "String", "ROOM_ID", "\"lana-dedek\""
+            buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"sl\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-dedek.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dedek-debug.apk\""
+        }
+
+        inna {
+            dimension "contact"
+            applicationId "com.novarehab.companion.inna"
+            resValue "string", "app_name", "Companion Inna"
+            buildConfigField "String", "CONTACT_ID", "\"inna\""
+            buildConfigField "String", "CONTACT_NAME", "\"Inna\""
+            buildConfigField "String", "ROOM_ID", "\"lana-inna\""
+            buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"uk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-inna.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-inna-debug.apk\""
+        }
+
+        julija {
+            dimension "contact"
+            applicationId "com.novarehab.companion.julija"
+            resValue "string", "app_name", "Companion Julija"
+            buildConfigField "String", "CONTACT_ID", "\"julija\""
+            buildConfigField "String", "CONTACT_NAME", "\"Julija\""
+            buildConfigField "String", "ROOM_ID", "\"lana-julija\""
+            buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"uk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-julija.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-julija-debug.apk\""
+        }
+
+        kuma {
+            dimension "contact"
+            applicationId "com.novarehab.companion.kuma"
+            resValue "string", "app_name", "Companion Kuma"
+            buildConfigField "String", "CONTACT_ID", "\"kuma\""
+            buildConfigField "String", "CONTACT_NAME", "\"Kuma\""
+            buildConfigField "String", "ROOM_ID", "\"lana-kuma\""
+            buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"sl\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-kuma.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-kuma-debug.apk\""
+        }
+
+        dusan {
+            dimension "contact"
+            applicationId "com.novarehab.companion.dusan"
+            resValue "string", "app_name", "Companion Dusan"
+            buildConfigField "String", "CONTACT_ID", "\"dusan\""
+            buildConfigField "String", "CONTACT_NAME", "\"Dusan\""
+            buildConfigField "String", "ROOM_ID", "\"lana-dusan\""
+            buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"sl\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-dusan.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dusan-debug.apk\""
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def flavorName = variant.flavorName
+            if (variant.buildType.name == "debug" && flavorName != null && flavorName.length() > 0) {
+                outputFileName = "companion-${flavorName}-debug.apk"
+            }
+        }
     }
 
     buildTypes {
@@ -31,29 +119,5 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
-    }
-}
-
-tasks.register("copyNamedCompanionDebugApks") {
-    dependsOn("assembleDebug")
-
-    doLast {
-        def sourceApk = file("$buildDir/outputs/apk/debug/companion-debug.apk")
-        def outputDir = file("$buildDir/outputs/apk/contacts/debug")
-        def contactIds = ["zana", "dedek", "inna", "julija", "kuma", "dusan"]
-
-        if (!sourceApk.exists()) {
-            throw new GradleException("Companion debug APK was not created: ${sourceApk}")
-        }
-
-        outputDir.mkdirs()
-
-        contactIds.each { contactId ->
-            copy {
-                from sourceApk
-                into outputDir
-                rename { "companion-${contactId}-debug.apk" }
-            }
-        }
     }
 }
