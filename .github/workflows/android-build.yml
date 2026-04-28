@@ -52,7 +52,7 @@ jobs:
           test -f companion/src/main/AndroidManifest.xml
 
       - name: Build debug APKs
-        run: ./gradlew --no-daemon clean :app:assembleDebug :companion:copyNamedCompanionDebugApks --stacktrace
+        run: ./gradlew --no-daemon clean :app:assembleDebug :companion:assembleDebug --stacktrace
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
