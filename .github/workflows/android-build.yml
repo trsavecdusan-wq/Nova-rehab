@@ -51,17 +51,64 @@ jobs:
           test -f companion/build.gradle
           test -f companion/src/main/AndroidManifest.xml
 
-      - name: Build debug APKs
-        run: ./gradlew --no-daemon clean :app:assembleDebug :companion:assembleDebug --stacktrace
+      - name: Build release APK set
+        run: |
+          ./gradlew --no-daemon clean \
+            :app:assembleDebug \
+            :companion:assembleZanaDebug \
+            :companion:assembleDedekDebug \
+            :companion:assembleInnaDebug \
+            :companion:assembleJulijaDebug \
+            :companion:assembleKumaDebug \
+            :companion:assembleDusanDebug \
+            --stacktrace
+
+      - name: Prepare release APKs
+        run: |
+          rm -rf release-apks
+          mkdir -p release-apks
+
+          cp app/build/outputs/apk/debug/app-debug.apk release-apks/app-debug.apk
+          cp companion/build/outputs/apk/zana/debug/companion-zana-debug.apk release-apks/companion-zana-debug.apk
+          cp companion/build/outputs/apk/dedek/debug/companion-dedek-debug.apk release-apks/companion-dedek-debug.apk
+          cp companion/build/outputs/apk/inna/debug/companion-inna-debug.apk release-apks/companion-inna-debug.apk
+          cp companion/build/outputs/apk/julija/debug/companion-julija-debug.apk release-apks/companion-julija-debug.apk
+          cp companion/build/outputs/apk/kuma/debug/companion-kuma-debug.apk release-apks/companion-kuma-debug.apk
+          cp companion/build/outputs/apk/dusan/debug/companion-dusan-debug.apk release-apks/companion-dusan-debug.apk
+
+      - name: Verify release APKs
+        run: |
+          test -f release-apks/app-debug.apk
+          test -f release-apks/companion-zana-debug.apk
+          test -f release-apks/companion-dedek-debug.apk
+          test -f release-apks/companion-inna-debug.apk
+          test -f release-apks/companion-julija-debug.apk
+          test -f release-apks/companion-kuma-debug.apk
+          test -f release-apks/companion-dusan-debug.apk
+
+          if [ -f release-apks/companion-debug.apk ]; then
+            echo "release-apks/companion-debug.apk must not be published"
+            exit 1
+          fi
+
+          apk_count=$(find release-apks -maxdepth 1 -type f -name '*.apk' | wc -l | tr -d ' ')
+          if [ "$apk_count" != "7" ]; then
+            echo "release-apks must contain exactly 7 APK files, found $apk_count"
+            find release-apks -maxdepth 1 -type f -print
+            exit 1
+          fi
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: NovaRehab-debug-apks
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            companion/build/outputs/apk/**/*.apk
+          path: release-apks/*.apk
           if-no-files-found: error
+
+      - name: Remove old generic companion APK from release
+        run: gh release delete-asset novarehab-companion-latest companion-debug.apk --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APKs to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -70,8 +117,6 @@ jobs:
           name: NovaRehab Companion APKs
           make_latest: true
           overwrite_files: true
-          files: |
-            app/build/outputs/apk/debug/*.apk
-            companion/build/outputs/apk/**/*.apk
+          files: release-apks/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
