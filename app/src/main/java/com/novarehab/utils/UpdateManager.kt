@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONObject
 import java.io.File
 
 object UpdateManager {
@@ -24,6 +26,9 @@ object UpdateManager {
 
     private const val BACKUP_FILE_NAME = "NovaRehab_last_working.apk"
     private const val UPDATE_FILE_NAME = "NovaRehab_update.apk"
+
+    private const val UPDATE_METADATA_URL =
+        "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-version.json"
 
     private val httpClient = OkHttpClient()
 
@@ -53,6 +58,49 @@ object UpdateManager {
             }
             .setNegativeButton("Ne zdaj", null)
             .show()
+    }
+
+    fun checkForUpdateNow(activity: Activity) {
+        CoroutineScope(Dispatchers.Main).launch {
+            Toast.makeText(activity, "Preverjam posodobitev...", Toast.LENGTH_SHORT).show()
+
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    val metadata = fetchUpdateMetadata()
+                    val remoteVersionCode = metadata.optLong("versionCode", 0L)
+                    val currentVersionCode = getCurrentVersionCode(activity)
+                    Result.success(UpdateInfo(metadata, remoteVersionCode, currentVersionCode))
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+
+            result.fold(
+                onSuccess = { info ->
+                    if (info.remoteVersionCode > info.currentVersionCode) {
+                        showUpdateDialog(
+                            activity = activity,
+                            versionName = info.metadata.optString("versionName", ""),
+                            apkUrl = info.metadata.optString("apkUrl", ""),
+                            message = info.metadata.optString("message", "Nova verzija je na voljo.")
+                        )
+                    } else {
+                        Toast.makeText(
+                            activity,
+                            "Nameščena je zadnja verzija.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                },
+                onFailure = { error ->
+                    Toast.makeText(
+                        activity,
+                        "Posodobitve ni bilo mogoče preveriti: ${error.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            )
+        }
     }
 
     fun showUpdateDialog(activity: Activity, versionName: String, apkUrl: String, message: String) {
@@ -120,6 +168,36 @@ object UpdateManager {
         }
 
         openApkInstaller(activity, backupFile)
+    }
+
+    private fun fetchUpdateMetadata(): JSONObject {
+        val request = Request.Builder()
+            .url(UPDATE_METADATA_URL)
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw IllegalStateException("Strežnik je vrnil napako ${response.code}")
+            }
+
+            val body = response.body?.string().orEmpty()
+            if (body.isBlank()) {
+                throw IllegalStateException("Datoteka app-version.json je prazna")
+            }
+
+            return JSONObject(body)
+        }
+    }
+
+    private fun getCurrentVersionCode(context: Context): Long {
+        val info = context.packageManager.getPackageInfo(context.packageName, 0)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            info.versionCode.toLong()
+        }
     }
 
     private fun markUpdateInstallStarted(context: Context) {
@@ -213,4 +291,10 @@ object UpdateManager {
     private fun getUpdateApkFile(): File {
         return File(getNovaRehabDirectory(), UPDATE_FILE_NAME)
     }
+
+    private data class UpdateInfo(
+        val metadata: JSONObject,
+        val remoteVersionCode: Long,
+        val currentVersionCode: Long
+    )
 }
