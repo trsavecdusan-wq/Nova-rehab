@@ -27,8 +27,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.novarehab.R
 import com.novarehab.databinding.ActivityMainBinding
+import com.novarehab.service.DailyUpdateCheckWorker
 import com.novarehab.service.RadioBrowserService
 import com.novarehab.service.RadioService
 import com.novarehab.service.ReportWorker
@@ -39,10 +43,12 @@ import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
+import com.novarehab.utils.UpdateManager
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
@@ -110,6 +116,7 @@ class MainActivity : AppCompatActivity() {
         translateManager = OpenAiTranslateManager(this)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
 
+        handleUpdateIntent(intent)
         loadOpenAiKeyFromDownloadIfNeeded()
 
         tts = TextToSpeech(this) { status ->
@@ -136,9 +143,42 @@ class MainActivity : AppCompatActivity() {
 
         if (prefs.isAutoLanguageEnabled()) setupLanguageDetector()
         scheduleReports()
+        scheduleDailyUpdateCheck()
 
         stats.log(StatEvent.APP_START)
         startService(Intent(this, UpdateService::class.java))
+
+        UpdateManager.showRestorePromptIfNeeded(this)
+        Handler(Looper.getMainLooper()).postDelayed({
+            UpdateManager.markCurrentLaunchSuccessful(this)
+        }, 15000L)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUpdateIntent(intent)
+    }
+
+    private fun handleUpdateIntent(intent: Intent?) {
+        if (intent?.action != DailyUpdateCheckWorker.ACTION_SHOW_UPDATE) return
+
+        UpdateManager.showUpdateDialog(
+            activity = this,
+            versionName = intent.getStringExtra(DailyUpdateCheckWorker.EXTRA_UPDATE_VERSION_NAME).orEmpty(),
+            apkUrl = intent.getStringExtra(DailyUpdateCheckWorker.EXTRA_UPDATE_APK_URL).orEmpty(),
+            message = intent.getStringExtra(DailyUpdateCheckWorker.EXTRA_UPDATE_MESSAGE).orEmpty()
+        )
+    }
+
+    private fun scheduleDailyUpdateCheck() {
+        val request = PeriodicWorkRequestBuilder<DailyUpdateCheckWorker>(24, TimeUnit.HOURS).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "daily_update_check",
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
 
     private fun setupRadio() {
@@ -694,11 +734,12 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Administrator")
-            .setItems(arrayOf("Nastavitve", "Statistika", "Izhod v Android")) { _, which ->
+            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejšnjo verzijo", "Izhod v Android")) { _, which ->
                 when (which) {
                     0 -> startActivity(Intent(this, SettingsActivity::class.java))
                     1 -> startActivity(Intent(this, StatsActivity::class.java))
-                    2 -> exitToAndroid()
+                    2 -> UpdateManager.openBackupInstaller(this)
+                    3 -> exitToAndroid()
                 }
             }
             .show()
@@ -728,6 +769,7 @@ class MainActivity : AppCompatActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             perms.add(Manifest.permission.READ_MEDIA_IMAGES)
+            perms.add(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             perms.add(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
