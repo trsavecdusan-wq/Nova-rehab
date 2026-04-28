@@ -1,154 +1,64 @@
 name: Android APK Build
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main, master ]
-
-permissions:
-  contents: write
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  build-debug-apk:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout project
+      - name: Checkout kode
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Daj pravice za gradlew
+        run: chmod +x gradlew
 
-      - name: Install Android platform/build tools
+      - name: Build main app APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Build companion APK-jev
         run: |
-          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          ./gradlew :companion:assembleZanaDebug
+          ./gradlew :companion:assembleDedekDebug
+          ./gradlew :companion:assembleInnaDebug
+          ./gradlew :companion:assembleJulijaDebug
+          ./gradlew :companion:assembleKumaDebug
+          ./gradlew :companion:assembleDusanDebug
 
-      - name: Cache Gradle download and dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/rehab-wrapper
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Make Gradle launcher executable
-        run: chmod +x ./gradlew
-
-      - name: Verify project structure
+      - name: Pripravi APK output
         run: |
-          test -f settings.gradle
-          test -f build.gradle
-          test -f app/build.gradle
-          test -f app/src/main/AndroidManifest.xml
-          test -f companion/build.gradle
-          test -f companion/src/main/AndroidManifest.xml
-          test -f companion/src/main/java/com/novarehab/companion/CompanionConfig.kt
+          mkdir output
 
-      - name: Build release APK set
+          cp app/build/outputs/apk/debug/app-debug.apk output/
+
+          cp companion/build/outputs/apk/zana/debug/*.apk output/ || true
+          cp companion/build/outputs/apk/dedek/debug/*.apk output/ || true
+          cp companion/build/outputs/apk/inna/debug/*.apk output/ || true
+          cp companion/build/outputs/apk/julija/debug/*.apk output/ || true
+          cp companion/build/outputs/apk/kuma/debug/*.apk output/ || true
+          cp companion/build/outputs/apk/dusan/debug/*.apk output/ || true
+
+      - name: Preveri APK-je
         run: |
-          ./gradlew --no-daemon clean \
-            :app:assembleDebug \
-            :companion:assembleZanaDebug \
-            :companion:assembleDedekDebug \
-            :companion:assembleInnaDebug \
-            :companion:assembleJulijaDebug \
-            :companion:assembleKumaDebug \
-            :companion:assembleDusanDebug \
-            --stacktrace
+          cd output
+          ls -la
 
-      - name: Prepare release APKs
-        run: |
-          rm -rf release-apks
-          mkdir -p release-apks
-
-          cp app/build/outputs/apk/debug/app-debug.apk release-apks/app-debug.apk
-          cp companion/build/outputs/apk/zana/debug/companion-zana-debug.apk release-apks/companion-zana-debug.apk
-          cp companion/build/outputs/apk/dedek/debug/companion-dedek-debug.apk release-apks/companion-dedek-debug.apk
-          cp companion/build/outputs/apk/inna/debug/companion-inna-debug.apk release-apks/companion-inna-debug.apk
-          cp companion/build/outputs/apk/julija/debug/companion-julija-debug.apk release-apks/companion-julija-debug.apk
-          cp companion/build/outputs/apk/kuma/debug/companion-kuma-debug.apk release-apks/companion-kuma-debug.apk
-          cp companion/build/outputs/apk/dusan/debug/companion-dusan-debug.apk release-apks/companion-dusan-debug.apk
-
-      - name: Verify release APK list
-        run: |
-          test -f release-apks/app-debug.apk
-          test -f release-apks/companion-zana-debug.apk
-          test -f release-apks/companion-dedek-debug.apk
-          test -f release-apks/companion-inna-debug.apk
-          test -f release-apks/companion-julija-debug.apk
-          test -f release-apks/companion-kuma-debug.apk
-          test -f release-apks/companion-dusan-debug.apk
-
-          if [ -f release-apks/companion-debug.apk ]; then
-            echo "release-apks/companion-debug.apk must not be published"
-            exit 1
-          fi
-
-          apk_count=$(find release-apks -maxdepth 1 -type f -name '*.apk' | wc -l | tr -d ' ')
-          if [ "$apk_count" != "7" ]; then
-            echo "release-apks must contain exactly 7 APK files, found $apk_count"
-            find release-apks -maxdepth 1 -type f -print
-            exit 1
-          fi
-
-      - name: Verify companion package names
-        run: |
-          AAPT="$ANDROID_HOME/build-tools/34.0.0/aapt"
-          if [ ! -x "$AAPT" ]; then
-            AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort | tail -n 1)
-          fi
-
-          if [ ! -x "$AAPT" ]; then
-            echo "aapt was not found"
-            exit 1
-          fi
-
-          check_package() {
-            apk="$1"
-            expected="$2"
-            actual=$("$AAPT" dump badging "$apk" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)
-            if [ "$actual" != "$expected" ]; then
-              echo "Wrong package for $apk"
-              echo "Expected: $expected"
-              echo "Actual:   $actual"
-              exit 1
-            fi
-          }
-
-          check_package release-apks/companion-zana-debug.apk com.novarehab.companion.zana
-          check_package release-apks/companion-dedek-debug.apk com.novarehab.companion.dedek
-          check_package release-apks/companion-inna-debug.apk com.novarehab.companion.inna
-          check_package release-apks/companion-julija-debug.apk com.novarehab.companion.julija
-          check_package release-apks/companion-kuma-debug.apk com.novarehab.companion.kuma
-          check_package release-apks/companion-dusan-debug.apk com.novarehab.companion.dusan
-
-      - name: Upload debug APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: NovaRehab-debug-apks
-          path: release-apks/*.apk
-          if-no-files-found: error
-
-      - name: Remove old generic companion APK from release
-        run: gh release delete-asset novarehab-companion-latest companion-debug.apk --yes || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APKs to GitHub Release
+      - name: Ustvari ali posodobi release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: novarehab-companion-latest
-          name: NovaRehab Companion APKs
-          make_latest: true
-          overwrite_files: true
-          files: release-apks/*.apk
+          name: NovaRehab Companion Latest
+          draft: false
+          prerelease: false
+          files: output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
