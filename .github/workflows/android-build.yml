@@ -50,6 +50,7 @@ jobs:
           test -f app/src/main/AndroidManifest.xml
           test -f companion/build.gradle
           test -f companion/src/main/AndroidManifest.xml
+          test -f companion/src/main/java/com/novarehab/companion/CompanionConfig.kt
 
       - name: Build release APK set
         run: |
@@ -76,7 +77,7 @@ jobs:
           cp companion/build/outputs/apk/kuma/debug/companion-kuma-debug.apk release-apks/companion-kuma-debug.apk
           cp companion/build/outputs/apk/dusan/debug/companion-dusan-debug.apk release-apks/companion-dusan-debug.apk
 
-      - name: Verify release APKs
+      - name: Verify release APK list
         run: |
           test -f release-apks/app-debug.apk
           test -f release-apks/companion-zana-debug.apk
@@ -97,6 +98,37 @@ jobs:
             find release-apks -maxdepth 1 -type f -print
             exit 1
           fi
+
+      - name: Verify companion package names
+        run: |
+          AAPT="$ANDROID_HOME/build-tools/34.0.0/aapt"
+          if [ ! -x "$AAPT" ]; then
+            AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort | tail -n 1)
+          fi
+
+          if [ ! -x "$AAPT" ]; then
+            echo "aapt was not found"
+            exit 1
+          fi
+
+          check_package() {
+            apk="$1"
+            expected="$2"
+            actual=$("$AAPT" dump badging "$apk" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)
+            if [ "$actual" != "$expected" ]; then
+              echo "Wrong package for $apk"
+              echo "Expected: $expected"
+              echo "Actual:   $actual"
+              exit 1
+            fi
+          }
+
+          check_package release-apks/companion-zana-debug.apk com.novarehab.companion.zana
+          check_package release-apks/companion-dedek-debug.apk com.novarehab.companion.dedek
+          check_package release-apks/companion-inna-debug.apk com.novarehab.companion.inna
+          check_package release-apks/companion-julija-debug.apk com.novarehab.companion.julija
+          check_package release-apks/companion-kuma-debug.apk com.novarehab.companion.kuma
+          check_package release-apks/companion-dusan-debug.apk com.novarehab.companion.dusan
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
