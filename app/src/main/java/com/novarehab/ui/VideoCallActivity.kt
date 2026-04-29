@@ -1,5 +1,7 @@
 package com.novarehab.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.Gravity
@@ -10,15 +12,19 @@ import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.novarehab.R
 import com.novarehab.utils.PrefsManager
+import org.webrtc.SurfaceViewRenderer
 import java.io.File
 
 class VideoCallActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
-    private lateinit var videoCallManager: VideoCallManager
+    private var videoCallManager: VideoCallManager? = null
 
     private lateinit var contactGridScreen: View
     private lateinit var confirmScreen: View
@@ -30,14 +36,16 @@ class VideoCallActivity : AppCompatActivity() {
     private lateinit var tvConfirmName: TextView
     private lateinit var tvConfirmLanguage: TextView
 
-    private lateinit var imgCallContact: ImageView
     private lateinit var tvCallName: TextView
     private lateinit var tvCallStatus: TextView
+    private lateinit var localRenderer: SurfaceViewRenderer
+    private lateinit var remoteRenderer: SurfaceViewRenderer
 
     private var selectedContact: VideoContact? = null
 
     private data class VideoContact(
         val index: Int,
+        val id: String,
         val name: String,
         val language: String,
         val roomId: String
@@ -53,22 +61,6 @@ class VideoCallActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
 
-        videoCallManager = VideoCallManager(
-            listener = object : VideoCallManager.Listener {
-                override fun onStatus(text: String) {
-                    tvCallStatus.text = text
-                }
-
-                override fun onCallStarted() {
-                    callScreen.visibility = View.VISIBLE
-                }
-
-                override fun onCallEnded() {
-                    showContactGrid()
-                }
-            }
-        )
-
         contactGridScreen = findViewById(R.id.contactGridScreen)
         confirmScreen = findViewById(R.id.confirmScreen)
         callScreen = findViewById(R.id.callScreen)
@@ -79,9 +71,10 @@ class VideoCallActivity : AppCompatActivity() {
         tvConfirmName = findViewById(R.id.tvConfirmName)
         tvConfirmLanguage = findViewById(R.id.tvConfirmLanguage)
 
-        imgCallContact = findViewById(R.id.imgCallContact)
         tvCallName = findViewById(R.id.tvCallName)
         tvCallStatus = findViewById(R.id.tvCallStatus)
+        localRenderer = findViewById(R.id.localRenderer)
+        remoteRenderer = findViewById(R.id.remoteRenderer)
 
         findViewById<Button>(R.id.btnVideoBack).setOnClickListener {
             finish()
@@ -96,9 +89,10 @@ class VideoCallActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnEndCall).setOnClickListener {
-            videoCallManager.endCall()
+            videoCallManager?.endCall()
         }
 
+        requestVideoPermissions()
         renderContacts()
         showContactGrid()
     }
@@ -107,16 +101,20 @@ class VideoCallActivity : AppCompatActivity() {
         gridContacts.removeAllViews()
 
         val savedContacts = prefs.getContacts()
+        val defaultIds = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
+        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
+        val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
         for (index in 0 until 6) {
             val saved = savedContacts.getOrNull(index)
-            val contactId = "contact_${index + 1}"
+            val contactId = defaultIds[index]
 
             val contact = VideoContact(
                 index = index,
-                name = saved?.name?.trim().orEmpty().ifBlank { "Kontakt ${index + 1}" },
-                language = saved?.language?.trim().orEmpty().ifBlank { "sl" },
-                roomId = saved?.phone?.trim().orEmpty().ifBlank { "room_$contactId" }
+                id = contactId,
+                name = saved?.name?.trim().orEmpty().ifBlank { defaultNames[index] },
+                language = saved?.language?.trim().orEmpty().ifBlank { defaultLanguages[index] },
+                roomId = "novarehab_$contactId"
             )
 
             val cell = createContactCell(contact)
@@ -180,7 +178,6 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun showContactGrid() {
         selectedContact = null
-
         contactGridScreen.visibility = View.VISIBLE
         confirmScreen.visibility = View.GONE
         callScreen.visibility = View.GONE
@@ -188,7 +185,6 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun showConfirm(contact: VideoContact) {
         selectedContact = contact
-
         loadContactImage(imgConfirmContact, contact.index)
         tvConfirmName.text = contact.name
         tvConfirmLanguage.text = languageLabel(contact.language)
@@ -200,8 +196,12 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun startCall() {
         val contact = selectedContact ?: return
+        if (!hasVideoPermissions()) {
+            requestVideoPermissions()
+            Toast.makeText(this, "Dovoli kamero in mikrofon za video klic.", Toast.LENGTH_LONG).show()
+            return
+        }
 
-        loadContactImage(imgCallContact, contact.index)
         tvCallName.text = contact.name
         tvCallStatus.text = "Kličem..."
 
@@ -209,7 +209,32 @@ class VideoCallActivity : AppCompatActivity() {
         confirmScreen.visibility = View.GONE
         callScreen.visibility = View.VISIBLE
 
-        videoCallManager.startOutgoingCall(contact.roomId)
+        videoCallManager?.endCall()
+        videoCallManager = VideoCallManager(
+            context = this,
+            localRenderer = localRenderer,
+            remoteRenderer = remoteRenderer,
+            signalingBaseUrl = SIGNALING_BASE_URL,
+            listener = object : VideoCallManager.Listener {
+                override fun onStatus(text: String) {
+                    tvCallStatus.text = text
+                }
+
+                override fun onCallStarted() {
+                    callScreen.visibility = View.VISIBLE
+                }
+
+                override fun onCallEnded() {
+                    showContactGrid()
+                }
+
+                override fun onError(text: String) {
+                    Toast.makeText(this@VideoCallActivity, text, Toast.LENGTH_LONG).show()
+                    tvCallStatus.text = text
+                }
+            }
+        )
+        videoCallManager?.startOutgoingCall(contact.roomId)
     }
 
     private fun loadContactImage(imageView: ImageView, index: Int) {
@@ -224,13 +249,27 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun languageLabel(code: String): String {
         return when (code.lowercase()) {
-            "uk" -> "Ukrajinščina"
+            "uk", "ua" -> "Ukrajinščina"
             "en" -> "Angleščina"
             "de" -> "Nemščina"
             "hr" -> "Hrvaščina"
             "sr" -> "Srbščina"
             else -> "Slovenščina"
         }
+    }
+
+    private fun requestVideoPermissions() {
+        val needed = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (needed.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, needed.toTypedArray(), 501)
+        }
+    }
+
+    private fun hasVideoPermissions(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -249,11 +288,16 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        videoCallManager.endCall()
+        videoCallManager?.endCall()
+        videoCallManager = null
         super.onDestroy()
     }
 
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    companion object {
+        private const val SIGNALING_BASE_URL = "https://YOUR_FIREBASE_DATABASE_URL"
     }
 }
