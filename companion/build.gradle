@@ -33,7 +33,8 @@ android {
             buildConfigField "String", "CONTACT_NAME", "\"Žana\""
             buildConfigField "String", "ROOM_ID", "\"novarehab_zana\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"ua\""
-            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://YOUR_FIREBASE_DATABASE_URL\""
+            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app
+\""
             buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-zana.json\""
             buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-zana-debug.apk\""
         }
@@ -46,7 +47,8 @@ android {
             buildConfigField "String", "CONTACT_NAME", "\"Dedek\""
             buildConfigField "String", "ROOM_ID", "\"novarehab_dedek\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"ua\""
-            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://YOUR_FIREBASE_DATABASE_URL\""
+            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app
+\""
             buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-dedek.json\""
             buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dedek-debug.apk\""
         }
@@ -59,7 +61,7 @@ android {
             buildConfigField "String", "CONTACT_NAME", "\"Inna\""
             buildConfigField "String", "ROOM_ID", "\"novarehab_inna\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"ua\""
-            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://YOUR_FIREBASE_DATABASE_URL\""
+            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
             buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-inna.json\""
             buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-inna-debug.apk\""
         }
@@ -72,7 +74,8 @@ android {
             buildConfigField "String", "CONTACT_NAME", "\"Julija\""
             buildConfigField "String", "ROOM_ID", "\"novarehab_julija\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"ua\""
-            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://YOUR_FIREBASE_DATABASE_URL\""
+            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app
+\""
             buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-julija.json\""
             buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-julija-debug.apk\""
         }
@@ -85,7 +88,8 @@ android {
             buildConfigField "String", "CONTACT_NAME", "\"Kuma\""
             buildConfigField "String", "ROOM_ID", "\"novarehab_kuma\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"ua\""
-            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://YOUR_FIREBASE_DATABASE_URL\""
+            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app
+\""
             buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-kuma.json\""
             buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-kuma-debug.apk\""
         }
@@ -98,7 +102,8 @@ android {
             buildConfigField "String", "CONTACT_NAME", "\"Dusan\""
             buildConfigField "String", "ROOM_ID", "\"novarehab_dusan\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"si\""
-            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://YOUR_FIREBASE_DATABASE_URL\""
+            buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app
+\""
             buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-dusan.json\""
             buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dusan-debug.apk\""
         }
