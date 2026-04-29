@@ -1,9 +1,9 @@
 package com.novarehab.ui
 
+import android.app.AlertDialog
 import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.widget.*
@@ -30,6 +30,17 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerCommIconsPerPage: Spinner
     private lateinit var switchAutoLanguage: Switch
     private lateinit var btnCheckUpdateNow: Button
+    private lateinit var btnRestorePreviousVersion: Button
+    private lateinit var btnShareCompanionApp: Button
+
+    private val companionContacts = listOf(
+        CompanionShareContact("zana", "Žana"),
+        CompanionShareContact("dedek", "Dedek"),
+        CompanionShareContact("inna", "Inna"),
+        CompanionShareContact("julija", "Julija"),
+        CompanionShareContact("kuma", "Kuma"),
+        CompanionShareContact("dusan", "Dusan")
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +50,7 @@ class SettingsActivity : AppCompatActivity() {
 
         addLanguageSettingsPanel()
         addUpdateSettingsPanel()
+        addCompanionSharePanel()
         loadSettings()
         setupButtons()
     }
@@ -184,6 +196,41 @@ class SettingsActivity : AppCompatActivity() {
         }
         panel.addView(btnCheckUpdateNow)
 
+        btnRestorePreviousVersion = Button(this).apply {
+            text = "OBNOVI PREJŠNJO VERZIJO"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF0F3460.toInt())
+            textSize = 15f
+        }
+        panel.addView(btnRestorePreviousVersion)
+
+        val insertIndex = (rootLayout.childCount - 1).coerceAtLeast(0)
+        rootLayout.addView(panel, insertIndex)
+    }
+
+    private fun addCompanionSharePanel() {
+        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 16)
+        }
+
+        panel.addView(TextView(this).apply {
+            text = "Aplikacije za sogovornike"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+
+        btnShareCompanionApp = Button(this).apply {
+            text = "POŠLJI APLIKACIJO ZA SOGOVORNIKA"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF4A1942.toInt())
+            textSize = 14f
+        }
+        panel.addView(btnShareCompanionApp)
+
         val insertIndex = (rootLayout.childCount - 1).coerceAtLeast(0)
         rootLayout.addView(panel, insertIndex)
     }
@@ -215,6 +262,9 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         val contacts = prefs.getContacts()
+        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
+        val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
+
         val nameF = listOf(
             binding.etContact1Name,
             binding.etContact2Name,
@@ -253,15 +303,10 @@ class SettingsActivity : AppCompatActivity() {
         langC.forEach { it.removeAllViews() }
         imgC.forEach { it.removeAllViews() }
 
-        contacts.forEachIndexed { i, contact ->
-            if (i < nameF.size) {
-                nameF[i].setText(contact.name)
-                phoneF[i].setText(contact.phone)
-            }
-        }
-
         for (i in 0 until 6) {
             val contact = contacts.getOrNull(i)
+            nameF[i].setText(contact?.name?.takeIf { it.isNotBlank() } ?: defaultNames[i])
+            phoneF[i].setText(contact?.phone.orEmpty())
 
             val spinner = Spinner(this).apply {
                 val opts = arrayOf("🇸🇮 Slovenščina", "🇺🇦 Ukrajinščina")
@@ -272,7 +317,9 @@ class SettingsActivity : AppCompatActivity() {
                 ).also {
                     it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 }
-                setSelection(if (contact?.language == "uk") 1 else 0)
+
+                val language = contact?.language ?: defaultLanguages[i]
+                setSelection(if (language == "uk") 1 else 0)
             }
             langC[i].addView(spinner)
             contactLangSpinners.add(spinner)
@@ -284,11 +331,13 @@ class SettingsActivity : AppCompatActivity() {
                 } else {
                     setImageResource(android.R.drawable.ic_menu_camera)
                 }
+
                 setBackgroundColor(0xFF333355.toInt())
                 layoutParams = LinearLayout.LayoutParams(80, 80).apply {
                     setMargins(0, 4, 0, 4)
                 }
                 scaleType = ImageView.ScaleType.FIT_CENTER
+
                 setOnClickListener {
                     pendingImageIndex = i
                     startActivityForResult(
@@ -360,6 +409,14 @@ class SettingsActivity : AppCompatActivity() {
             UpdateManager.checkForUpdateNow(this)
         }
 
+        btnRestorePreviousVersion.setOnClickListener {
+            UpdateManager.openBackupInstaller(this)
+        }
+
+        btnShareCompanionApp.setOnClickListener {
+            showCompanionSharePicker()
+        }
+
         binding.btnTestTts.setOnClickListener {
             val key = binding.etOpenAiKey.text.toString().trim()
             val voice = binding.spinnerTtsVoice.selectedItem.toString()
@@ -396,6 +453,61 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    private fun showCompanionSharePicker() {
+        val names = companionContacts.map { it.displayName }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("Izberi sogovornika")
+            .setItems(names) { _, which ->
+                val contact = companionContacts.getOrNull(which)
+                if (contact == null) {
+                    Toast.makeText(this, "Neznan sogovornik.", Toast.LENGTH_LONG).show()
+                    return@setItems
+                }
+
+                shareCompanionApp(contact)
+            }
+            .setNegativeButton("Prekliči", null)
+            .show()
+    }
+
+    private fun shareCompanionApp(contact: CompanionShareContact) {
+        val url = buildCompanionApkUrl(contact.contactId)
+        if (url == null) {
+            Toast.makeText(this, "Neznan kontakt, povezava ni bila ustvarjena.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val message = """
+            Namesti aplikacijo NovaRehab Companion za video klic z Lano.
+
+            1. Klikni povezavo:
+            $url
+
+            2. Prenesi APK.
+
+            3. Po prenosu klikni datoteko in potrdi namestitev.
+
+            Če telefon vpraša za dovoljenje namestitve iz tega vira, dovoli.
+        """.trimIndent()
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "NovaRehab Companion - ${contact.displayName}")
+            putExtra(Intent.EXTRA_TEXT, message)
+        }
+
+        startActivity(Intent.createChooser(intent, "Pošlji povezavo"))
+    }
+
+    private fun buildCompanionApkUrl(contactId: String): String? {
+        val allowedIds = companionContacts.map { it.contactId }.toSet()
+        if (contactId !in allowedIds) return null
+
+        val baseUrl = "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/"
+        return baseUrl + "companion-$contactId-debug.apk"
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -468,14 +580,15 @@ class SettingsActivity : AppCompatActivity() {
             binding.etContact6Phone
         )
 
+        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
         val emojis = listOf("👩", "👨", "👧", "🧑", "👨‍⚕️", "🧑‍💼")
         val contacts = mutableListOf<Contact>()
 
         nameC.forEachIndexed { i, field ->
-            val name = field.text.toString().trim()
+            val name = field.text.toString().trim().ifEmpty { defaultNames[i] }
             val phone = phoneC[i].text.toString().trim()
             val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) "uk" else "sl"
-            contacts.add(Contact(name.ifEmpty { "Kontakt ${i + 1}" }, phone, emojis.getOrElse(i) { "👤" }, lang))
+            contacts.add(Contact(name, phone, emojis.getOrElse(i) { "👤" }, lang))
         }
         prefs.saveContacts(contacts)
 
@@ -519,4 +632,9 @@ class SettingsActivity : AppCompatActivity() {
 
         Toast.makeText(this, "Nastavitve shranjene ✓", Toast.LENGTH_SHORT).show()
     }
+
+    private data class CompanionShareContact(
+        val contactId: String,
+        val displayName: String
+    )
 }
