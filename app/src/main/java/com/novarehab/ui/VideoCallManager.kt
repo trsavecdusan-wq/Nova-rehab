@@ -1,6 +1,45 @@
 package com.novarehab.ui
 
+import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import org.webrtc.AudioSource
+import org.webrtc.AudioTrack
+import org.webrtc.Camera2Enumerator
+import org.webrtc.CameraVideoCapturer
+import org.webrtc.DataChannel
+import org.webrtc.DefaultVideoDecoderFactory
+import org.webrtc.DefaultVideoEncoderFactory
+import org.webrtc.EglBase
+import org.webrtc.IceCandidate
+import org.webrtc.MediaConstraints
+import org.webrtc.MediaStream
+import org.webrtc.PeerConnection
+import org.webrtc.PeerConnectionFactory
+import org.webrtc.RtpReceiver
+import org.webrtc.SdpObserver
+import org.webrtc.SessionDescription
+import org.webrtc.SurfaceTextureHelper
+import org.webrtc.SurfaceViewRenderer
+import org.webrtc.VideoCapturer
+import org.webrtc.VideoSource
+import org.webrtc.VideoTrack
+
 class VideoCallManager(
+    private val context: Context,
+    private val localRenderer: SurfaceViewRenderer,
+    private val remoteRenderer: SurfaceViewRenderer,
+    private val signalingBaseUrl: String,
     private val listener: Listener
 ) {
 
@@ -8,38 +47,407 @@ class VideoCallManager(
         fun onStatus(text: String)
         fun onCallStarted()
         fun onCallEnded()
+        fun onError(text: String)
     }
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val httpClient = OkHttpClient()
+    private val jsonType = "application/json; charset=utf-8".toMediaType()
+
+    private var eglBase: EglBase? = null
+    private var peerConnectionFactory: PeerConnectionFactory? = null
+    private var peerConnection: PeerConnection? = null
+    private var videoCapturer: VideoCapturer? = null
+    private var videoSource: VideoSource? = null
+    private var localVideoTrack: VideoTrack? = null
+    private var audioSource: AudioSource? = null
+    private var localAudioTrack: AudioTrack? = null
+    private var pollJob: Job? = null
     private var currentRoomId: String? = null
-    private var audioMuted: Boolean = false
-    private var cameraEnabled: Boolean = true
+    private var isCaller = false
+    private var remoteDescriptionSet = false
+    private val handledRemoteCandidates = mutableSetOf<String>()
 
     fun startOutgoingCall(roomId: String) {
-        currentRoomId = roomId
-        audioMuted = false
-        cameraEnabled = true
+        if (!isSignalingConfigured()) {
+            listener.onError("Firebase povezava ni nastavljena.")
+            return
+        }
 
-        listener.onStatus("Kličem...")
+        currentRoomId = roomId
+        isCaller = true
+        remoteDescriptionSet = false
+        handledRemoteCandidates.clear()
+
+        listener.onStatus("Pripravljam kamero...")
         listener.onCallStarted()
-        listener.onStatus("Klic vzpostavljen")
+
+        try {
+            initializeWebRtc()
+            createPeerConnection()
+            startLocalMedia()
+            clearRoom(roomId)
+            createOffer(roomId)
+            startCallerPolling(roomId)
+        } catch (e: Exception) {
+            listener.onError("Klica ni bilo mogoce zagnati: ${e.message}")
+            endCall()
+        }
     }
 
     fun endCall() {
-        currentRoomId = null
-        audioMuted = false
-        cameraEnabled = true
+        val roomId = currentRoomId
+        pollJob?.cancel()
+        pollJob = null
 
+        try {
+            videoCapturer?.stopCapture()
+        } catch (e: Exception) {
+        }
+
+        videoCapturer?.dispose()
+        videoCapturer = null
+
+        localVideoTrack?.dispose()
+        localVideoTrack = null
+
+        localAudioTrack?.dispose()
+        localAudioTrack = null
+
+        videoSource?.dispose()
+        videoSource = null
+
+        audioSource?.dispose()
+        audioSource = null
+
+        peerConnection?.close()
+        peerConnection?.dispose()
+        peerConnection = null
+
+        peerConnectionFactory?.dispose()
+        peerConnectionFactory = null
+
+        localRenderer.clearImage()
+        remoteRenderer.clearImage()
+
+        if (roomId != null && isCaller && isSignalingConfigured()) {
+            scope.launch(Dispatchers.IO) {
+                runCatching { deleteRoom(roomId) }
+            }
+        }
+
+        currentRoomId = null
+        isCaller = false
+        remoteDescriptionSet = false
+        handledRemoteCandidates.clear()
         listener.onStatus("Klic prekinjen")
         listener.onCallEnded()
     }
 
     fun muteAudio(enabled: Boolean) {
-        audioMuted = enabled
+        localAudioTrack?.setEnabled(!enabled)
         listener.onStatus(if (enabled) "Mikrofon izklopljen" else "Mikrofon vklopljen")
     }
 
     fun enableCamera(enabled: Boolean) {
-        cameraEnabled = enabled
+        localVideoTrack?.setEnabled(enabled)
         listener.onStatus(if (enabled) "Kamera vklopljena" else "Kamera izklopljena")
+    }
+
+    private fun initializeWebRtc() {
+        if (peerConnectionFactory != null) return
+
+        eglBase = EglBase.create()
+        localRenderer.init(eglBase!!.eglBaseContext, null)
+        localRenderer.setMirror(true)
+        remoteRenderer.init(eglBase!!.eglBaseContext, null)
+        remoteRenderer.setMirror(false)
+
+        PeerConnectionFactory.initialize(
+            PeerConnectionFactory.InitializationOptions.builder(context)
+                .createInitializationOptions()
+        )
+
+        val encoderFactory = DefaultVideoEncoderFactory(
+            eglBase!!.eglBaseContext,
+            true,
+            true
+        )
+        val decoderFactory = DefaultVideoDecoderFactory(eglBase!!.eglBaseContext)
+
+        peerConnectionFactory = PeerConnectionFactory.builder()
+            .setVideoEncoderFactory(encoderFactory)
+            .setVideoDecoderFactory(decoderFactory)
+            .createPeerConnectionFactory()
+    }
+
+    private fun createPeerConnection() {
+        val iceServers = listOf(
+            PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
+        )
+        val config = PeerConnection.RTCConfiguration(iceServers)
+
+        peerConnection = peerConnectionFactory?.createPeerConnection(config, object : PeerConnection.Observer {
+            override fun onSignalingChange(newState: PeerConnection.SignalingState) {
+            }
+
+            override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState) {
+                if (newState == PeerConnection.IceConnectionState.CONNECTED) {
+                    listener.onStatus("Klic vzpostavljen")
+                }
+            }
+
+            override fun onIceConnectionReceivingChange(receiving: Boolean) {
+            }
+
+            override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState) {
+            }
+
+            override fun onIceCandidate(candidate: IceCandidate) {
+                val roomId = currentRoomId ?: return
+                scope.launch(Dispatchers.IO) {
+                    runCatching {
+                        val path = if (isCaller) "callerCandidates" else "receiverCandidates"
+                        sendIceCandidate(roomId, path, candidate)
+                    }
+                }
+            }
+
+            override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) {
+            }
+
+            override fun onAddStream(stream: MediaStream) {
+            }
+
+            override fun onRemoveStream(stream: MediaStream) {
+            }
+
+            override fun onDataChannel(dataChannel: DataChannel) {
+            }
+
+            override fun onRenegotiationNeeded() {
+            }
+
+            override fun onAddTrack(receiver: RtpReceiver, streams: Array<out MediaStream>) {
+                val track = receiver.track()
+                if (track is VideoTrack) {
+                    track.addSink(remoteRenderer)
+                }
+            }
+        })
+    }
+
+    private fun startLocalMedia() {
+        val factory = peerConnectionFactory ?: return
+        val eglContext = eglBase?.eglBaseContext ?: return
+
+        videoCapturer = createCameraCapturer()
+        videoSource = factory.createVideoSource(false)
+        val helper = SurfaceTextureHelper.create("NovaRehabCameraThread", eglContext)
+        videoCapturer?.initialize(helper, context, videoSource!!.capturerObserver)
+        videoCapturer?.startCapture(640, 480, 24)
+
+        localVideoTrack = factory.createVideoTrack("novarehab_video", videoSource)
+        localVideoTrack?.addSink(localRenderer)
+
+        audioSource = factory.createAudioSource(MediaConstraints())
+        localAudioTrack = factory.createAudioTrack("novarehab_audio", audioSource)
+
+        localVideoTrack?.let { peerConnection?.addTrack(it, listOf("novarehab_stream")) }
+        localAudioTrack?.let { peerConnection?.addTrack(it, listOf("novarehab_stream")) }
+    }
+
+    private fun createCameraCapturer(): CameraVideoCapturer? {
+        val enumerator = Camera2Enumerator(context)
+        val deviceNames = enumerator.deviceNames
+
+        for (name in deviceNames) {
+            if (enumerator.isFrontFacing(name)) {
+                enumerator.createCapturer(name, null)?.let { return it }
+            }
+        }
+
+        for (name in deviceNames) {
+            if (!enumerator.isFrontFacing(name)) {
+                enumerator.createCapturer(name, null)?.let { return it }
+            }
+        }
+
+        return null
+    }
+
+    private fun createOffer(roomId: String) {
+        val constraints = MediaConstraints()
+        peerConnection?.createOffer(object : SimpleSdpObserver() {
+            override fun onCreateSuccess(description: SessionDescription) {
+                peerConnection?.setLocalDescription(object : SimpleSdpObserver() {
+                    override fun onSetSuccess() {
+                        scope.launch(Dispatchers.IO) {
+                            runCatching { sendSessionDescription(roomId, "offer", description) }
+                                .onSuccess {
+                                    withContext(Dispatchers.Main) {
+                                        listener.onStatus("Klicem...")
+                                    }
+                                }
+                                .onFailure {
+                                    withContext(Dispatchers.Main) {
+                                        listener.onError("Ponudbe ni bilo mogoce poslati.")
+                                    }
+                                }
+                        }
+                    }
+                }, description)
+            }
+        }, constraints)
+    }
+
+    private fun startCallerPolling(roomId: String) {
+        pollJob?.cancel()
+        pollJob = scope.launch {
+            while (true) {
+                try {
+                    if (!remoteDescriptionSet) {
+                        val answer = withContext(Dispatchers.IO) { getSessionDescription(roomId, "answer") }
+                        if (answer != null) {
+                            peerConnection?.setRemoteDescription(SimpleSdpObserver(), answer)
+                            remoteDescriptionSet = true
+                            listener.onStatus("Klic vzpostavljen")
+                        }
+                    }
+
+                    val candidates = withContext(Dispatchers.IO) {
+                        getIceCandidates(roomId, "receiverCandidates")
+                    }
+                    candidates.forEach { candidate ->
+                        val key = candidate.sdpMid + candidate.sdpMLineIndex + candidate.sdp
+                        if (handledRemoteCandidates.add(key)) {
+                            peerConnection?.addIceCandidate(candidate)
+                        }
+                    }
+                } catch (e: Exception) {
+                }
+
+                delay(1200L)
+            }
+        }
+    }
+
+    private fun isSignalingConfigured(): Boolean {
+        return signalingBaseUrl.startsWith("https://") && !signalingBaseUrl.contains("YOUR_FIREBASE")
+    }
+
+    private fun roomUrl(roomId: String, child: String = ""): String {
+        val base = signalingBaseUrl.trimEnd('/')
+        val suffix = if (child.isBlank()) "" else "/$child"
+        return "$base/rooms/$roomId$suffix.json"
+    }
+
+    private fun clearRoom(roomId: String) {
+        deleteRoom(roomId)
+    }
+
+    private fun deleteRoom(roomId: String) {
+        val request = Request.Builder()
+            .url(roomUrl(roomId))
+            .delete()
+            .build()
+        httpClient.newCall(request).execute().close()
+    }
+
+    private fun sendSessionDescription(roomId: String, child: String, description: SessionDescription) {
+        val json = JSONObject()
+            .put("type", description.type.canonicalForm())
+            .put("sdp", description.description)
+
+        val request = Request.Builder()
+            .url(roomUrl(roomId, child))
+            .put(json.toString().toRequestBody(jsonType))
+            .build()
+
+        httpClient.newCall(request).execute().close()
+    }
+
+    private fun getSessionDescription(roomId: String, child: String): SessionDescription? {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, child))
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+
+            val text = response.body?.string().orEmpty()
+            if (text.isBlank() || text == "null") return null
+
+            val json = JSONObject(text)
+            val type = when (json.optString("type")) {
+                "answer" -> SessionDescription.Type.ANSWER
+                "offer" -> SessionDescription.Type.OFFER
+                else -> return null
+            }
+
+            return SessionDescription(type, json.optString("sdp"))
+        }
+    }
+
+    private fun sendIceCandidate(roomId: String, child: String, candidate: IceCandidate) {
+        val json = JSONObject()
+            .put("sdpMid", candidate.sdpMid)
+            .put("sdpMLineIndex", candidate.sdpMLineIndex)
+            .put("sdp", candidate.sdp)
+
+        val request = Request.Builder()
+            .url(roomUrl(roomId, child))
+            .post(json.toString().toRequestBody(jsonType))
+            .build()
+
+        httpClient.newCall(request).execute().close()
+    }
+
+    private fun getIceCandidates(roomId: String, child: String): List<IceCandidate> {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, child))
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return emptyList()
+
+            val text = response.body?.string().orEmpty()
+            if (text.isBlank() || text == "null") return emptyList()
+
+            val root = JSONObject(text)
+            val candidates = mutableListOf<IceCandidate>()
+            val keys = root.keys()
+
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val item = root.optJSONObject(key) ?: continue
+
+                candidates.add(
+                    IceCandidate(
+                        item.optString("sdpMid"),
+                        item.optInt("sdpMLineIndex"),
+                        item.optString("sdp")
+                    )
+                )
+            }
+
+            return candidates
+        }
+    }
+
+    open class SimpleSdpObserver : SdpObserver {
+        override fun onCreateSuccess(description: SessionDescription) {
+        }
+
+        override fun onSetSuccess() {
+        }
+
+        override fun onCreateFailure(error: String) {
+        }
+
+        override fun onSetFailure(error: String) {
+        }
     }
 }
