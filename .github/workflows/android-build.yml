@@ -44,41 +44,53 @@ jobs:
             :companion:assembleDusanDebug \
             --stacktrace
 
-      - name: Pripravi release APK-je
+      - name: Pripravi APK output
         run: |
-          rm -rf release-apks
-          mkdir -p release-apks
+          rm -rf output
+          mkdir -p output
 
-          cp app/build/outputs/apk/debug/app-debug.apk release-apks/app-debug.apk
-          cp companion/build/outputs/apk/zana/debug/companion-zana-debug.apk release-apks/companion-zana-debug.apk
-          cp companion/build/outputs/apk/dedek/debug/companion-dedek-debug.apk release-apks/companion-dedek-debug.apk
-          cp companion/build/outputs/apk/inna/debug/companion-inna-debug.apk release-apks/companion-inna-debug.apk
-          cp companion/build/outputs/apk/julija/debug/companion-julija-debug.apk release-apks/companion-julija-debug.apk
-          cp companion/build/outputs/apk/kuma/debug/companion-kuma-debug.apk release-apks/companion-kuma-debug.apk
-          cp companion/build/outputs/apk/dusan/debug/companion-dusan-debug.apk release-apks/companion-dusan-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk output/app-debug.apk
+          cp companion/build/outputs/apk/zana/debug/companion-zana-debug.apk output/companion-zana-debug.apk
+          cp companion/build/outputs/apk/dedek/debug/companion-dedek-debug.apk output/companion-dedek-debug.apk
+          cp companion/build/outputs/apk/inna/debug/companion-inna-debug.apk output/companion-inna-debug.apk
+          cp companion/build/outputs/apk/julija/debug/companion-julija-debug.apk output/companion-julija-debug.apk
+          cp companion/build/outputs/apk/kuma/debug/companion-kuma-debug.apk output/companion-kuma-debug.apk
+          cp companion/build/outputs/apk/dusan/debug/companion-dusan-debug.apk output/companion-dusan-debug.apk
 
-      - name: Preveri seznam release APK-jev
+      - name: Ustvari app-version.json
+        run: |
+          cat > app-version.json <<'EOF'
+          {
+            "versionCode": 1,
+            "versionName": "1.0",
+            "apkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-debug.apk",
+            "message": "Nova verzija aplikacije NovaRehab je na voljo."
+          }
+          EOF
+
+      - name: Preveri seznam APK-jev
         run: |
           echo "APK datoteke za release:"
-          find release-apks -maxdepth 1 -type f -name '*.apk' -print | sort
+          find output -maxdepth 1 -type f -name '*.apk' -print | sort
 
-          test -f release-apks/app-debug.apk
-          test -f release-apks/companion-zana-debug.apk
-          test -f release-apks/companion-dedek-debug.apk
-          test -f release-apks/companion-inna-debug.apk
-          test -f release-apks/companion-julija-debug.apk
-          test -f release-apks/companion-kuma-debug.apk
-          test -f release-apks/companion-dusan-debug.apk
+          test -f output/app-debug.apk
+          test -f output/companion-zana-debug.apk
+          test -f output/companion-dedek-debug.apk
+          test -f output/companion-inna-debug.apk
+          test -f output/companion-julija-debug.apk
+          test -f output/companion-kuma-debug.apk
+          test -f output/companion-dusan-debug.apk
+          test -f app-version.json
 
-          if [ -f release-apks/companion-debug.apk ]; then
-            echo "NAPAKA: release-apks/companion-debug.apk ne sme obstajati"
+          if [ -f output/companion-debug.apk ]; then
+            echo "NAPAKA: output/companion-debug.apk ne sme obstajati"
             exit 1
           fi
 
-          apk_count=$(find release-apks -maxdepth 1 -type f -name '*.apk' | wc -l | tr -d ' ')
+          apk_count=$(find output -maxdepth 1 -type f -name '*.apk' | wc -l | tr -d ' ')
           if [ "$apk_count" != "7" ]; then
-            echo "NAPAKA: release-apks mora imeti točno 7 APK datotek, našel sem $apk_count"
-            find release-apks -maxdepth 1 -type f -print
+            echo "NAPAKA: output mora imeti točno 7 APK datotek, našel sem $apk_count"
+            find output -maxdepth 1 -type f -print
             exit 1
           fi
 
@@ -107,18 +119,20 @@ jobs:
             fi
           }
 
-          check_package release-apks/companion-zana-debug.apk com.novarehab.companion.zana
-          check_package release-apks/companion-dedek-debug.apk com.novarehab.companion.dedek
-          check_package release-apks/companion-inna-debug.apk com.novarehab.companion.inna
-          check_package release-apks/companion-julija-debug.apk com.novarehab.companion.julija
-          check_package release-apks/companion-kuma-debug.apk com.novarehab.companion.kuma
-          check_package release-apks/companion-dusan-debug.apk com.novarehab.companion.dusan
+          check_package output/companion-zana-debug.apk com.novarehab.companion.zana
+          check_package output/companion-dedek-debug.apk com.novarehab.companion.dedek
+          check_package output/companion-inna-debug.apk com.novarehab.companion.inna
+          check_package output/companion-julija-debug.apk com.novarehab.companion.julija
+          check_package output/companion-kuma-debug.apk com.novarehab.companion.kuma
+          check_package output/companion-dusan-debug.apk com.novarehab.companion.dusan
 
       - name: Naloži debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: NovaRehab-debug-apks
-          path: release-apks/*.apk
+          path: |
+            output/*.apk
+            app-version.json
           if-no-files-found: error
 
       - name: Odstrani star napačen companion-debug.apk iz release
@@ -135,6 +149,8 @@ jobs:
           prerelease: false
           make_latest: true
           overwrite_files: true
-          files: release-apks/*.apk
+          files: |
+            output/*.apk
+            app-version.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
