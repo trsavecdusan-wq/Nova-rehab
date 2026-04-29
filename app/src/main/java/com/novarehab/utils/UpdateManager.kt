@@ -1,6 +1,7 @@
 package com.novarehab.utils
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -33,8 +34,8 @@ object UpdateManager {
     private val httpClient = OkHttpClient()
 
     fun markCurrentLaunchSuccessful(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit()
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
             .putBoolean(KEY_UPDATE_PENDING, false)
             .putBoolean(KEY_UPDATE_SUCCESS, true)
             .apply()
@@ -46,14 +47,14 @@ object UpdateManager {
         val updateSuccess = prefs.getBoolean(KEY_UPDATE_SUCCESS, true)
         val backupFile = getBackupApkFile()
 
-        if (!updatePending || updateSuccess || !backupFile.exists() || backupFile.length() <= 0L) {
+        if (!updatePending || updateSuccess || !isUsableApk(backupFile)) {
             return
         }
 
         AlertDialog.Builder(activity)
             .setTitle("Obnova aplikacije")
-            .setMessage("Prejšnja verzija je na voljo. Želite obnoviti?")
-            .setPositiveButton("OBNOVI PREJŠNJO VERZIJO") { _, _ ->
+            .setMessage("Prejsnja verzija je na voljo. Zelite obnoviti?")
+            .setPositiveButton("OBNOVI PREJSNJO VERZIJO") { _, _ ->
                 openApkInstaller(activity, backupFile)
             }
             .setNegativeButton("Ne zdaj", null)
@@ -87,7 +88,7 @@ object UpdateManager {
                     } else {
                         Toast.makeText(
                             activity,
-                            "Nameščena je zadnja verzija.",
+                            "Namescena je zadnja verzija.",
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -95,7 +96,7 @@ object UpdateManager {
                 onFailure = { error ->
                     Toast.makeText(
                         activity,
-                        "Posodobitve ni bilo mogoče preveriti: ${error.message}",
+                        "Posodobitve ni bilo mogoce preveriti: ${error.message}",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -116,6 +117,7 @@ object UpdateManager {
                 append(versionName)
             }
             append("\n\nNamestitev bo odprla Android potrditveno okno.")
+            append("\nAplikacija se ne namesca tiho.")
         }
 
         AlertDialog.Builder(activity)
@@ -152,7 +154,7 @@ object UpdateManager {
                 onFailure = { error ->
                     Toast.makeText(
                         activity,
-                        "Posodobitve ni bilo mogoče pripraviti: ${error.message}",
+                        "Posodobitve ni bilo mogoce pripraviti: ${error.message}",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -162,8 +164,8 @@ object UpdateManager {
 
     fun openBackupInstaller(activity: Activity) {
         val backupFile = getBackupApkFile()
-        if (!backupFile.exists() || backupFile.length() <= 0L) {
-            Toast.makeText(activity, "Prejšnja verzija ni najdena.", Toast.LENGTH_LONG).show()
+        if (!isUsableApk(backupFile)) {
+            Toast.makeText(activity, "Prejsnja verzija ni najdena.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -178,7 +180,7 @@ object UpdateManager {
 
         httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw IllegalStateException("Strežnik je vrnil napako ${response.code}")
+                throw IllegalStateException("Streznik je vrnil napako ${response.code}")
             }
 
             val body = response.body?.string().orEmpty()
@@ -210,18 +212,18 @@ object UpdateManager {
 
     private fun saveCurrentApkBackupIfMissing(context: Context) {
         val backupFile = getBackupApkFile()
-        if (backupFile.exists() && backupFile.length() > 0L) return
+        if (isUsableApk(backupFile)) return
 
         val sourceApk = File(context.applicationInfo.sourceDir)
-        if (!sourceApk.exists() || sourceApk.length() <= 0L) {
-            throw IllegalStateException("Trenutne APK datoteke ni mogoče najti")
+        if (!isUsableApk(sourceApk)) {
+            throw IllegalStateException("Trenutne APK datoteke ni mogoce najti")
         }
 
         backupFile.parentFile?.mkdirs()
         sourceApk.copyTo(backupFile, overwrite = true)
 
-        if (!backupFile.exists() || backupFile.length() <= 0L) {
-            throw IllegalStateException("Varnostne kopije APK ni bilo mogoče shraniti")
+        if (!isUsableApk(backupFile)) {
+            throw IllegalStateException("Varnostne kopije APK ni bilo mogoce shraniti")
         }
     }
 
@@ -273,7 +275,15 @@ object UpdateManager {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        context.startActivity(intent)
+        try {
+            context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "Namestitvenega programa ni bilo mogoce odpreti.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun isUsableApk(file: File): Boolean {
+        return file.exists() && file.isFile && file.length() > 0L
     }
 
     private fun getNovaRehabDirectory(): File {
