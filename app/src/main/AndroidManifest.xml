@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
@@ -30,24 +31,31 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.NovaRehab">
 
-        <activity android:name=".ui.MainActivity" android:exported="true"
-            android:screenOrientation="portrait" android:launchMode="singleTop">
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".ui.SettingsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.GalleryActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.MirrorActivity" android:exported="false" android:screenOrientation="portrait" />
-                <activity android:name=".ui.MusicActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".ui.MusicActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.StatsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.NavigationActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.IconSettingsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.CommunicationActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".ui.VideoCallActivity" android:exported="false" android:screenOrientation="portrait" />
 
-        <service android:name=".service.RadioService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
+        <service
+            android:name=".service.RadioService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
         <service android:name=".service.UpdateService" android:exported="false" />
 
         <receiver android:name=".utils.BootReceiver" android:exported="true">
@@ -56,10 +64,13 @@
             </intent-filter>
         </receiver>
 
-        <provider android:name="androidx.core.content.FileProvider"
+        <provider
+            android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
-            android:exported="false" android:grantUriPermissions="true">
-            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_provider_paths" />
         </provider>
 
