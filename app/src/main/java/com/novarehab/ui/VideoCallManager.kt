@@ -90,7 +90,7 @@ class VideoCallManager(
             createOffer(roomId)
             startCallerPolling(roomId)
         } catch (e: Exception) {
-            listener.onError("Klica ni bilo mogoce zagnati: ${e.message}")
+            listener.onError("Klica ni bilo mogoče zagnati: ${e.message}")
             endCall()
         }
     }
@@ -127,8 +127,11 @@ class VideoCallManager(
         peerConnectionFactory?.dispose()
         peerConnectionFactory = null
 
-        localRenderer.clearImage()
-        remoteRenderer.clearImage()
+        try {
+            localRenderer.clearImage()
+            remoteRenderer.clearImage()
+        } catch (e: Exception) {
+        }
 
         if (roomId != null && isCaller && isSignalingConfigured()) {
             scope.launch(Dispatchers.IO) {
@@ -158,9 +161,12 @@ class VideoCallManager(
         if (peerConnectionFactory != null) return
 
         eglBase = EglBase.create()
-        localRenderer.init(eglBase!!.eglBaseContext, null)
+        val eglContext = eglBase!!.eglBaseContext
+
+        localRenderer.init(eglContext, null)
         localRenderer.setMirror(true)
-        remoteRenderer.init(eglBase!!.eglBaseContext, null)
+
+        remoteRenderer.init(eglContext, null)
         remoteRenderer.setMirror(false)
 
         PeerConnectionFactory.initialize(
@@ -168,12 +174,8 @@ class VideoCallManager(
                 .createInitializationOptions()
         )
 
-        val encoderFactory = DefaultVideoEncoderFactory(
-            eglBase!!.eglBaseContext,
-            true,
-            true
-        )
-        val decoderFactory = DefaultVideoDecoderFactory(eglBase!!.eglBaseContext)
+        val encoderFactory = DefaultVideoEncoderFactory(eglContext, true, true)
+        val decoderFactory = DefaultVideoDecoderFactory(eglContext)
 
         peerConnectionFactory = PeerConnectionFactory.builder()
             .setVideoEncoderFactory(encoderFactory)
@@ -182,12 +184,13 @@ class VideoCallManager(
     }
 
     private fun createPeerConnection() {
+        val factory = peerConnectionFactory ?: return
         val iceServers = listOf(
             PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
         )
         val config = PeerConnection.RTCConfiguration(iceServers)
 
-        peerConnection = peerConnectionFactory?.createPeerConnection(config, object : PeerConnection.Observer {
+        peerConnection = factory.createPeerConnection(config, object : PeerConnection.Observer {
             override fun onSignalingChange(newState: PeerConnection.SignalingState) {
             }
 
@@ -213,7 +216,7 @@ class VideoCallManager(
                 }
             }
 
-            override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) {
+            override fun onIceCandidatesRemoved(candidates: Array<IceCandidate>) {
             }
 
             override fun onAddStream(stream: MediaStream) {
@@ -228,7 +231,7 @@ class VideoCallManager(
             override fun onRenegotiationNeeded() {
             }
 
-            override fun onAddTrack(receiver: RtpReceiver, streams: Array<out MediaStream>) {
+            override fun onAddTrack(receiver: RtpReceiver, streams: Array<MediaStream>) {
                 val track = receiver.track()
                 if (track is VideoTrack) {
                     track.addSink(remoteRenderer)
@@ -239,22 +242,32 @@ class VideoCallManager(
 
     private fun startLocalMedia() {
         val factory = peerConnectionFactory ?: return
+        val connection = peerConnection ?: return
         val eglContext = eglBase?.eglBaseContext ?: return
 
-        videoCapturer = createCameraCapturer()
-        videoSource = factory.createVideoSource(false)
+        val capturer = createCameraCapturer()
+            ?: throw IllegalStateException("Kamera ni najdena")
+
+        val createdVideoSource = factory.createVideoSource(false)
         val helper = SurfaceTextureHelper.create("NovaRehabCameraThread", eglContext)
-        videoCapturer?.initialize(helper, context, videoSource!!.capturerObserver)
-        videoCapturer?.startCapture(640, 480, 24)
 
-        localVideoTrack = factory.createVideoTrack("novarehab_video", videoSource)
-        localVideoTrack?.addSink(localRenderer)
+        capturer.initialize(helper, context, createdVideoSource.capturerObserver)
+        capturer.startCapture(640, 480, 24)
 
-        audioSource = factory.createAudioSource(MediaConstraints())
-        localAudioTrack = factory.createAudioTrack("novarehab_audio", audioSource)
+        val createdVideoTrack = factory.createVideoTrack("novarehab_video", createdVideoSource)
+        createdVideoTrack.addSink(localRenderer)
 
-        localVideoTrack?.let { peerConnection?.addTrack(it, listOf("novarehab_stream")) }
-        localAudioTrack?.let { peerConnection?.addTrack(it, listOf("novarehab_stream")) }
+        val createdAudioSource = factory.createAudioSource(MediaConstraints())
+        val createdAudioTrack = factory.createAudioTrack("novarehab_audio", createdAudioSource)
+
+        connection.addTrack(createdVideoTrack, listOf("novarehab_stream"))
+        connection.addTrack(createdAudioTrack, listOf("novarehab_stream"))
+
+        videoCapturer = capturer
+        videoSource = createdVideoSource
+        localVideoTrack = createdVideoTrack
+        audioSource = createdAudioSource
+        localAudioTrack = createdAudioTrack
     }
 
     private fun createCameraCapturer(): CameraVideoCapturer? {
@@ -263,13 +276,15 @@ class VideoCallManager(
 
         for (name in deviceNames) {
             if (enumerator.isFrontFacing(name)) {
-                enumerator.createCapturer(name, null)?.let { return it }
+                val capturer = enumerator.createCapturer(name, null)
+                if (capturer != null) return capturer
             }
         }
 
         for (name in deviceNames) {
             if (!enumerator.isFrontFacing(name)) {
-                enumerator.createCapturer(name, null)?.let { return it }
+                val capturer = enumerator.createCapturer(name, null)
+                if (capturer != null) return capturer
             }
         }
 
@@ -277,26 +292,31 @@ class VideoCallManager(
     }
 
     private fun createOffer(roomId: String) {
+        val connection = peerConnection ?: return
         val constraints = MediaConstraints()
-        peerConnection?.createOffer(object : SimpleSdpObserver() {
+
+        connection.createOffer(object : SimpleSdpObserver() {
             override fun onCreateSuccess(description: SessionDescription) {
-                peerConnection?.setLocalDescription(object : SimpleSdpObserver() {
+                connection.setLocalDescription(object : SimpleSdpObserver() {
                     override fun onSetSuccess() {
                         scope.launch(Dispatchers.IO) {
-                            runCatching { sendSessionDescription(roomId, "offer", description) }
-                                .onSuccess {
-                                    withContext(Dispatchers.Main) {
-                                        listener.onStatus("Klicem...")
-                                    }
+                            try {
+                                sendSessionDescription(roomId, "offer", description)
+                                withContext(Dispatchers.Main) {
+                                    listener.onStatus("Kličem...")
                                 }
-                                .onFailure {
-                                    withContext(Dispatchers.Main) {
-                                        listener.onError("Ponudbe ni bilo mogoce poslati.")
-                                    }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    listener.onError("Ponudbe ni bilo mogoče poslati.")
                                 }
+                            }
                         }
                     }
                 }, description)
+            }
+
+            override fun onCreateFailure(error: String) {
+                listener.onError("Ponudbe ni bilo mogoče ustvariti.")
             }
         }, constraints)
     }
@@ -307,7 +327,10 @@ class VideoCallManager(
             while (true) {
                 try {
                     if (!remoteDescriptionSet) {
-                        val answer = withContext(Dispatchers.IO) { getSessionDescription(roomId, "answer") }
+                        val answer = withContext(Dispatchers.IO) {
+                            getSessionDescription(roomId, "answer")
+                        }
+
                         if (answer != null) {
                             peerConnection?.setRemoteDescription(SimpleSdpObserver(), answer)
                             remoteDescriptionSet = true
@@ -318,6 +341,7 @@ class VideoCallManager(
                     val candidates = withContext(Dispatchers.IO) {
                         getIceCandidates(roomId, "receiverCandidates")
                     }
+
                     candidates.forEach { candidate ->
                         val key = candidate.sdpMid + candidate.sdpMLineIndex + candidate.sdp
                         if (handledRemoteCandidates.add(key)) {
@@ -351,7 +375,9 @@ class VideoCallManager(
             .url(roomUrl(roomId))
             .delete()
             .build()
-        httpClient.newCall(request).execute().close()
+
+        httpClient.newCall(request).execute().use {
+        }
     }
 
     private fun sendSessionDescription(roomId: String, child: String, description: SessionDescription) {
@@ -364,7 +390,8 @@ class VideoCallManager(
             .put(json.toString().toRequestBody(jsonType))
             .build()
 
-        httpClient.newCall(request).execute().close()
+        httpClient.newCall(request).execute().use {
+        }
     }
 
     private fun getSessionDescription(roomId: String, child: String): SessionDescription? {
@@ -401,7 +428,8 @@ class VideoCallManager(
             .post(json.toString().toRequestBody(jsonType))
             .build()
 
-        httpClient.newCall(request).execute().close()
+        httpClient.newCall(request).execute().use {
+        }
     }
 
     private fun getIceCandidates(roomId: String, child: String): List<IceCandidate> {
