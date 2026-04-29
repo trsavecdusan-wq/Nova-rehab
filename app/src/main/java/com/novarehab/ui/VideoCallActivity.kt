@@ -298,6 +298,7 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val SIGNALING_BASE_URL = "https://YOUR_FIREBASE_DATABASE_URL"
+        private const val SIGNALING_BASE_URL = "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
+
     }
 }
