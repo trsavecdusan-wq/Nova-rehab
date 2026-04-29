@@ -39,7 +39,8 @@ class DailyUpdateCheckWorker(
 
             Result.success()
         } catch (e: Exception) {
-            Result.retry()
+            // Ce ni interneta ali GitHub trenutno ni dosegljiv, aplikacije ne obremenjujemo z retry zanko.
+            Result.success()
         }
     }
 
