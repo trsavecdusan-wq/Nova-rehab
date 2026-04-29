@@ -1,74 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp"
-    android:background="#1A1A2E">
+    android:background="#050510">
 
-    <TextView
-        android:id="@+id/tvTitle"
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/remoteRenderer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/localRenderer"
+        android:layout_width="120dp"
+        android:layout_height="160dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp" />
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="NovaRehab Companion"
-        android:textColor="#E94560"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="24dp" />
+        android:layout_gravity="top"
+        android:orientation="vertical"
+        android:background="#CC1A1A2E"
+        android:padding="16dp">
 
-    <TextView
-        android:id="@+id/tvStatus"
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NovaRehab Companion"
+            android:textColor="#E94560"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Povezano z Lano"
+            android:textColor="#FFFFFF"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/tvContactInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Kontakt"
+            android:textColor="#B8D8FF"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Povezano z Lano"
-        android:textColor="#FFFFFF"
-        android:textSize="30sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="16dp" />
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:background="#CC1A1A2E"
+        android:padding="16dp">
 
-    <TextView
-        android:id="@+id/tvContactInfo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Kontakt"
-        android:textColor="#B8D8FF"
-        android:textSize="22sp"
-        android:gravity="center"
-        android:layout_marginBottom="48dp" />
+        <Button
+            android:id="@+id/btnAcceptCall"
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:text="SPREJMI KLIC"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:backgroundTint="#1B8F3A"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="14dp" />
 
-    <Button
-        android:id="@+id/btnAcceptCall"
-        android:layout_width="match_parent"
-        android:layout_height="78dp"
-        android:text="SPREJMI KLIC"
-        android:textSize="26sp"
-        android:textStyle="bold"
-        android:backgroundTint="#1B8F3A"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="18dp" />
+        <Button
+            android:id="@+id/btnRejectCall"
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:text="ZAVRNI KLIC"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:backgroundTint="#B71C1C"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="14dp" />
 
-    <Button
-        android:id="@+id/btnRejectCall"
-        android:layout_width="match_parent"
-        android:layout_height="78dp"
-        android:text="ZAVRNI KLIC"
-        android:textSize="26sp"
-        android:textStyle="bold"
-        android:backgroundTint="#B71C1C"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="18dp" />
+        <Button
+            android:id="@+id/btnCallLana"
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:text="POKLIČI LANO"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:backgroundTint="#0F3460"
+            android:textColor="#FFFFFF" />
 
-    <Button
-        android:id="@+id/btnCallLana"
-        android:layout_width="match_parent"
-        android:layout_height="78dp"
-        android:text="POKLIČI LANO"
-        android:textSize="26sp"
-        android:textStyle="bold"
-        android:backgroundTint="#0F3460"
-        android:textColor="#FFFFFF" />
+    </LinearLayout>
 
-</LinearLayout>
+</FrameLayout>
