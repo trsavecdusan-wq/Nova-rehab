@@ -55,6 +55,7 @@ class OpenAiTtsManager(private val context: Context) {
         language: String,
         apiKey: String,
         voice: String,
+        apiBaseUrl: String = "",
         onDone: () -> Unit = {}
     ) {
         speak(
@@ -62,6 +63,7 @@ class OpenAiTtsManager(private val context: Context) {
             language = language,
             apiKey = apiKey,
             voice = voice,
+            apiBaseUrl = apiBaseUrl,
             speed = 0.92f,
             volume = 1.0f,
             style = "Speak clearly, warmly, calmly and naturally. Use a gentle rehabilitation assistant voice. Keep the speech easy to understand, with good articulation and a natural Slovenian rhythm when speaking Slovenian.",
@@ -74,6 +76,7 @@ class OpenAiTtsManager(private val context: Context) {
         language: String,
         apiKey: String,
         voice: String,
+        apiBaseUrl: String,
         speed: Float,
         volume: Float,
         style: String,
@@ -95,11 +98,12 @@ class OpenAiTtsManager(private val context: Context) {
             return
         }
 
-        if (apiKey.isNotBlank() && isOnline()) {
+        if (apiKey.isNotBlank() && apiBaseUrl.isNotBlank() && isOnline()) {
             speakOpenAI(
                 text = clean,
                 language = language,
                 apiKey = apiKey,
+                apiBaseUrl = apiBaseUrl,
                 voice = safeVoice,
                 speed = safeSpeed,
                 volume = safeVolume,
@@ -116,6 +120,7 @@ class OpenAiTtsManager(private val context: Context) {
         text: String,
         language: String,
         apiKey: String,
+        apiBaseUrl: String,
         voice: String,
         speed: Float,
         volume: Float,
@@ -135,7 +140,7 @@ class OpenAiTtsManager(private val context: Context) {
                 }
 
                 val request = Request.Builder()
-                    .url("https://api.openai.com/v1/audio/speech")
+                    .url(buildEndpoint(apiBaseUrl, "v1/audio/speech"))
                     .header("Authorization", "Bearer $apiKey")
                     .header("Content-Type", "application/json")
                     .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
@@ -239,7 +244,7 @@ class OpenAiTtsManager(private val context: Context) {
 
             else -> listOf(
                 Locale(language),
-                Locale( language, "")
+                Locale(language, "")
             )
         }
 
@@ -304,6 +309,16 @@ class OpenAiTtsManager(private val context: Context) {
             "alloy", "ash", "ballad", "coral", "echo", "fable", "nova",
             "onyx", "sage", "shimmer", "verse", "marin", "cedar" -> voice.trim().lowercase()
             else -> "marin"
+        }
+    }
+
+    private fun buildEndpoint(baseUrl: String, path: String): String {
+        val base = baseUrl.trim().trimEnd('/')
+        val cleanPath = path.trim().trimStart('/')
+        return if (base.endsWith("/v1")) {
+            "$base/${cleanPath.removePrefix("v1/")}"
+        } else {
+            "$base/$cleanPath"
         }
     }
 
