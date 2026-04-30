@@ -102,7 +102,7 @@ class VideoCallActivity : AppCompatActivity() {
 
         val savedContacts = prefs.getContacts()
         val defaultIds = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
-        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
+        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
         val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
         for (index in 0 until 6) {
@@ -171,6 +171,15 @@ class VideoCallActivity : AppCompatActivity() {
             })
 
             setOnClickListener {
+                if (!prefs.isContactOutgoingCallEnabled(contact.index)) {
+                    Toast.makeText(
+                        this@VideoCallActivity,
+                        "Odhodni video klici za ta kontakt so izklopljeni.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@setOnClickListener
+                }
+
                 showConfirm(contact)
             }
         }
@@ -196,6 +205,13 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun startCall() {
         val contact = selectedContact ?: return
+
+        if (!prefs.isContactOutgoingCallEnabled(contact.index)) {
+            Toast.makeText(this, "Odhodni video klici za ta kontakt so izklopljeni.", Toast.LENGTH_LONG).show()
+            showContactGrid()
+            return
+        }
+
         if (!hasVideoPermissions()) {
             requestVideoPermissions()
             Toast.makeText(this, "Dovoli kamero in mikrofon za video klic.", Toast.LENGTH_LONG).show()
@@ -203,7 +219,7 @@ class VideoCallActivity : AppCompatActivity() {
         }
 
         tvCallName.text = contact.name
-        tvCallStatus.text = "Kličem..."
+        tvCallStatus.text = "Klicem..."
 
         contactGridScreen.visibility = View.GONE
         confirmScreen.visibility = View.GONE
@@ -249,12 +265,12 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun languageLabel(code: String): String {
         return when (code.lowercase()) {
-            "uk", "ua" -> "Ukrajinščina"
-            "en" -> "Angleščina"
-            "de" -> "Nemščina"
-            "hr" -> "Hrvaščina"
-            "sr" -> "Srbščina"
-            else -> "Slovenščina"
+            "uk", "ua" -> "Ukrajinscina"
+            "en" -> "Anglescina"
+            "de" -> "Nemscina"
+            "hr" -> "Hrvascina"
+            "sr" -> "Srbscina"
+            else -> "Slovenscina"
         }
     }
 
@@ -262,6 +278,7 @@ class VideoCallActivity : AppCompatActivity() {
         val needed = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
+
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), 501)
         }
@@ -299,6 +316,5 @@ class VideoCallActivity : AppCompatActivity() {
 
     companion object {
         private const val SIGNALING_BASE_URL = "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
-
     }
 }
