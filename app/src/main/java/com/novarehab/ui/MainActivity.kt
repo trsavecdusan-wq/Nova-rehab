@@ -45,6 +45,11 @@ import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
 import com.novarehab.utils.UpdateManager
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -54,6 +59,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val MAX_SUBMENU_ITEMS = 18
+        private const val SIGNALING_BASE_URL = "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -74,9 +80,15 @@ class MainActivity : AppCompatActivity() {
     private val kioskHandler = Handler(Looper.getMainLooper())
     private val clockHandler = Handler(Looper.getMainLooper())
     private val languageReturnHandler = Handler(Looper.getMainLooper())
+    private val incomingCallHandler = Handler(Looper.getMainLooper())
+    private val httpClient = OkHttpClient()
+    private val jsonType = "application/json; charset=utf-8".toMediaType()
+
     private var kioskRunnable: Runnable? = null
     private var clockRunnable: Runnable? = null
     private var languageReturnRunnable: Runnable? = null
+    private var incomingCallRunnable: Runnable? = null
+    private var activeIncomingRoomId: String? = null
 
     private lateinit var speedGestureDetector: GestureDetector
 
@@ -122,6 +134,7 @@ class MainActivity : AppCompatActivity() {
         if (prefs.isAutoLanguageEnabled()) setupLanguageDetector()
         scheduleReports()
         scheduleDailyUpdateCheck()
+        startIncomingCallPolling()
 
         stats.log(StatEvent.APP_START)
         startService(Intent(this, UpdateService::class.java))
@@ -329,17 +342,22 @@ class MainActivity : AppCompatActivity() {
     private fun handleCommunicationItem(item: CommunicationItem) {
         val iconTextManager = IconTextManager(this)
         val mainText = iconTextManager.getText(item.id).ifBlank { item.ttsText }
-        val submenuEnabled = prefs.isCommSubmenuEnabled(item.id, false)
+        val submenuEnabled = prefs.isCommSubmenuEnabled(item.id, defaultSubmenuEnabled(item.id))
 
         if (submenuEnabled && item.children.isNotEmpty()) {
             speakComm(mainText, "sl", logEvent = false) {
-                showCommunicationSubmenu(item)
                 val prompt = iconTextManager.getSubmenuPrompt(item.id).ifBlank { item.ttsText }
-                speakComm(prompt, "sl", logEvent = false)
+                speakComm(prompt, "sl", logEvent = false) {
+                    showCommunicationSubmenu(item)
+                }
             }
         } else {
             speakComm(mainText, "sl")
         }
+    }
+
+    private fun defaultSubmenuEnabled(id: String): Boolean {
+        return id in setOf("piti", "jesti", "slabo", "pomoc")
     }
 
     private fun showCommunicationSubmenu(parent: CommunicationItem) {
@@ -516,11 +534,7 @@ class MainActivity : AppCompatActivity() {
 
         if (targetLang != "sl") {
             if (!apiReady) {
-                Toast.makeText(
-                    this,
-                    "API ni nastavljen.",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(this, "API ni nastavljen.", Toast.LENGTH_LONG).show()
                 speakFinal(text)
             } else {
                 translateManager.translate(text, targetLang, apiToken, apiBaseUrl) { translated ->
@@ -721,6 +735,121 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun startIncomingCallPolling() {
+        incomingCallRunnable?.let { incomingCallHandler.removeCallbacks(it) }
+
+        incomingCallRunnable = object : Runnable {
+            override fun run() {
+                checkCompanionIncomingRequests()
+                incomingCallHandler.postDelayed(this, 3000L)
+            }
+        }
+
+        incomingCallHandler.postDelayed(incomingCallRunnable!!, 1500L)
+    }
+
+    private fun checkCompanionIncomingRequests() {
+        Thread {
+            val request = findIncomingCallRequest()
+            if (request != null) {
+                incomingCallHandler.post {
+                    showIncomingCallDialog(request)
+                }
+            }
+        }.start()
+    }
+
+    private fun findIncomingCallRequest(): IncomingCallRequest? {
+        val ids = listOf("contact1", "contact2", "contact3", "contact4", "contact5", "contact6")
+        val contacts = prefs.getContacts()
+
+        ids.forEachIndexed { index, id ->
+            if (!prefs.isContactIncomingCallEnabled(index)) return@forEachIndexed
+
+            val roomId = "novarehab_$id"
+            if (activeIncomingRoomId == roomId) return@forEachIndexed
+
+            val json = getOutgoingRequest(roomId) ?: return@forEachIndexed
+            if (json.optString("status") != "calling") return@forEachIndexed
+
+            val name = json.optString("contactName")
+                .ifBlank { contacts.getOrNull(index)?.name }
+                .orEmpty()
+                .ifBlank { id.uppercase() }
+
+            return IncomingCallRequest(roomId, name)
+        }
+
+        return null
+    }
+
+    private fun getOutgoingRequest(roomId: String): JSONObject? {
+        return try {
+            val request = Request.Builder()
+                .url(roomUrl(roomId, "outgoingRequest"))
+                .get()
+                .build()
+
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return null
+
+                val raw = response.body?.string().orEmpty()
+                if (raw.isBlank() || raw == "null") null else JSONObject(raw)
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun showIncomingCallDialog(request: IncomingCallRequest) {
+        if (activeIncomingRoomId == request.roomId || isFinishing) return
+        activeIncomingRoomId = request.roomId
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("${request.contactName} klice")
+            .setMessage("TESTNI KLIC\nSogovornik zeli poklicati Lano.")
+            .setPositiveButton("SPREJMI") { _, _ ->
+                sendOutgoingRequestStatus(request.roomId, "accepted")
+                Toast.makeText(this, "Testni klic sprejet.", Toast.LENGTH_LONG).show()
+                activeIncomingRoomId = null
+            }
+            .setNegativeButton("ZAVRNI") { _, _ ->
+                sendOutgoingRequestStatus(request.roomId, "rejected")
+                Toast.makeText(this, "Klic zavrnjen.", Toast.LENGTH_SHORT).show()
+                activeIncomingRoomId = null
+            }
+            .setOnCancelListener {
+                sendOutgoingRequestStatus(request.roomId, "rejected")
+                activeIncomingRoomId = null
+            }
+            .show()
+    }
+
+    private fun sendOutgoingRequestStatus(roomId: String, status: String) {
+        Thread {
+            try {
+                val body = JSONObject()
+                    .put("status", status)
+                    .put("updatedAt", System.currentTimeMillis())
+                    .toString()
+                    .toRequestBody(jsonType)
+
+                val request = Request.Builder()
+                    .url(roomUrl(roomId, "outgoingRequest"))
+                    .patch(body)
+                    .build()
+
+                httpClient.newCall(request).execute().use {
+                }
+            } catch (_: Exception) {
+            }
+        }.start()
+    }
+
+    private fun roomUrl(roomId: String, child: String): String {
+        return "${SIGNALING_BASE_URL.trimEnd('/')}/rooms/$roomId/$child.json"
+    }
+
     private fun setupBottomActionButtons() {
         binding.btnMirror.setOnClickListener {
             keepRadioOnNextStop = true
@@ -869,6 +998,7 @@ class MainActivity : AppCompatActivity() {
         kioskRunnable?.let { kioskHandler.removeCallbacks(it) }
         clockRunnable?.let { clockHandler.removeCallbacks(it) }
         languageReturnRunnable?.let { languageReturnHandler.removeCallbacks(it) }
+        incomingCallRunnable?.let { incomingCallHandler.removeCallbacks(it) }
 
         super.onDestroy()
     }
@@ -881,5 +1011,10 @@ class MainActivity : AppCompatActivity() {
         val code: String,
         val flag: String,
         val fullName: String
+    )
+
+    private data class IncomingCallRequest(
+        val roomId: String,
+        val contactName: String
     )
 }
