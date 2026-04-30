@@ -66,6 +66,7 @@ class VideoCallManager(
     private var currentRoomId: String? = null
     private var isCaller = false
     private var remoteDescriptionSet = false
+    private var callEndedByRemote = false
     private val handledRemoteCandidates = mutableSetOf<String>()
 
     fun startOutgoingCall(roomId: String) {
@@ -77,6 +78,7 @@ class VideoCallManager(
         currentRoomId = roomId
         isCaller = true
         remoteDescriptionSet = false
+        callEndedByRemote = false
         handledRemoteCandidates.clear()
 
         listener.onStatus("Pripravljam kamero...")
@@ -90,7 +92,7 @@ class VideoCallManager(
             createOffer(roomId)
             startCallerPolling(roomId)
         } catch (e: Exception) {
-            listener.onError("Klica ni bilo mogoče zagnati: ${e.message}")
+            listener.onError("Klica ni bilo mogoce zagnati: ${e.message}")
             endCall()
         }
     }
@@ -133,16 +135,18 @@ class VideoCallManager(
         } catch (e: Exception) {
         }
 
-        if (roomId != null && isCaller && isSignalingConfigured()) {
+        if (roomId != null && isCaller && isSignalingConfigured() && !callEndedByRemote) {
             scope.launch(Dispatchers.IO) {
-                runCatching { deleteRoom(roomId) }
+                runCatching { markRoomEnded(roomId) }
             }
         }
 
         currentRoomId = null
         isCaller = false
         remoteDescriptionSet = false
+        callEndedByRemote = false
         handledRemoteCandidates.clear()
+
         listener.onStatus("Klic prekinjen")
         listener.onCallEnded()
     }
@@ -302,12 +306,13 @@ class VideoCallManager(
                         scope.launch(Dispatchers.IO) {
                             try {
                                 sendSessionDescription(roomId, "offer", description)
+                                setRoomStatus(roomId, "calling")
                                 withContext(Dispatchers.Main) {
-                                    listener.onStatus("Kličem...")
+                                    listener.onStatus("Klicem...")
                                 }
                             } catch (e: Exception) {
                                 withContext(Dispatchers.Main) {
-                                    listener.onError("Ponudbe ni bilo mogoče poslati.")
+                                    listener.onError("Ponudbe ni bilo mogoce poslati.")
                                 }
                             }
                         }
@@ -316,7 +321,7 @@ class VideoCallManager(
             }
 
             override fun onCreateFailure(error: String) {
-                listener.onError("Ponudbe ni bilo mogoče ustvariti.")
+                listener.onError("Ponudbe ni bilo mogoce ustvariti.")
             }
         }, constraints)
     }
@@ -326,6 +331,24 @@ class VideoCallManager(
         pollJob = scope.launch {
             while (true) {
                 try {
+                    val status = withContext(Dispatchers.IO) {
+                        getRoomStatus(roomId)
+                    }
+
+                    if (status == "rejected") {
+                        callEndedByRemote = true
+                        listener.onError("Klic je zavrnjen.")
+                        endCall()
+                        return@launch
+                    }
+
+                    if (status == "ended") {
+                        callEndedByRemote = true
+                        listener.onError("Klic je prekinjen.")
+                        endCall()
+                        return@launch
+                    }
+
                     if (!remoteDescriptionSet) {
                         val answer = withContext(Dispatchers.IO) {
                             getSessionDescription(roomId, "answer")
@@ -377,6 +400,39 @@ class VideoCallManager(
             .build()
 
         httpClient.newCall(request).execute().use {
+        }
+    }
+
+    private fun markRoomEnded(roomId: String) {
+        runCatching { setRoomStatus(roomId, "ended") }
+    }
+
+    private fun setRoomStatus(roomId: String, status: String) {
+        val body = JSONObject()
+            .put("status", status)
+            .toString()
+            .toRequestBody(jsonType)
+
+        val request = Request.Builder()
+            .url(roomUrl(roomId))
+            .patch(body)
+            .build()
+
+        httpClient.newCall(request).execute().use {
+        }
+    }
+
+    private fun getRoomStatus(roomId: String): String {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "status"))
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return ""
+            val text = response.body?.string().orEmpty().trim()
+            if (text.isBlank() || text == "null") return ""
+            return text.trim('"')
         }
     }
 
