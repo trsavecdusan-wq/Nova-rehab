@@ -32,6 +32,12 @@ class IconTextManager(context: Context) {
         "objemi" to "Bi me objel?"
     )
 
+    private val submenuPrompts = mapOf(
+        "piti" to "Kaj zelis piti?",
+        "jesti" to "Kaj zelis jesti?",
+        "slabo" to "Kaj te moti?"
+    )
+
     fun getText(id: String): String {
         val direct = prefs.getString(id, null)
         if (!direct.isNullOrBlank()) return direct
@@ -56,5 +62,15 @@ class IconTextManager(context: Context) {
 
     fun setText(id: String, lang: String, text: String) {
         setText(id, text)
+    }
+
+    fun getSubmenuPrompt(id: String): String {
+        return prefs.getString("${id}_submenu_prompt", null)
+            ?.takeIf { it.isNotBlank() }
+            ?: submenuPrompts[id].orEmpty()
+    }
+
+    fun setSubmenuPrompt(id: String, text: String) {
+        prefs.edit().putString("${id}_submenu_prompt", text).apply()
     }
 }
