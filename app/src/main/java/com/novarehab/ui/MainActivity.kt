@@ -420,15 +420,21 @@ class MainActivity : AppCompatActivity() {
         })
 
         val submenuItems = parent.children.take(MAX_SUBMENU_ITEMS)
-        val columns = submenuColumns(submenuItems.size)
-        val rows = Math.ceil(submenuItems.size.toDouble() / columns).toInt().coerceAtLeast(1)
+        val pageSize = prefs.getCommIconsPerPage()
+        val columns = commGridColumns(pageSize)
+        val rows = commGridRows(pageSize)
+        val visibleSlots = maxOf(
+            pageSize,
+            Math.ceil(submenuItems.size.toDouble() / pageSize).toInt() * pageSize
+        )
+        val totalRows = Math.ceil(visibleSlots.toDouble() / columns).toInt().coerceAtLeast(rows)
 
         val grid = GridLayout(this).apply {
             columnCount = columns
-            rowCount = rows
+            rowCount = totalRows
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT
             )
         }
 
@@ -449,8 +455,8 @@ class MainActivity : AppCompatActivity() {
             true
         )
 
-        submenuItems.forEach { child ->
-            grid.addView(createSubmenuCell(child, popup, columns))
+        for (slot in 0 until visibleSlots) {
+            grid.addView(createSubmenuCell(submenuItems.getOrNull(slot), popup))
         }
 
         overlay.addView(Button(this).apply {
@@ -477,9 +483,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createSubmenuCell(
-        item: CommunicationItem,
-        popup: PopupWindow,
-        columns: Int
+        item: CommunicationItem?,
+        popup: PopupWindow
     ): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -488,14 +493,19 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(0xFF16213E.toInt())
             isClickable = true
             isFocusable = true
+
             layoutParams = GridLayout.LayoutParams().apply {
                 width = 0
-                height = dp(140)
+                height = 0
                 columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
                 rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
                 setMargins(dp(6), dp(6), dp(6), dp(6))
             }
-            minimumWidth = resources.displayMetrics.widthPixels / columns - dp(24)
+
+            if (item == null) {
+                visibility = View.INVISIBLE
+                return@apply
+            }
 
             addView(ImageView(this@MainActivity).apply {
                 setImageResource(item.iconRes)
@@ -527,15 +537,30 @@ class MainActivity : AppCompatActivity() {
             })
 
             setOnClickListener {
-                popup.dismiss()
-                speakComm(item.ttsText, "sl")
+                isEnabled = false
+                animate()
+                    .scaleX(1.18f)
+                    .scaleY(1.18f)
+                    .setDuration(120L)
+                    .start()
+
+                speakComm(item.ttsText, "sl") {
+                    popup.dismiss()
+                }
             }
         }
     }
 
-    private fun submenuColumns(count: Int): Int = when {
-        count <= 2 -> count.coerceAtLeast(1)
-        count <= 4 -> 2
+    private fun commGridColumns(pageSize: Int): Int = when (pageSize) {
+        6 -> 2
+        8 -> 2
+        else -> 3
+    }
+
+    private fun commGridRows(pageSize: Int): Int = when (pageSize) {
+        6 -> 3
+        8 -> 4
+        12 -> 4
         else -> 3
     }
 
@@ -721,12 +746,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun languageChoice(code: String): LanguageChoice {
         return when (code) {
-            "uk" -> LanguageChoice("uk", "UA", "Ukrajinscina")
-            "en" -> LanguageChoice("en", "EN", "Anglescina")
-            "de" -> LanguageChoice("de", "DE", "Nemscina")
-            "hr" -> LanguageChoice("hr", "HR", "Hrvascina")
-            "sr" -> LanguageChoice("sr", "SR", "Srbscina")
-            else -> LanguageChoice("sl", "SI", "Slovenscina")
+            "uk" -> LanguageChoice("uk", "\uD83C\uDDFA\uD83C\uDDE6", "Ukrajinscina")
+            "en" -> LanguageChoice("en", "\uD83C\uDDEC\uD83C\uDDE7", "Anglescina")
+            "de" -> LanguageChoice("de", "\uD83C\uDDE9\uD83C\uDDEA", "Nemscina")
+            "hr" -> LanguageChoice("hr", "\uD83C\uDDED\uD83C\uDDF7", "Hrvascina")
+            "sr" -> LanguageChoice("sr", "\uD83C\uDDF7\uD83C\uDDF8", "Srbscina")
+            else -> LanguageChoice("sl", "\uD83C\uDDF8\uD83C\uDDEE", "Slovenscina")
         }
     }
 
