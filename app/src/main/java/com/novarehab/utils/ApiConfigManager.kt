@@ -2,6 +2,7 @@ package com.novarehab.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import okhttp3.OkHttpClient
@@ -19,18 +20,23 @@ class ApiConfigManager(context: Context) {
         .build()
 
     fun saveApiBaseUrl(baseUrl: String) {
-        prefs.edit().putString(KEY_BASE_URL, normalizeBaseUrl(baseUrl)).apply()
+        prefs.edit().putString(KEY_BASE_URL, normalizeBaseUrl(baseUrl)).commit()
     }
 
     fun saveApiToken(token: String) {
-        prefs.edit().putString(KEY_TOKEN, token.trim()).apply()
+        prefs.edit().putString(KEY_TOKEN, token.trim()).commit()
+        Log.d(
+            "NovaRehabApi",
+            "API saved: baseUrl length=${getApiBaseUrl().length}, token length=${getApiToken().length}"
+        )
     }
 
     fun getApiBaseUrl(): String = prefs.getString(KEY_BASE_URL, "") ?: ""
 
     fun getApiToken(): String = prefs.getString(KEY_TOKEN, "") ?: ""
 
-    fun isApiConfigured(): Boolean = getApiBaseUrl().isNotBlank() && getApiToken().isNotBlank()
+    fun isApiConfigured(): Boolean =
+        getApiBaseUrl().isNotBlank() && getApiToken().isNotBlank()
 
     fun clearApiConfig() {
         prefs.edit()
@@ -42,11 +48,24 @@ class ApiConfigManager(context: Context) {
     fun buildEndpoint(path: String): String {
         val base = getApiBaseUrl().trim().trimEnd('/')
         val cleanPath = path.trim().trimStart('/')
+
         if (base.isBlank()) return cleanPath
+
         return if (base.endsWith("/v1")) {
             "$base/${cleanPath.removePrefix("v1/")}"
         } else {
             "$base/$cleanPath"
+        }
+    }
+
+    fun getStatusText(): String {
+        val baseUrl = getApiBaseUrl()
+        val token = getApiToken()
+
+        return when {
+            baseUrl.isBlank() -> "Base URL manjka"
+            token.isBlank() -> "Token manjka"
+            else -> "API shranjen"
         }
     }
 
@@ -67,13 +86,13 @@ class ApiConfigManager(context: Context) {
         Thread {
             val result = try {
                 val request = Request.Builder()
-                    .url(baseUrl)
+                    .url(buildEndpoint("v1/models"))
                     .header("Authorization", "Bearer $token")
                     .get()
                     .build()
 
                 http.newCall(request).execute().use { response ->
-                    if (response.code in 200..399 || response.code == 404 || response.code == 405) {
+                    if (response.code in 200..399) {
                         true to "API povezava deluje"
                     } else {
                         false to "API povezava ni uspela (${response.code})."
