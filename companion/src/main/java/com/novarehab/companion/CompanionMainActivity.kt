@@ -49,6 +49,7 @@ class CompanionMainActivity : Activity() {
                 Toast.makeText(this, "Dovoli kamero in mikrofon za video klic.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
+
             callState = CompanionCallState.CONNECTED
             updateStatus()
             callManager?.acceptCall()
@@ -65,12 +66,26 @@ class CompanionMainActivity : Activity() {
         }
 
         btnCallLana.setOnClickListener {
-            tvStatus.text = "Klic iz telefona proti Lani bo dodan v naslednji fazi."
+            if (!CompanionConfig.outgoingCallsEnabled) {
+                Toast.makeText(this, "Odhodni klici so izklopljeni.", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            Toast.makeText(
+                this,
+                "Odhodni klic iz companion aplikacije je pripravljen v nastavitvah. Za test naj klic zacne tablica.",
+                Toast.LENGTH_LONG
+            ).show()
         }
 
         requestVideoPermissions()
         updateStatus()
-        startWaitingForCall()
+
+        if (CompanionConfig.incomingCallsEnabled) {
+            startWaitingForCall()
+        } else {
+            tvStatus.text = "Dohodni klici so izklopljeni"
+        }
     }
 
     private fun startWaitingForCall() {
@@ -98,8 +113,11 @@ class CompanionMainActivity : Activity() {
                 override fun onCallEnded() {
                     callState = CompanionCallState.WAITING
                     updateStatus()
-                    if (!destroyed) {
-                        startWaitingForCall()
+
+                    if (!destroyed && CompanionConfig.incomingCallsEnabled) {
+                        tvStatus.postDelayed({
+                            if (!destroyed) startWaitingForCall()
+                        }, 1500L)
                     }
                 }
 
@@ -116,22 +134,33 @@ class CompanionMainActivity : Activity() {
         tvContactInfo.text = "Kontakt: ${CompanionConfig.contactName}"
 
         tvStatus.text = when (callState) {
-            CompanionCallState.WAITING -> "Povezano z Lano"
-            CompanionCallState.INCOMING -> "Lana kliče"
+            CompanionCallState.WAITING -> {
+                if (CompanionConfig.incomingCallsEnabled) "Povezano z Lano" else "Dohodni klici so izklopljeni"
+            }
+            CompanionCallState.INCOMING -> "Lana klice"
             CompanionCallState.CONNECTED -> "Klic vzpostavljen"
             CompanionCallState.ENDED -> "Klic zavrnjen"
         }
 
         btnAcceptCall.visibility = if (callState == CompanionCallState.INCOMING) View.VISIBLE else View.GONE
-        btnRejectCall.visibility = if (callState == CompanionCallState.INCOMING || callState == CompanionCallState.CONNECTED) View.VISIBLE else View.GONE
+        btnRejectCall.visibility = if (
+            callState == CompanionCallState.INCOMING ||
+            callState == CompanionCallState.CONNECTED
+        ) View.VISIBLE else View.GONE
+
         btnRejectCall.text = if (callState == CompanionCallState.CONNECTED) "PREKINI KLIC" else "ZAVRNI KLIC"
-        btnCallLana.visibility = if (callState == CompanionCallState.WAITING) View.VISIBLE else View.GONE
+
+        btnCallLana.visibility = if (
+            callState == CompanionCallState.WAITING &&
+            CompanionConfig.outgoingCallsEnabled
+        ) View.VISIBLE else View.GONE
     }
 
     private fun requestVideoPermissions() {
         val needed = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
+
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), 601)
         }
