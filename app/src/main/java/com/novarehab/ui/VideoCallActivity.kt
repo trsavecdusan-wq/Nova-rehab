@@ -54,7 +54,10 @@ class VideoCallActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContentView(R.layout.activity_video_call)
@@ -101,9 +104,9 @@ class VideoCallActivity : AppCompatActivity() {
         gridContacts.removeAllViews()
 
         val savedContacts = prefs.getContacts()
-        val defaultIds = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
-        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
-        val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
+        val defaultIds = listOf("contact1", "contact2", "contact3", "contact4", "contact5", "contact6")
+        val defaultNames = listOf("Kontakt 1", "Kontakt 2", "Kontakt 3", "Kontakt 4", "Kontakt 5", "Kontakt 6")
+        val defaultLanguages = listOf("sl", "sl", "sl", "sl", "sl", "sl")
 
         for (index in 0 until 6) {
             val saved = savedContacts.getOrNull(index)
@@ -206,12 +209,6 @@ class VideoCallActivity : AppCompatActivity() {
     private fun startCall() {
         val contact = selectedContact ?: return
 
-        if (!prefs.isContactOutgoingCallEnabled(contact.index)) {
-            Toast.makeText(this, "Odhodni video klici za ta kontakt so izklopljeni.", Toast.LENGTH_LONG).show()
-            showContactGrid()
-            return
-        }
-
         if (!hasVideoPermissions()) {
             requestVideoPermissions()
             Toast.makeText(this, "Dovoli kamero in mikrofon za video klic.", Toast.LENGTH_LONG).show()
@@ -250,11 +247,13 @@ class VideoCallActivity : AppCompatActivity() {
                 }
             }
         )
+
         videoCallManager?.startOutgoingCall(contact.roomId)
     }
 
     private fun loadContactImage(imageView: ImageView, index: Int) {
         val file = File(getExternalFilesDir(null), "contacts/contact_${index + 1}.png")
+
         if (file.exists()) {
             imageView.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
         } else {
@@ -275,7 +274,10 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     private fun requestVideoPermissions() {
-        val needed = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filter {
+        val needed = arrayOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
+        ).filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
@@ -315,6 +317,7 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val SIGNALING_BASE_URL = "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
+        private const val SIGNALING_BASE_URL =
+            "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
     }
 }
