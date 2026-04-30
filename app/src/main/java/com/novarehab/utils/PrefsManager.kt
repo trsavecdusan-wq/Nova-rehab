@@ -57,7 +57,7 @@ class PrefsManager(context: Context) {
         prefs.edit().putLong("guest_language_return_minutes", minutes.coerceIn(1L, 240L)).apply()
 
     fun getCommSubmenuTimeoutSeconds(): Long =
-        prefs.getLong("comm_submenu_timeout_seconds", 12L).coerceIn(5L, 120L)
+        prefs.getLong("comm_submenu_timeout_seconds", 15L).coerceIn(5L, 120L)
 
     fun saveCommSubmenuTimeoutSeconds(seconds: Long) =
         prefs.edit().putLong("comm_submenu_timeout_seconds", seconds.coerceIn(5L, 120L)).apply()
@@ -93,12 +93,12 @@ class PrefsManager(context: Context) {
         prefs.edit().putString("patient_language_2", lang).apply()
 
     fun getCommIconsPerPage(): Int {
-        val v = prefs.getInt("comm_icons_per_page", 12)
-        return if (v in setOf(6, 8, 12, 18)) v else 12
+        val v = prefs.getInt("comm_icons_per_page", 9)
+        return if (v in setOf(6, 8, 9, 12)) v else 9
     }
 
     fun saveCommIconsPerPage(v: Int) {
-        val safe = if (v in setOf(6, 8, 12, 18)) v else 12
+        val safe = if (v in setOf(6, 8, 9, 12)) v else 9
         prefs.edit().putInt("comm_icons_per_page", safe).apply()
     }
 
