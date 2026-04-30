@@ -9,4 +9,6 @@ object CompanionConfig {
     val signalingBaseUrl: String = BuildConfig.SIGNALING_BASE_URL
     val updateCheckUrl: String = BuildConfig.UPDATE_CHECK_URL
     val apkDownloadUrl: String = BuildConfig.APK_DOWNLOAD_URL
+    val incomingCallsEnabled: Boolean = BuildConfig.INCOMING_CALLS_ENABLED
+    val outgoingCallsEnabled: Boolean = BuildConfig.OUTGOING_CALLS_ENABLED
 }
