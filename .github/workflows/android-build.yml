@@ -64,6 +64,14 @@ jobs:
             "versionCode": 1,
             "versionName": "1.0",
             "apkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-debug.apk",
+            "companionApkUrls": {
+              "zana": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-zana-debug.apk",
+              "dedek": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dedek-debug.apk",
+              "inna": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-inna-debug.apk",
+              "julija": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-julija-debug.apk",
+              "kuma": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-kuma-debug.apk",
+              "dusan": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dusan-debug.apk"
+            },
             "message": "Nova verzija aplikacije NovaRehab je na voljo."
           }
           EOF
@@ -89,7 +97,7 @@ jobs:
 
           apk_count=$(find output -maxdepth 1 -type f -name '*.apk' | wc -l | tr -d ' ')
           if [ "$apk_count" != "7" ]; then
-            echo "NAPAKA: output mora imeti točno 7 APK datotek, našel sem $apk_count"
+            echo "NAPAKA: output mora imeti tocno 7 APK datotek, nasel sem $apk_count"
             find output -maxdepth 1 -type f -print
             exit 1
           fi
@@ -112,8 +120,8 @@ jobs:
             actual=$("$AAPT" dump badging "$apk" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)
             echo "$apk -> $actual"
             if [ "$actual" != "$expected" ]; then
-              echo "NAPAKA: napačen package za $apk"
-              echo "Pričakovano: $expected"
+              echo "NAPAKA: napacen package za $apk"
+              echo "Pricakovano: $expected"
               echo "Dejansko:    $actual"
               exit 1
             fi
@@ -126,7 +134,7 @@ jobs:
           check_package output/companion-kuma-debug.apk com.novarehab.companion.kuma
           check_package output/companion-dusan-debug.apk com.novarehab.companion.dusan
 
-      - name: Naloži debug APK artifact
+      - name: Nalozi debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: NovaRehab-debug-apks
@@ -135,7 +143,7 @@ jobs:
             app-version.json
           if-no-files-found: error
 
-      - name: Odstrani star napačen companion-debug.apk iz release
+      - name: Odstrani star napacen companion-debug.apk iz release
         run: gh release delete-asset novarehab-companion-latest companion-debug.apk --yes || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
