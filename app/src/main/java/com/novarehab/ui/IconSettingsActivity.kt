@@ -161,6 +161,28 @@ class IconSettingsActivity : AppCompatActivity() {
         etText.setPadding(10, 8, 10, 8)
         textBox.addView(etText)
 
+        val submenuSwitch = Switch(this).apply {
+            text = "PODMENI VKLOPLJEN"
+            textSize = 12f
+            setTextColor(0xFFB8D8FF.toInt())
+            isChecked = prefs.isCommSubmenuEnabled(id, false)
+        }
+        textBox.addView(submenuSwitch)
+
+        val etSubmenuPrompt = EditText(this).apply {
+            setText(mgr.getSubmenuPrompt(id))
+            hint = "Vprasanje po kliku, npr. Kaj zelis piti?"
+            textSize = 12f
+            setSingleLine(false)
+            minLines = 1
+            maxLines = 2
+            setTextColor(0xFFFFFFFF.toInt())
+            setHintTextColor(0xFF777799.toInt())
+            setBackgroundColor(0xFF0F3460.toInt())
+            setPadding(10, 8, 10, 8)
+        }
+        textBox.addView(etSubmenuPrompt)
+
         row.addView(textBox)
 
         val btnSave = Button(this)
@@ -171,12 +193,14 @@ class IconSettingsActivity : AppCompatActivity() {
         btnSave.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(8, 0, 0, 0) }
         btnSave.setOnClickListener {
             mgr.setText(id, etText.text.toString().trim())
+            mgr.setSubmenuPrompt(id, etSubmenuPrompt.text.toString().trim())
+            prefs.saveCommSubmenuEnabled(id, submenuSwitch.isChecked)
             Toast.makeText(this, "Shranjeno", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnSave)
 
         val btnReset = Button(this)
-        btnReset.text = "↺"
+        btnReset.text = "↶"
         btnReset.textSize = 16f
         btnReset.setBackgroundColor(0xFF333355.toInt())
         btnReset.setTextColor(0xFFFFFFFF.toInt())
@@ -267,7 +291,7 @@ class IconSettingsActivity : AppCompatActivity() {
         row.addView(btnSave)
 
         val btnReset = Button(this)
-        btnReset.text = "↺"
+        btnReset.text = "↶"
         btnReset.textSize = 16f
         btnReset.setBackgroundColor(0xFF333355.toInt())
         btnReset.setTextColor(0xFFFFFFFF.toInt())
