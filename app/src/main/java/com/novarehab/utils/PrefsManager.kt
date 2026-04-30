@@ -56,8 +56,17 @@ class PrefsManager(context: Context) {
     fun saveGuestLanguageReturnMinutes(minutes: Long) =
         prefs.edit().putLong("guest_language_return_minutes", minutes.coerceIn(1L, 240L)).apply()
 
-    fun getOpenAiKey(): String = prefs.getString("openai_key", "") ?: ""
-    fun saveOpenAiKey(key: String) = prefs.edit().putString("openai_key", key).apply()
+    fun getCommSubmenuTimeoutSeconds(): Long =
+        prefs.getLong("comm_submenu_timeout_seconds", 12L).coerceIn(5L, 120L)
+
+    fun saveCommSubmenuTimeoutSeconds(seconds: Long) =
+        prefs.edit().putLong("comm_submenu_timeout_seconds", seconds.coerceIn(5L, 120L)).apply()
+
+    fun isCommSubmenuEnabled(iconId: String, defaultValue: Boolean): Boolean =
+        prefs.getBoolean("comm_submenu_enabled_$iconId", defaultValue)
+
+    fun saveCommSubmenuEnabled(iconId: String, enabled: Boolean) =
+        prefs.edit().putBoolean("comm_submenu_enabled_$iconId", enabled).apply()
 
     fun getDefaultSpeechLanguage(): String =
         prefs.getString("default_speech_language", "sl") ?: "sl"
@@ -210,6 +219,18 @@ class PrefsManager(context: Context) {
     fun saveContacts(contacts: List<Contact>) {
         prefs.edit().putString("contacts", gson.toJson(contacts)).apply()
     }
+
+    fun isContactIncomingCallEnabled(index: Int): Boolean =
+        prefs.getBoolean("contact_${index}_incoming_calls_enabled", true)
+
+    fun saveContactIncomingCallEnabled(index: Int, enabled: Boolean) =
+        prefs.edit().putBoolean("contact_${index}_incoming_calls_enabled", enabled).apply()
+
+    fun isContactOutgoingCallEnabled(index: Int): Boolean =
+        prefs.getBoolean("contact_${index}_outgoing_calls_enabled", true)
+
+    fun saveContactOutgoingCallEnabled(index: Int, enabled: Boolean) =
+        prefs.edit().putBoolean("contact_${index}_outgoing_calls_enabled", enabled).apply()
 
     private fun defaultContacts(): List<Contact> = listOf(
         Contact("Mama", "", "", "sl"),
