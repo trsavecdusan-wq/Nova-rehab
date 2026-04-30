@@ -22,6 +22,7 @@ class OpenAiTranslateManager(private val context: Context) {
         text: String,
         targetLanguage: String,
         apiKey: String,
+        apiBaseUrl: String = "",
         onResult: (String) -> Unit
     ) {
         val cleanText = text.trim()
@@ -36,7 +37,7 @@ class OpenAiTranslateManager(private val context: Context) {
             return
         }
 
-        if (apiKey.isBlank()) {
+        if (apiKey.isBlank() || apiBaseUrl.isBlank()) {
             onResult(cleanText)
             return
         }
@@ -52,7 +53,7 @@ class OpenAiTranslateManager(private val context: Context) {
 
         Thread {
             val translated = try {
-                translateWithOpenAi(cleanText, targetLanguage, apiKey)
+                translateWithOpenAi(cleanText, targetLanguage, apiKey, apiBaseUrl)
             } catch (_: Exception) {
                 null
             }
@@ -71,7 +72,8 @@ class OpenAiTranslateManager(private val context: Context) {
     private fun translateWithOpenAi(
         text: String,
         targetLanguage: String,
-        apiKey: String
+        apiKey: String,
+        apiBaseUrl: String
     ): String? {
         val targetName = when (targetLanguage) {
             "uk", "ua" -> "Ukrainian"
@@ -103,7 +105,7 @@ class OpenAiTranslateManager(private val context: Context) {
             .put("messages", messages)
 
         val request = Request.Builder()
-            .url("https://api.openai.com/v1/chat/completions")
+            .url(buildEndpoint(apiBaseUrl, "v1/chat/completions"))
             .header("Authorization", "Bearer $apiKey")
             .header("Content-Type", "application/json")
             .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
@@ -121,6 +123,16 @@ class OpenAiTranslateManager(private val context: Context) {
                 .getJSONObject("message")
                 .getString("content")
                 .trim()
+        }
+    }
+
+    private fun buildEndpoint(baseUrl: String, path: String): String {
+        val base = baseUrl.trim().trimEnd('/')
+        val cleanPath = path.trim().trimStart('/')
+        return if (base.endsWith("/v1")) {
+            "$base/${cleanPath.removePrefix("v1/")}"
+        } else {
+            "$base/$cleanPath"
         }
     }
 }
