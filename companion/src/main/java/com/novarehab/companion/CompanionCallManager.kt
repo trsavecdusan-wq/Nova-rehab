@@ -78,8 +78,18 @@ class CompanionCallManager(
         waitJob?.cancel()
         waitJob = scope.launch {
             listener.onStatus("Povezano z Lano")
+
             while (true) {
                 try {
+                    val status = withContext(Dispatchers.IO) {
+                        getRoomStatus()
+                    }
+
+                    if (status == "ended" || status == "rejected") {
+                        delay(1200L)
+                        continue
+                    }
+
                     val offer = withContext(Dispatchers.IO) {
                         getSessionDescription(roomId, "offer")
                     }
@@ -87,7 +97,7 @@ class CompanionCallManager(
                     if (offer != null) {
                         remoteOffer = offer
                         listener.onIncomingCall()
-                        listener.onStatus("Lana kliče")
+                        listener.onStatus("Lana klice")
                         return@launch
                     }
                 } catch (e: Exception) {
@@ -101,7 +111,7 @@ class CompanionCallManager(
     fun acceptCall() {
         val offer = remoteOffer
         if (offer == null) {
-            listener.onStatus("Čakam Lanin klic")
+            listener.onStatus("Cakam Lanin klic")
             startWaitingForCall()
             return
         }
@@ -122,7 +132,7 @@ class CompanionCallManager(
             listener.onStatus("Povezujem...")
             startReceiverPolling()
         } catch (e: Exception) {
-            listener.onError("Klica ni bilo mogoče sprejeti: ${e.message}")
+            listener.onError("Klica ni bilo mogoce sprejeti: ${e.message}")
             endCall()
         }
     }
@@ -130,10 +140,22 @@ class CompanionCallManager(
     fun rejectCall() {
         remoteOffer = null
         listener.onStatus("Klic zavrnjen")
-        startWaitingForCall()
+
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                sendRoomStatus("rejected")
+                clearActiveCallData()
+            }
+
+            withContext(Dispatchers.Main) {
+                startWaitingForCall()
+            }
+        }
     }
 
     fun endCall() {
+        val hadActiveCall = remoteOffer != null || peerConnection != null
+
         waitJob?.cancel()
         pollJob?.cancel()
         waitJob = null
@@ -170,6 +192,15 @@ class CompanionCallManager(
             localRenderer.clearImage()
             remoteRenderer.clearImage()
         } catch (e: Exception) {
+        }
+
+        if (hadActiveCall) {
+            scope.launch(Dispatchers.IO) {
+                runCatching {
+                    sendRoomStatus("ended")
+                    clearActiveCallData()
+                }
+            }
         }
 
         remoteOffer = null
@@ -319,12 +350,14 @@ class CompanionCallManager(
                         scope.launch(Dispatchers.IO) {
                             try {
                                 sendSessionDescription(roomId, "answer", description)
+                                sendRoomStatus("connected")
+
                                 withContext(Dispatchers.Main) {
                                     listener.onStatus("Klic vzpostavljen")
                                 }
                             } catch (e: Exception) {
                                 withContext(Dispatchers.Main) {
-                                    listener.onError("Odgovora ni bilo mogoče poslati.")
+                                    listener.onError("Odgovora ni bilo mogoce poslati.")
                                 }
                             }
                         }
@@ -333,7 +366,7 @@ class CompanionCallManager(
             }
 
             override fun onCreateFailure(error: String) {
-                listener.onError("Odgovora ni bilo mogoče ustvariti.")
+                listener.onError("Odgovora ni bilo mogoce ustvariti.")
             }
         }, MediaConstraints())
     }
@@ -343,6 +376,16 @@ class CompanionCallManager(
         pollJob = scope.launch {
             while (true) {
                 try {
+                    val status = withContext(Dispatchers.IO) {
+                        getRoomStatus()
+                    }
+
+                    if (status == "ended" || status == "rejected") {
+                        listener.onStatus("Klic prekinjen")
+                        endCall()
+                        return@launch
+                    }
+
                     val candidates = withContext(Dispatchers.IO) {
                         getIceCandidates(roomId, "callerCandidates")
                     }
@@ -371,6 +414,20 @@ class CompanionCallManager(
         return "$base/rooms/$roomId$suffix.json"
     }
 
+    private fun getRoomStatus(): String {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "status"))
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return ""
+            val text = response.body?.string().orEmpty().trim()
+            if (text.isBlank() || text == "null") return ""
+            return text.trim('"')
+        }
+    }
+
     private fun sendSessionDescription(roomId: String, child: String, description: SessionDescription) {
         val json = JSONObject()
             .put("type", description.type.canonicalForm())
@@ -382,6 +439,28 @@ class CompanionCallManager(
             .build()
 
         httpClient.newCall(request).execute().use {
+        }
+    }
+
+    private fun sendRoomStatus(status: String) {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "status"))
+            .put(JSONObject.quote(status).toRequestBody(jsonType))
+            .build()
+
+        httpClient.newCall(request).execute().use {
+        }
+    }
+
+    private fun clearActiveCallData() {
+        listOf("offer", "answer", "callerCandidates", "receiverCandidates").forEach { child ->
+            val request = Request.Builder()
+                .url(roomUrl(roomId, child))
+                .delete()
+                .build()
+
+            httpClient.newCall(request).execute().use {
+            }
         }
     }
 
