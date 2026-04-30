@@ -129,6 +129,7 @@ class OpenAiTranslateManager(private val context: Context) {
     private fun buildEndpoint(baseUrl: String, path: String): String {
         val base = baseUrl.trim().trimEnd('/')
         val cleanPath = path.trim().trimStart('/')
+
         return if (base.endsWith("/v1")) {
             "$base/${cleanPath.removePrefix("v1/")}"
         } else {
