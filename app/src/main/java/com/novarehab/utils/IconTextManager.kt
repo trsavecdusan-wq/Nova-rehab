@@ -6,36 +6,37 @@ class IconTextManager(context: Context) {
     private val prefs = context.getSharedPreferences("icon_texts", Context.MODE_PRIVATE)
 
     private val defaults = mapOf(
-        "pomoc" to "Potrebujem pomoč, prosim pridite",
-        "piti" to "Žejna sem, prosim prinesite mi piti",
-        "jesti" to "Lačna sem, bi rada jedla",
-        "bolecina" to "Imam bolečine",
-        "kopalnica" to "Potrebujem v kopalnico",
-        "dobro" to "Dobro se počutim",
-        "slabo" to "Ne počutim se dobro",
-        "utrujena" to "Utrujena sem, rada bi počivala",
-        "mraz" to "Mrzlica mi je",
-        "vroce" to "Vroče mi je",
-        "hvala" to "Hvala lepa",
-        "pridi_sem" to "Prosim pridi sem k meni",
-        "pocakaj" to "Počakaj prosim, ne odhajaj",
-        "zdravilo" to "Čas je za zdravilo",
-        "telefon" to "Prosim prinesite mi telefon",
-        "tv" to "Prosim vklopite televizijo",
-        "postelja" to "Rada bi ležala v postelji",
-        "okno" to "Prosim odprite okno",
-        "vesela" to "Vesela sem",
-        "zalostna" to "Žalostna sem",
-        "jezna" to "Jezna sem",
-        "strah" to "Prestrašena sem",
-        "tesnoba" to "Tesnobno se počutim",
+        "pomoc" to "Potrebujem pomoc.",
+        "piti" to "Zejna sem.",
+        "jesti" to "Lacna sem.",
+        "bolecina" to "Imam bolecine.",
+        "kopalnica" to "Potrebujem v kopalnico.",
+        "dobro" to "Dobro se pocutim.",
+        "slabo" to "Ne pocutim se dobro.",
+        "utrujena" to "Utrujena sem, rada bi pocivala.",
+        "mraz" to "Mrzlo mi je.",
+        "vroce" to "Vroce mi je.",
+        "hvala" to "Hvala lepa.",
+        "pridi_sem" to "Prosim pridi sem k meni.",
+        "pocakaj" to "Pocakaj prosim.",
+        "zdravilo" to "Cas je za zdravilo.",
+        "telefon" to "Prosim prinesite mi telefon.",
+        "tv" to "Prosim vklopite televizijo.",
+        "postelja" to "Rada bi lezala v postelji.",
+        "okno" to "Prosim odprite okno.",
+        "vesela" to "Vesela sem.",
+        "zalostna" to "Zalostna sem.",
+        "jezna" to "Jezna sem.",
+        "strah" to "Prestrasena sem.",
+        "tesnoba" to "Tesnobno se pocutim.",
         "objemi" to "Bi me objel?"
     )
 
     private val submenuPrompts = mapOf(
         "piti" to "Kaj zelis piti?",
         "jesti" to "Kaj zelis jesti?",
-        "slabo" to "Kaj te moti?"
+        "slabo" to "Kaj te moti?",
+        "pomoc" to "Kaksno pomoc potrebujes?"
     )
 
     fun getText(id: String): String {
