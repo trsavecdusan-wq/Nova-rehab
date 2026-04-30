@@ -6,10 +6,19 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Spinner
+import android.widget.Switch
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.databinding.ActivitySettingsBinding
 import com.novarehab.service.ReportWorker
+import com.novarehab.utils.ApiConfigManager
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.RadioStation
@@ -18,23 +27,33 @@ import java.io.File
 
 class SettingsActivity : AppCompatActivity() {
 
+    companion object {
+        private const val REQUEST_API_FILE = 501
+    }
+
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: PrefsManager
+    private lateinit var apiConfig: ApiConfigManager
+
     private val contactLangSpinners = mutableListOf<Spinner>()
     private val contactImageButtons = mutableListOf<ImageButton>()
+    private val contactIncomingSwitches = mutableListOf<Switch>()
+    private val contactOutgoingSwitches = mutableListOf<Switch>()
+
     private var pendingImageIndex = -1
 
     private lateinit var spinnerDefaultSpeechLang: Spinner
     private lateinit var spinnerPatientLang1: Spinner
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
+    private lateinit var spinnerCommSubmenuTimeout: Spinner
     private lateinit var switchAutoLanguage: Switch
     private lateinit var btnCheckUpdateNow: Button
     private lateinit var btnRestorePreviousVersion: Button
     private lateinit var btnShareCompanionApp: Button
 
     private val companionContacts = listOf(
-        CompanionShareContact("zana", "Žana"),
+        CompanionShareContact("zana", "Zana"),
         CompanionShareContact("dedek", "Dedek"),
         CompanionShareContact("inna", "Inna"),
         CompanionShareContact("julija", "Julija"),
@@ -46,7 +65,9 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         prefs = PrefsManager(this)
+        apiConfig = ApiConfigManager(this)
 
         addLanguageSettingsPanel()
         addUpdateSettingsPanel()
@@ -56,12 +77,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun langOptions() = arrayOf(
-        "🇸🇮 Slovenščina",
-        "🇺🇦 Ukrajinščina",
-        "🇬🇧 Angleščina",
-        "🇩🇪 Nemščina",
-        "🇭🇷 Hrvaščina",
-        "🇷🇸 Srbščina"
+        "SL Slovenscina",
+        "UK Ukrajinscina",
+        "EN Anglescina",
+        "DE Nemscina",
+        "HR Hrvascina",
+        "SR Srbscina"
     )
 
     private fun langCode(position: Int): String = when (position) {
@@ -80,6 +101,24 @@ class SettingsActivity : AppCompatActivity() {
         "hr" -> 4
         "sr" -> 5
         else -> 0
+    }
+
+    private fun timeoutSeconds(position: Int): Long = when (position) {
+        0 -> 8L
+        2 -> 15L
+        3 -> 20L
+        4 -> 30L
+        5 -> 60L
+        else -> 12L
+    }
+
+    private fun timeoutIndex(seconds: Long): Int = when (seconds) {
+        8L -> 0
+        15L -> 2
+        20L -> 3
+        30L -> 4
+        60L -> 5
+        else -> 1
     }
 
     private fun newLangSpinner(): Spinner {
@@ -110,7 +149,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         panel.addView(TextView(this).apply {
-            text = "Število komunikacijskih ikon na stran:"
+            text = "Stevilo komunikacijskih ikon na stran:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -125,6 +164,23 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         panel.addView(spinnerCommIconsPerPage)
+
+        panel.addView(TextView(this).apply {
+            text = "Cas izhoda iz podmenija:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+
+        spinnerCommSubmenuTimeout = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                arrayOf("8 sekund", "12 sekund", "15 sekund", "20 sekund", "30 sekund", "60 sekund")
+            ).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        }
+        panel.addView(spinnerCommSubmenuTimeout)
 
         panel.addView(TextView(this).apply {
             text = "Privzeti jezik izgovora:"
@@ -197,7 +253,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(btnCheckUpdateNow)
 
         btnRestorePreviousVersion = Button(this).apply {
-            text = "OBNOVI PREJŠNJO VERZIJO"
+            text = "OBNOVI PREJSNJO VERZIJO"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF0F3460.toInt())
             textSize = 15f
@@ -224,7 +280,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         btnShareCompanionApp = Button(this).apply {
-            text = "POŠLJI APLIKACIJO ZA SOGOVORNIKA"
+            text = "POSLJI APLIKACIJO ZA SOGOVORNIKA"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
             textSize = 14f
@@ -262,7 +318,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         val contacts = prefs.getContacts()
-        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
+        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
         val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
         val nameF = listOf(
@@ -300,6 +356,8 @@ class SettingsActivity : AppCompatActivity() {
 
         contactLangSpinners.clear()
         contactImageButtons.clear()
+        contactIncomingSwitches.clear()
+        contactOutgoingSwitches.clear()
         langC.forEach { it.removeAllViews() }
         imgC.forEach { it.removeAllViews() }
 
@@ -309,7 +367,7 @@ class SettingsActivity : AppCompatActivity() {
             phoneF[i].setText(contact?.phone.orEmpty())
 
             val spinner = Spinner(this).apply {
-                val opts = arrayOf("🇸🇮 Slovenščina", "🇺🇦 Ukrajinščina")
+                val opts = arrayOf("SL Slovenscina", "UK Ukrajinscina")
                 adapter = ArrayAdapter(
                     this@SettingsActivity,
                     android.R.layout.simple_spinner_item,
@@ -323,6 +381,24 @@ class SettingsActivity : AppCompatActivity() {
             }
             langC[i].addView(spinner)
             contactLangSpinners.add(spinner)
+
+            val incomingSwitch = Switch(this).apply {
+                text = "Dohodni video klici"
+                textSize = 12f
+                setTextColor(0xFFB8D8FF.toInt())
+                isChecked = prefs.isContactIncomingCallEnabled(i)
+            }
+            langC[i].addView(incomingSwitch)
+            contactIncomingSwitches.add(incomingSwitch)
+
+            val outgoingSwitch = Switch(this).apply {
+                text = "Odhodni video klici"
+                textSize = 12f
+                setTextColor(0xFFB8D8FF.toInt())
+                isChecked = prefs.isContactOutgoingCallEnabled(i)
+            }
+            langC[i].addView(outgoingSwitch)
+            contactOutgoingSwitches.add(outgoingSwitch)
 
             val imgBtn = ImageButton(this).apply {
                 val f = File(getExternalFilesDir(null), "contacts/contact_${i + 1}.png")
@@ -350,7 +426,8 @@ class SettingsActivity : AppCompatActivity() {
             contactImageButtons.add(imgBtn)
         }
 
-        binding.etOpenAiKey.setText(prefs.getOpenAiKey())
+        binding.etApiBaseUrl.setText(apiConfig.getApiBaseUrl())
+        binding.etOpenAiKey.setText(apiConfig.getApiToken())
 
         val voices = arrayOf("nova", "shimmer", "alloy", "echo", "fable", "onyx")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
@@ -379,6 +456,7 @@ class SettingsActivity : AppCompatActivity() {
                 else -> 2
             }
         )
+        spinnerCommSubmenuTimeout.setSelection(timeoutIndex(prefs.getCommSubmenuTimeoutSeconds()))
 
         spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
         spinnerPatientLang1.setSelection(langIndex(prefs.getPatientLanguage1()))
@@ -417,13 +495,33 @@ class SettingsActivity : AppCompatActivity() {
             showCompanionSharePicker()
         }
 
+        binding.btnChooseApiFile.setOnClickListener {
+            openApiFilePicker()
+        }
+
         binding.btnTestTts.setOnClickListener {
-            val key = binding.etOpenAiKey.text.toString().trim()
+            saveApiFields()
+
+            if (!apiConfig.isApiConfigured()) {
+                Toast.makeText(this, "API ni nastavljen.", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            val key = apiConfig.getApiToken()
+            val baseUrl = apiConfig.getApiBaseUrl()
             val voice = binding.spinnerTtsVoice.selectedItem.toString()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
+
             tts.initLocalTts()
-            tts.speak("Zdravo, to je test govora aplikacije Nova Rehab.", "sl", key, voice) {
+            tts.speak("Zdravo, to je test govora aplikacije Nova Rehab.", "sl", key, voice, baseUrl) {
                 tts.destroy()
+            }
+        }
+
+        binding.btnTestApi.setOnClickListener {
+            saveApiFields()
+            apiConfig.testApiConnection { success, message ->
+                Toast.makeText(this, message, if (success) Toast.LENGTH_SHORT else Toast.LENGTH_LONG).show()
             }
         }
 
@@ -432,7 +530,7 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
                 Toast.makeText(
                     this,
-                    "Če slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
+                    "Ce slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
                     Toast.LENGTH_LONG
                 ).show()
             } catch (e: Exception) {
@@ -449,7 +547,7 @@ class SettingsActivity : AppCompatActivity() {
             ReportWorker.schedule(this, prefs.getReportHour())
             Toast.makeText(
                 this,
-                "Poročilo bo poslano ob ${prefs.getReportHour()}:00",
+                "Porocilo bo poslano ob ${prefs.getReportHour()}:00",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -469,7 +567,7 @@ class SettingsActivity : AppCompatActivity() {
 
                 shareCompanionApp(contact)
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("Preklici", null)
             .show()
     }
 
@@ -490,7 +588,7 @@ class SettingsActivity : AppCompatActivity() {
 
             3. Po prenosu klikni datoteko in potrdi namestitev.
 
-            Če telefon vpraša za dovoljenje namestitve iz tega vira, dovoli.
+            Ce telefon vprasa za dovoljenje namestitve iz tega vira, dovoli.
         """.trimIndent()
 
         val intent = Intent(Intent.ACTION_SEND).apply {
@@ -499,7 +597,7 @@ class SettingsActivity : AppCompatActivity() {
             putExtra(Intent.EXTRA_TEXT, message)
         }
 
-        startActivity(Intent.createChooser(intent, "Pošlji povezavo"))
+        startActivity(Intent.createChooser(intent, "Poslji povezavo"))
     }
 
     private fun buildCompanionApkUrl(contactId: String): String? {
@@ -510,8 +608,107 @@ class SettingsActivity : AppCompatActivity() {
         return baseUrl + "companion-$contactId-debug.apk"
     }
 
+    private fun saveApiFields() {
+        apiConfig.saveApiBaseUrl(binding.etApiBaseUrl.text.toString())
+        apiConfig.saveApiToken(binding.etOpenAiKey.text.toString())
+    }
+
+    private fun openApiFilePicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(
+                Intent.EXTRA_MIME_TYPES,
+                arrayOf("text/plain", "application/json", "application/octet-stream")
+            )
+        }
+        startActivityForResult(intent, REQUEST_API_FILE)
+    }
+
+    private fun importApiFile(uri: Uri) {
+        val raw = try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                input.readBytes().toString(Charsets.UTF_8)
+            }.orEmpty()
+        } catch (e: Exception) {
+            Toast.makeText(this, "API datoteke ni bilo mogoce prebrati.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val parsed = parseApiFile(raw)
+        if (parsed.baseUrl.isBlank() && parsed.token.isBlank()) {
+            Toast.makeText(this, "API datoteka ne vsebuje prepoznavnega URL-ja ali tokena.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        if (parsed.baseUrl.isNotBlank()) {
+            binding.etApiBaseUrl.setText(parsed.baseUrl)
+            apiConfig.saveApiBaseUrl(parsed.baseUrl)
+        }
+
+        if (parsed.token.isNotBlank()) {
+            binding.etOpenAiKey.setText(parsed.token)
+            apiConfig.saveApiToken(parsed.token)
+        }
+
+        Toast.makeText(this, "API podatki so shranjeni.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun parseApiFile(raw: String): ImportedApiConfig {
+        val lines = raw
+            .replace("\uFEFF", "")
+            .replace("\r", "\n")
+            .lines()
+            .map { it.trim().trim(',', '"', '\'') }
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+
+        val baseUrl = lines.firstNotNullOfOrNull { line ->
+            val value = valueAfterSeparator(line)
+            when {
+                line.startsWith("http", ignoreCase = true) -> line.trim(',', '"', '\'')
+                line.contains("base", ignoreCase = true) && value.startsWith("http", ignoreCase = true) -> value
+                line.contains("url", ignoreCase = true) && value.startsWith("http", ignoreCase = true) -> value
+                else -> null
+            }
+        }.orEmpty()
+
+        val token = lines.firstNotNullOfOrNull { line ->
+            val value = valueAfterSeparator(line)
+            when {
+                line.contains("token", ignoreCase = true) && value.isNotBlank() -> value
+                line.contains("key", ignoreCase = true) && value.isNotBlank() -> value
+                line.startsWith("Bearer ", ignoreCase = true) -> line.removePrefix("Bearer ").trim()
+                !line.startsWith("http", ignoreCase = true) && line.length >= 12 -> line
+                else -> null
+            }
+        }.orEmpty()
+
+        return ImportedApiConfig(baseUrl, token)
+    }
+
+    private fun valueAfterSeparator(line: String): String {
+        val afterEquals = if (line.contains("=")) line.substringAfter("=") else line
+        val afterColon = if (!afterEquals.startsWith("http", ignoreCase = true) && afterEquals.contains(":")) {
+            afterEquals.substringAfter(":")
+        } else {
+            afterEquals
+        }
+
+        return afterColon
+            .trim()
+            .trim(',', '"', '\'')
+            .removePrefix("Bearer ")
+            .trim()
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_API_FILE && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            importApiFile(uri)
+            return
+        }
 
         if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
             val uri = data?.data ?: return
@@ -531,6 +728,7 @@ class SettingsActivity : AppCompatActivity() {
                 )
                 contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
             } catch (e: Exception) {
+                Toast.makeText(this, "Slike ni bilo mogoce shraniti.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -580,19 +778,23 @@ class SettingsActivity : AppCompatActivity() {
             binding.etContact6Phone
         )
 
-        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
-        val emojis = listOf("👩", "👨", "👧", "🧑", "👨‍⚕️", "🧑‍💼")
+        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
+        val contactIcons = listOf("Z", "D", "I", "J", "K", "Du")
         val contacts = mutableListOf<Contact>()
 
         nameC.forEachIndexed { i, field ->
             val name = field.text.toString().trim().ifEmpty { defaultNames[i] }
             val phone = phoneC[i].text.toString().trim()
             val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) "uk" else "sl"
-            contacts.add(Contact(name, phone, emojis.getOrElse(i) { "👤" }, lang))
+
+            prefs.saveContactIncomingCallEnabled(i, contactIncomingSwitches.getOrNull(i)?.isChecked ?: true)
+            prefs.saveContactOutgoingCallEnabled(i, contactOutgoingSwitches.getOrNull(i)?.isChecked ?: true)
+
+            contacts.add(Contact(name, phone, contactIcons.getOrElse(i) { "C" }, lang))
         }
         prefs.saveContacts(contacts)
 
-        prefs.saveOpenAiKey(binding.etOpenAiKey.text.toString().trim())
+        saveApiFields()
         prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
 
         prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
@@ -615,6 +817,7 @@ class SettingsActivity : AppCompatActivity() {
                 else -> 8
             }
         )
+        prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition))
 
         prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
         prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
@@ -630,11 +833,16 @@ class SettingsActivity : AppCompatActivity() {
             prefs.savePin(pin)
         }
 
-        Toast.makeText(this, "Nastavitve shranjene ✓", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
     }
 
     private data class CompanionShareContact(
         val contactId: String,
         val displayName: String
+    )
+
+    private data class ImportedApiConfig(
+        val baseUrl: String,
+        val token: String
     )
 }
