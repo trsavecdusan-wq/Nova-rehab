@@ -7,7 +7,14 @@ import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Spinner
+import android.widget.Switch
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.databinding.ActivitySettingsBinding
 import com.novarehab.service.ReportWorker
@@ -22,6 +29,7 @@ class SettingsActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_API_FILE = 501
+        private const val REQUEST_CONTACT_IMAGE = 301
     }
 
     private lateinit var binding: ActivitySettingsBinding
@@ -32,7 +40,6 @@ class SettingsActivity : AppCompatActivity() {
     private val contactImageButtons = mutableListOf<ImageButton>()
     private val contactIncomingSwitches = mutableListOf<Switch>()
     private val contactOutgoingSwitches = mutableListOf<Switch>()
-
     private var pendingImageIndex = -1
 
     private lateinit var spinnerDefaultSpeechLang: Spinner
@@ -41,25 +48,14 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerCommIconsPerPage: Spinner
     private lateinit var spinnerCommSubmenuTimeout: Spinner
     private lateinit var switchAutoLanguage: Switch
-    private lateinit var btnCheckUpdateNow: Button
-    private lateinit var btnRestorePreviousVersion: Button
-    private lateinit var btnShareCompanionApp: Button
 
-    private fun companionContacts(): List<CompanionShareContact> {
-        val contacts = prefs.getContacts()
-        val fallbackNames = listOf("Kontakt 1", "Kontakt 2", "Kontakt 3", "Kontakt 4", "Kontakt 5", "Kontakt 6")
-
-        return (0 until 6).map { index ->
-            val slot = index + 1
-            CompanionShareContact(
-                contactId = "contact$slot",
-                displayName = contacts.getOrNull(index)?.name?.takeIf { it.isNotBlank() } ?: fallbackNames[index]
-            )
-        }
-    }
+    private lateinit var btnCheckUpdateNow: android.widget.Button
+    private lateinit var btnRestorePreviousVersion: android.widget.Button
+    private lateinit var btnShareCompanionApp: android.widget.Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -69,13 +65,35 @@ class SettingsActivity : AppCompatActivity() {
         addLanguageSettingsPanel()
         addUpdateSettingsPanel()
         addCompanionSharePanel()
+
         loadSettings()
         setupButtons()
     }
 
+    private fun companionContacts(): List<CompanionShareContact> {
+        val contacts = prefs.getContacts()
+        val fallbackNames = listOf(
+            "Kontakt 1",
+            "Kontakt 2",
+            "Kontakt 3",
+            "Kontakt 4",
+            "Kontakt 5",
+            "Kontakt 6"
+        )
+
+        return (0 until 6).map { index ->
+            val slot = index + 1
+            CompanionShareContact(
+                contactId = "contact$slot",
+                displayName = contacts.getOrNull(index)?.name?.takeIf { it.isNotBlank() }
+                    ?: fallbackNames[index]
+            )
+        }
+    }
+
     private fun langOptions() = arrayOf(
-        "SL Slovenscina",
-        "UK Ukrajinscina",
+        "SI Slovenscina",
+        "UA Ukrajinscina",
         "EN Anglescina",
         "DE Nemscina",
         "HR Hrvascina",
@@ -184,6 +202,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
+
         spinnerDefaultSpeechLang = newLangSpinner()
         panel.addView(spinnerDefaultSpeechLang)
 
@@ -192,6 +211,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
+
         spinnerPatientLang1 = newLangSpinner()
         panel.addView(spinnerPatientLang1)
 
@@ -200,6 +220,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
+
         spinnerPatientLang2 = newLangSpinner()
         panel.addView(spinnerPatientLang2)
 
@@ -241,7 +262,7 @@ class SettingsActivity : AppCompatActivity() {
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
 
-        btnCheckUpdateNow = Button(this).apply {
+        btnCheckUpdateNow = android.widget.Button(this).apply {
             text = "PREVERI POSODOBITEV"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF1B5E20.toInt())
@@ -249,8 +270,8 @@ class SettingsActivity : AppCompatActivity() {
         }
         panel.addView(btnCheckUpdateNow)
 
-        btnRestorePreviousVersion = Button(this).apply {
-            text = "OBNOVI PREJSNJO VERZIJO"
+        btnRestorePreviousVersion = android.widget.Button(this).apply {
+            text = "OBNOVI PREJASNJO VERZIJO"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF0F3460.toInt())
             textSize = 15f
@@ -276,7 +297,7 @@ class SettingsActivity : AppCompatActivity() {
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
 
-        btnShareCompanionApp = Button(this).apply {
+        btnShareCompanionApp = android.widget.Button(this).apply {
             text = "POSLJI APLIKACIJO ZA SOGOVORNIKA"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
@@ -289,139 +310,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadSettings() {
-        val stations = prefs.getRadioStations()
-        val nameFields = listOf(
-            binding.etStation1Name,
-            binding.etStation2Name,
-            binding.etStation3Name,
-            binding.etStation4Name,
-            binding.etStation5Name,
-            binding.etStation6Name
-        )
-        val urlFields = listOf(
-            binding.etStation1Url,
-            binding.etStation2Url,
-            binding.etStation3Url,
-            binding.etStation4Url,
-            binding.etStation5Url,
-            binding.etStation6Url
-        )
-
-        stations.forEachIndexed { i, station ->
-            if (i < nameFields.size) {
-                nameFields[i].setText(station.name)
-                urlFields[i].setText(station.url)
-            }
-        }
-
-        val contacts = prefs.getContacts()
-        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
-        val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
-
-        val nameF = listOf(
-            binding.etContact1Name,
-            binding.etContact2Name,
-            binding.etContact3Name,
-            binding.etContact4Name,
-            binding.etContact5Name,
-            binding.etContact6Name
-        )
-        val phoneF = listOf(
-            binding.etContact1Phone,
-            binding.etContact2Phone,
-            binding.etContact3Phone,
-            binding.etContact4Phone,
-            binding.etContact5Phone,
-            binding.etContact6Phone
-        )
-        val langC = listOf(
-            binding.langContainer1,
-            binding.langContainer2,
-            binding.langContainer3,
-            binding.langContainer4,
-            binding.langContainer5,
-            binding.langContainer6
-        )
-        val imgC = listOf(
-            binding.imgContainer1,
-            binding.imgContainer2,
-            binding.imgContainer3,
-            binding.imgContainer4,
-            binding.imgContainer5,
-            binding.imgContainer6
-        )
-
-        contactLangSpinners.clear()
-        contactImageButtons.clear()
-        contactIncomingSwitches.clear()
-        contactOutgoingSwitches.clear()
-        langC.forEach { it.removeAllViews() }
-        imgC.forEach { it.removeAllViews() }
-
-        for (i in 0 until 6) {
-            val contact = contacts.getOrNull(i)
-            nameF[i].setText(contact?.name?.takeIf { it.isNotBlank() } ?: defaultNames[i])
-            phoneF[i].setText(contact?.phone.orEmpty())
-
-            val spinner = Spinner(this).apply {
-                val opts = arrayOf("SL Slovenscina", "UK Ukrajinscina")
-                adapter = ArrayAdapter(
-                    this@SettingsActivity,
-                    android.R.layout.simple_spinner_item,
-                    opts
-                ).also {
-                    it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                }
-
-                val language = contact?.language ?: defaultLanguages[i]
-                setSelection(if (language == "uk") 1 else 0)
-            }
-            langC[i].addView(spinner)
-            contactLangSpinners.add(spinner)
-
-            val incomingSwitch = Switch(this).apply {
-                text = "Dohodni video klici"
-                textSize = 12f
-                setTextColor(0xFFB8D8FF.toInt())
-                isChecked = prefs.isContactIncomingCallEnabled(i)
-            }
-            langC[i].addView(incomingSwitch)
-            contactIncomingSwitches.add(incomingSwitch)
-
-            val outgoingSwitch = Switch(this).apply {
-                text = "Odhodni video klici"
-                textSize = 12f
-                setTextColor(0xFFB8D8FF.toInt())
-                isChecked = prefs.isContactOutgoingCallEnabled(i)
-            }
-            langC[i].addView(outgoingSwitch)
-            contactOutgoingSwitches.add(outgoingSwitch)
-
-            val imgBtn = ImageButton(this).apply {
-                val f = File(getExternalFilesDir(null), "contacts/contact_${i + 1}.png")
-                if (f.exists()) {
-                    setImageBitmap(BitmapFactory.decodeFile(f.absolutePath))
-                } else {
-                    setImageResource(android.R.drawable.ic_menu_camera)
-                }
-
-                setBackgroundColor(0xFF333355.toInt())
-                layoutParams = LinearLayout.LayoutParams(80, 80).apply {
-                    setMargins(0, 4, 0, 4)
-                }
-                scaleType = ImageView.ScaleType.FIT_CENTER
-
-                setOnClickListener {
-                    pendingImageIndex = i
-                    startActivityForResult(
-                        Intent(Intent.ACTION_PICK).apply { type = "image/*" },
-                        301
-                    )
-                }
-            }
-            imgC[i].addView(imgBtn)
-            contactImageButtons.add(imgBtn)
-        }
+        loadRadioStations()
+        loadContacts()
 
         binding.etApiBaseUrl.setText(apiConfig.getApiBaseUrl())
         binding.etOpenAiKey.setText(apiConfig.getApiToken())
@@ -454,6 +344,7 @@ class SettingsActivity : AppCompatActivity() {
                 else -> 2
             }
         )
+
         spinnerCommSubmenuTimeout.setSelection(timeoutIndex(prefs.getCommSubmenuTimeoutSeconds()))
 
         spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
@@ -465,6 +356,154 @@ class SettingsActivity : AppCompatActivity() {
         binding.etServerPort.setText(prefs.getServerPort())
         binding.etNewPin.setText("")
         binding.etKioskMinutes.setText(prefs.getKioskReturnMinutes().toString())
+    }
+
+    private fun loadRadioStations() {
+        val stations = prefs.getRadioStations()
+
+        val nameFields = listOf(
+            binding.etStation1Name,
+            binding.etStation2Name,
+            binding.etStation3Name,
+            binding.etStation4Name,
+            binding.etStation5Name,
+            binding.etStation6Name
+        )
+
+        val urlFields = listOf(
+            binding.etStation1Url,
+            binding.etStation2Url,
+            binding.etStation3Url,
+            binding.etStation4Url,
+            binding.etStation5Url,
+            binding.etStation6Url
+        )
+
+        stations.forEachIndexed { i, station ->
+            if (i < nameFields.size) {
+                nameFields[i].setText(station.name)
+                urlFields[i].setText(station.url)
+            }
+        }
+    }
+
+    private fun loadContacts() {
+        val contacts = prefs.getContacts()
+        val defaultNames = listOf("Kontakt 1", "Kontakt 2", "Kontakt 3", "Kontakt 4", "Kontakt 5", "Kontakt 6")
+        val defaultLanguages = listOf("sl", "sl", "sl", "sl", "sl", "sl")
+
+        val nameFields = listOf(
+            binding.etContact1Name,
+            binding.etContact2Name,
+            binding.etContact3Name,
+            binding.etContact4Name,
+            binding.etContact5Name,
+            binding.etContact6Name
+        )
+
+        val phoneFields = listOf(
+            binding.etContact1Phone,
+            binding.etContact2Phone,
+            binding.etContact3Phone,
+            binding.etContact4Phone,
+            binding.etContact5Phone,
+            binding.etContact6Phone
+        )
+
+        val languageContainers = listOf(
+            binding.langContainer1,
+            binding.langContainer2,
+            binding.langContainer3,
+            binding.langContainer4,
+            binding.langContainer5,
+            binding.langContainer6
+        )
+
+        val imageContainers = listOf(
+            binding.imgContainer1,
+            binding.imgContainer2,
+            binding.imgContainer3,
+            binding.imgContainer4,
+            binding.imgContainer5,
+            binding.imgContainer6
+        )
+
+        contactLangSpinners.clear()
+        contactImageButtons.clear()
+        contactIncomingSwitches.clear()
+        contactOutgoingSwitches.clear()
+
+        languageContainers.forEach { it.removeAllViews() }
+        imageContainers.forEach { it.removeAllViews() }
+
+        for (i in 0 until 6) {
+            val contact = contacts.getOrNull(i)
+
+            nameFields[i].setText(contact?.name?.takeIf { it.isNotBlank() } ?: defaultNames[i])
+            phoneFields[i].setText(contact?.phone.orEmpty())
+
+            val spinner = Spinner(this).apply {
+                val options = arrayOf("SI Slovenscina", "UA Ukrajinscina")
+                adapter = ArrayAdapter(
+                    this@SettingsActivity,
+                    android.R.layout.simple_spinner_item,
+                    options
+                ).also {
+                    it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                }
+
+                val language = contact?.language ?: defaultLanguages[i]
+                setSelection(if (language == "uk") 1 else 0)
+            }
+
+            languageContainers[i].addView(spinner)
+            contactLangSpinners.add(spinner)
+
+            val incomingSwitch = Switch(this).apply {
+                text = "Dohodni video klici"
+                textSize = 12f
+                setTextColor(0xFFB8D8FF.toInt())
+                isChecked = prefs.isContactIncomingCallEnabled(i)
+            }
+            languageContainers[i].addView(incomingSwitch)
+            contactIncomingSwitches.add(incomingSwitch)
+
+            val outgoingSwitch = Switch(this).apply {
+                text = "Odhodni video klici"
+                textSize = 12f
+                setTextColor(0xFFB8D8FF.toInt())
+                isChecked = prefs.isContactOutgoingCallEnabled(i)
+            }
+            languageContainers[i].addView(outgoingSwitch)
+            contactOutgoingSwitches.add(outgoingSwitch)
+
+            val imageButton = ImageButton(this).apply {
+                val file = File(getExternalFilesDir(null), "contacts/contact_${i + 1}.png")
+
+                if (file.exists()) {
+                    setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
+                } else {
+                    setImageResource(android.R.drawable.ic_menu_camera)
+                }
+
+                setBackgroundColor(0xFF333355.toInt())
+                layoutParams = LinearLayout.LayoutParams(80, 80).apply {
+                    setMargins(0, 4, 0, 4)
+                }
+                scaleType = ImageView.ScaleType.FIT_CENTER
+
+                setOnClickListener {
+                    pendingImageIndex = i
+                    startActivityForResult(
+                        Intent(Intent.ACTION_PICK).apply { type = "image/*" },
+                        REQUEST_CONTACT_IMAGE
+                    )
+                }
+            }
+
+            imageContainers[i].addView(imageButton)
+            contactImageButtons.add(imageButton)
+        }
     }
 
     private fun setupButtons() {
@@ -499,18 +538,22 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.btnTestLocalTts.setOnClickListener {
             saveApiFields()
+
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speakAndroid("Zdravo, to je test lokalnega govora.", "sl") {
                 tts.destroy()
             }
+
             Toast.makeText(this, "Test lokalnega govora.", Toast.LENGTH_SHORT).show()
         }
 
         binding.btnTestApiTts.setOnClickListener {
             saveApiFields()
+
             val key = apiConfig.getApiToken()
             val baseUrl = apiConfig.getApiBaseUrl()
+
             if (!apiConfig.isApiConfigured()) {
                 Toast.makeText(this, "API ni nastavljen.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
@@ -527,6 +570,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnTestApi.setOnClickListener {
             saveApiFields()
             updateApiStatus()
+
             apiConfig.testApiConnection { success, message ->
                 updateApiStatus(if (success) "API shranjen" else message)
                 Toast.makeText(this, message, if (success) Toast.LENGTH_SHORT else Toast.LENGTH_LONG).show()
@@ -541,10 +585,10 @@ class SettingsActivity : AppCompatActivity() {
                     "Ce slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
                     Toast.LENGTH_LONG
                 ).show()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 try {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=RHVoice&c=apps")))
-                } catch (e2: Exception) {
+                } catch (_: Exception) {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/search?q=RHVoice&c=apps")))
                 }
             }
@@ -582,6 +626,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun shareCompanionApp(contact: CompanionShareContact) {
         val url = buildCompanionApkUrl(contact.contactId)
+
         if (url == null) {
             Toast.makeText(this, "Neznan kontakt, povezava ni bila ustvarjena.", Toast.LENGTH_LONG).show()
             return
@@ -618,10 +663,19 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun saveApiFields() {
-        apiConfig.saveApiBaseUrl(binding.etApiBaseUrl.text.toString())
-        apiConfig.saveApiToken(binding.etOpenAiKey.text.toString())
+        val token = binding.etOpenAiKey.text.toString().trim()
+        val baseUrl = binding.etApiBaseUrl.text.toString().trim().ifBlank {
+            if (token.isNotBlank()) "https://api.openai.com" else ""
+        }
 
-        val message = "API shranjen: baseUrl length=${apiConfig.getApiBaseUrl().length}, token length=${apiConfig.getApiToken().length}"
+        binding.etApiBaseUrl.setText(baseUrl)
+
+        apiConfig.saveApiBaseUrl(baseUrl)
+        apiConfig.saveApiToken(token)
+
+        val message =
+            "API shranjen: baseUrl length=${apiConfig.getApiBaseUrl().length}, token length=${apiConfig.getApiToken().length}"
+
         Log.d("NovaRehabApi", message)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         updateApiStatus()
@@ -634,12 +688,13 @@ class SettingsActivity : AppCompatActivity() {
     private fun openApiFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "*/*"
+            type = "text/*"
             putExtra(
                 Intent.EXTRA_MIME_TYPES,
                 arrayOf("text/plain", "application/json", "application/octet-stream")
             )
         }
+
         startActivityForResult(intent, REQUEST_API_FILE)
     }
 
@@ -648,20 +703,24 @@ class SettingsActivity : AppCompatActivity() {
             contentResolver.openInputStream(uri)?.use { input ->
                 input.readBytes().toString(Charsets.UTF_8)
             }.orEmpty()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Toast.makeText(this, "API datoteke ni bilo mogoce prebrati.", Toast.LENGTH_LONG).show()
             return
         }
 
         val parsed = parseApiFile(raw)
         if (parsed.baseUrl.isBlank() && parsed.token.isBlank()) {
-            Toast.makeText(this, "API datoteka ne vsebuje prepoznavnega URL-ja ali tokena.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "API datoteka ne vsebuje prepoznavnega tokena.", Toast.LENGTH_LONG).show()
             return
         }
 
-        if (parsed.baseUrl.isNotBlank()) {
-            binding.etApiBaseUrl.setText(parsed.baseUrl)
-            apiConfig.saveApiBaseUrl(parsed.baseUrl)
+        val baseUrl = parsed.baseUrl.ifBlank {
+            if (parsed.token.isNotBlank()) "https://api.openai.com" else ""
+        }
+
+        if (baseUrl.isNotBlank()) {
+            binding.etApiBaseUrl.setText(baseUrl)
+            apiConfig.saveApiBaseUrl(baseUrl)
         }
 
         if (parsed.token.isNotBlank()) {
@@ -684,9 +743,9 @@ class SettingsActivity : AppCompatActivity() {
         val baseUrl = lines.firstNotNullOfOrNull { line ->
             val value = valueAfterSeparator(line)
             when {
-                line.startsWith("http", ignoreCase = true) -> line.trim(',', '"', '\'')
                 line.contains("base", ignoreCase = true) && value.startsWith("http", ignoreCase = true) -> value
                 line.contains("url", ignoreCase = true) && value.startsWith("http", ignoreCase = true) -> value
+                line.startsWith("http", ignoreCase = true) -> line
                 else -> null
             }
         }.orEmpty()
@@ -694,8 +753,8 @@ class SettingsActivity : AppCompatActivity() {
         val token = lines.firstNotNullOfOrNull { line ->
             val value = valueAfterSeparator(line)
             when {
-                line.contains("token", ignoreCase = true) && value.isNotBlank() -> value
-                line.contains("key", ignoreCase = true) && value.isNotBlank() -> value
+                line.contains("token", ignoreCase = true) -> value
+                line.contains("key", ignoreCase = true) -> value
                 line.startsWith("Bearer ", ignoreCase = true) -> line.removePrefix("Bearer ").trim()
                 !line.startsWith("http", ignoreCase = true) && line.length >= 12 -> line
                 else -> null
@@ -706,14 +765,27 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun valueAfterSeparator(line: String): String {
-        val afterEquals = if (line.contains("=")) line.substringAfter("=") else line
-        val afterColon = if (!afterEquals.startsWith("http", ignoreCase = true) && afterEquals.contains(":")) {
-            afterEquals.substringAfter(":")
-        } else {
-            afterEquals
+        val cleaned = line.trim().trim(',', '"', '\'')
+
+        val eqIndex = cleaned.indexOf('=')
+        if (eqIndex >= 0) {
+            return cleaned.substring(eqIndex + 1)
+                .trim()
+                .trim(',', '"', '\'')
+                .removePrefix("Bearer ")
+                .trim()
         }
 
-        return afterColon
+        val colonIndex = cleaned.indexOf(':')
+        if (colonIndex >= 0 && !cleaned.startsWith("http", ignoreCase = true)) {
+            return cleaned.substring(colonIndex + 1)
+                .trim()
+                .trim(',', '"', '\'')
+                .removePrefix("Bearer ")
+                .trim()
+        }
+
+        return cleaned
             .trim()
             .trim(',', '"', '\'')
             .removePrefix("Bearer ")
@@ -729,7 +801,7 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
 
-        if (requestCode == 301 && resultCode == RESULT_OK && pendingImageIndex >= 0) {
+        if (requestCode == REQUEST_CONTACT_IMAGE && resultCode == RESULT_OK && pendingImageIndex >= 0) {
             val uri = data?.data ?: return
 
             try {
@@ -742,76 +814,18 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-                val bmp = BitmapFactory.decodeFile(
-                    File(dir, "contact_${pendingImageIndex + 1}.png").absolutePath
-                )
-                contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bmp)
-            } catch (e: Exception) {
+                val file = File(dir, "contact_${pendingImageIndex + 1}.png")
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bitmap)
+            } catch (_: Exception) {
                 Toast.makeText(this, "Slike ni bilo mogoce shraniti.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun saveSettings() {
-        val nameF = listOf(
-            binding.etStation1Name,
-            binding.etStation2Name,
-            binding.etStation3Name,
-            binding.etStation4Name,
-            binding.etStation5Name,
-            binding.etStation6Name
-        )
-        val urlF = listOf(
-            binding.etStation1Url,
-            binding.etStation2Url,
-            binding.etStation3Url,
-            binding.etStation4Url,
-            binding.etStation5Url,
-            binding.etStation6Url
-        )
-
-        val stations = mutableListOf<RadioStation>()
-        nameF.forEachIndexed { i, field ->
-            val name = field.text.toString().trim()
-            val url = urlF[i].text.toString().trim()
-            if (name.isNotEmpty() && url.isNotEmpty()) {
-                stations.add(RadioStation(name, url))
-            }
-        }
-        prefs.saveRadioStations(stations)
-
-        val nameC = listOf(
-            binding.etContact1Name,
-            binding.etContact2Name,
-            binding.etContact3Name,
-            binding.etContact4Name,
-            binding.etContact5Name,
-            binding.etContact6Name
-        )
-        val phoneC = listOf(
-            binding.etContact1Phone,
-            binding.etContact2Phone,
-            binding.etContact3Phone,
-            binding.etContact4Phone,
-            binding.etContact5Phone,
-            binding.etContact6Phone
-        )
-
-        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
-        val contactIcons = listOf("Z", "D", "I", "J", "K", "Du")
-        val contacts = mutableListOf<Contact>()
-
-        nameC.forEachIndexed { i, field ->
-            val name = field.text.toString().trim().ifEmpty { defaultNames[i] }
-            val phone = phoneC[i].text.toString().trim()
-            val lang = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) "uk" else "sl"
-
-            prefs.saveContactIncomingCallEnabled(i, contactIncomingSwitches.getOrNull(i)?.isChecked ?: true)
-            prefs.saveContactOutgoingCallEnabled(i, contactOutgoingSwitches.getOrNull(i)?.isChecked ?: true)
-
-            contacts.add(Contact(name, phone, contactIcons.getOrElse(i) { "C" }, lang))
-        }
-        prefs.saveContacts(contacts)
+        saveRadioStations()
+        saveContacts()
 
         saveApiFields()
         prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
@@ -836,7 +850,10 @@ class SettingsActivity : AppCompatActivity() {
                 else -> 9
             }
         )
-        prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition))
+
+        prefs.saveCommSubmenuTimeoutSeconds(
+            timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition)
+        )
 
         prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
         prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
@@ -853,6 +870,82 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun saveRadioStations() {
+        val nameFields = listOf(
+            binding.etStation1Name,
+            binding.etStation2Name,
+            binding.etStation3Name,
+            binding.etStation4Name,
+            binding.etStation5Name,
+            binding.etStation6Name
+        )
+
+        val urlFields = listOf(
+            binding.etStation1Url,
+            binding.etStation2Url,
+            binding.etStation3Url,
+            binding.etStation4Url,
+            binding.etStation5Url,
+            binding.etStation6Url
+        )
+
+        val stations = mutableListOf<RadioStation>()
+
+        nameFields.forEachIndexed { i, field ->
+            val name = field.text.toString().trim()
+            val url = urlFields[i].text.toString().trim()
+
+            if (name.isNotEmpty() && url.isNotEmpty()) {
+                stations.add(RadioStation(name, url))
+            }
+        }
+
+        prefs.saveRadioStations(stations)
+    }
+
+    private fun saveContacts() {
+        val nameFields = listOf(
+            binding.etContact1Name,
+            binding.etContact2Name,
+            binding.etContact3Name,
+            binding.etContact4Name,
+            binding.etContact5Name,
+            binding.etContact6Name
+        )
+
+        val phoneFields = listOf(
+            binding.etContact1Phone,
+            binding.etContact2Phone,
+            binding.etContact3Phone,
+            binding.etContact4Phone,
+            binding.etContact5Phone,
+            binding.etContact6Phone
+        )
+
+        val defaultNames = listOf("Kontakt 1", "Kontakt 2", "Kontakt 3", "Kontakt 4", "Kontakt 5", "Kontakt 6")
+        val contacts = mutableListOf<Contact>()
+
+        nameFields.forEachIndexed { i, field ->
+            val name = field.text.toString().trim().ifEmpty { defaultNames[i] }
+            val phone = phoneFields[i].text.toString().trim()
+            val language = if (contactLangSpinners.getOrNull(i)?.selectedItemPosition == 1) "uk" else "sl"
+
+            prefs.saveContactIncomingCallEnabled(
+                i,
+                contactIncomingSwitches.getOrNull(i)?.isChecked ?: true
+            )
+
+            prefs.saveContactOutgoingCallEnabled(
+                i,
+                contactOutgoingSwitches.getOrNull(i)?.isChecked ?: true
+            )
+
+            contacts.add(Contact(name, phone, "", language))
+        }
+
+        prefs.saveContacts(contacts)
     }
 
     private data class CompanionShareContact(
