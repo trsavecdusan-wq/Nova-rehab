@@ -4,9 +4,11 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.widget.*
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.novarehab.R
 import com.novarehab.utils.MusicManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
@@ -22,6 +24,7 @@ class MusicActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -40,11 +43,14 @@ class MusicActivity : AppCompatActivity() {
 
         musicManager.setOnPlayStateChange { playing ->
             runOnUiThread {
-                btnPlayPause.text = if (playing) "⏸ PAVZA" else "▶ PREDVAJAJ"
+                btnPlayPause.text = if (playing) "PAVZA" else "PREDVAJAJ"
                 btnPlayPause.backgroundTintList = android.content.res.ColorStateList.valueOf(
                     if (playing) 0xFFb71c1c.toInt() else 0xFF1b5e20.toInt()
                 )
-                if (!playing) stats.log(StatEvent.MUSIC_STOP)
+
+                if (!playing) {
+                    stats.log(StatEvent.MUSIC_STOP)
+                }
             }
         }
 
@@ -57,47 +63,52 @@ class MusicActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(0xFF1a1a2e.toInt())
             gravity = Gravity.CENTER
-            setPadding(24, 24, 24, 24)
+            setPadding(dp(24), dp(24), dp(24), dp(24))
         }
 
-        // Glava
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(56)
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(56)
             )
         }
+
         val tvTitle = TextView(this).apply {
-            text = "🎵 GLASBA"
+            text = "GLASBA"
             textSize = 20f
             setTextColor(0xFFe94560.toInt())
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
+
         val btnBack = Button(this).apply {
             text = "NAZAJ"
             setBackgroundColor(0xFF333355.toInt())
             setTextColor(0xFFFFFFFF.toInt())
             setOnClickListener { finish() }
         }
+
         header.addView(tvTitle)
         header.addView(btnBack)
         root.addView(header)
 
-        // Nota ikona
         val tvNote = TextView(this).apply {
-            text = "🎵"
-            textSize = 80f
+            text = "GLASBA"
+            textSize = 40f
             gravity = Gravity.CENTER
+            setTextColor(0xFFFFFFFF.toInt())
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 40, 0, 20) }
+            ).apply {
+                setMargins(0, dp(40), 0, dp(20))
+            }
         }
         root.addView(tvNote)
 
-        // Naslov pesmi
         tvTrackTitle = TextView(this).apply {
             text = "Ni glasbe"
             textSize = 22f
@@ -107,7 +118,9 @@ class MusicActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 0, 0, 8) }
+            ).apply {
+                setMargins(0, 0, 0, dp(8))
+            }
         }
         root.addView(tvTrackTitle)
 
@@ -119,48 +132,61 @@ class MusicActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 0, 0, 40) }
+            ).apply {
+                setMargins(0, 0, 0, dp(40))
+            }
         }
         root.addView(tvTrackInfo)
 
-        // Kontrole
         val controls = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 0, 0, 20) }
+            ).apply {
+                setMargins(0, 0, 0, dp(20))
+            }
         }
 
         val btnPrev = Button(this).apply {
-            text = "⏮"
+            text = "<<"
             textSize = 24f
             setBackgroundColor(0xFF0f3460.toInt())
             setTextColor(0xFFFFFFFF.toInt())
-            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply { setMargins(8, 0, 8, 0) }
+            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
+                setMargins(dp(8), 0, dp(8), 0)
+            }
             setOnClickListener { musicManager.previous() }
         }
 
         btnPlayPause = Button(this).apply {
-            text = "▶ PREDVAJAJ"
+            text = "PREDVAJAJ"
             textSize = 16f
             setBackgroundColor(0xFF1b5e20.toInt())
             setTextColor(0xFFFFFFFF.toInt())
-            layoutParams = LinearLayout.LayoutParams(0, dp(72), 1f).apply { setMargins(8, 0, 8, 0) }
+            layoutParams = LinearLayout.LayoutParams(0, dp(72), 1f).apply {
+                setMargins(dp(8), 0, dp(8), 0)
+            }
             setOnClickListener {
-                if (musicManager.isPlaying()) musicManager.pause()
-                else if (musicManager.trackCount() > 0) musicManager.resume()
-                else musicManager.play()
+                if (musicManager.isPlaying()) {
+                    musicManager.pause()
+                } else if (musicManager.trackCount() > 0) {
+                    musicManager.resume()
+                } else {
+                    musicManager.play()
+                }
             }
         }
 
         val btnNext = Button(this).apply {
-            text = "⏭"
+            text = ">>"
             textSize = 24f
             setBackgroundColor(0xFF0f3460.toInt())
             setTextColor(0xFFFFFFFF.toInt())
-            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply { setMargins(8, 0, 8, 0) }
+            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
+                setMargins(dp(8), 0, dp(8), 0)
+            }
             setOnClickListener { musicManager.next() }
         }
 
@@ -169,7 +195,6 @@ class MusicActivity : AppCompatActivity() {
         controls.addView(btnNext)
         root.addView(controls)
 
-        // Info o številu pesmi
         val tvCount = TextView(this).apply {
             id = android.R.id.text1
             text = "Skupaj ${musicManager.trackCount()} pesmi"
@@ -183,16 +208,17 @@ class MusicActivity : AppCompatActivity() {
         }
         root.addView(tvCount)
 
-        // Gumb za USB kopiranje
         val btnUsb = Button(this).apply {
-            text = "📁 Kopiraj z USB ključa"
+            text = "Kopiraj z USB kljuca"
             textSize = 14f
             setBackgroundColor(0xFF16213e.toInt())
             setTextColor(0xFFaaaaaa.toInt())
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 20, 0, 0) }
+            ).apply {
+                setMargins(0, dp(20), 0, 0)
+            }
             setOnClickListener { scanAndCopyUsb() }
         }
         root.addView(btnUsb)
@@ -202,17 +228,21 @@ class MusicActivity : AppCompatActivity() {
 
     private fun updateTrackInfo() {
         val track = musicManager.currentTrack()
+
         if (track != null) {
             tvTrackTitle.text = track.title
             tvTrackInfo.text = if (track.playCount > 0) "Predvajano ${track.playCount}x" else ""
         } else {
-            tvTrackTitle.text = if (musicManager.trackCount() == 0) "Dodaj glasbo prek USB ali NAS" else "Pritisni ▶"
+            tvTrackTitle.text = if (musicManager.trackCount() == 0) {
+                "Dodaj glasbo prek USB"
+            } else {
+                "Pritisni PREDVAJAJ"
+            }
             tvTrackInfo.text = "Skupaj ${musicManager.trackCount()} pesmi"
         }
     }
 
     private fun scanAndCopyUsb() {
-        // Poišči USB storage
         val possiblePaths = listOf(
             File("/storage/usb"),
             File("/storage/usb0"),
@@ -220,27 +250,35 @@ class MusicActivity : AppCompatActivity() {
             File("/mnt/media_rw")
         )
 
-        val usbPath = possiblePaths.firstOrNull { it.exists() && it.listFiles()?.isNotEmpty() == true }
+        val usbPath = possiblePaths.firstOrNull {
+            it.exists() && it.listFiles()?.isNotEmpty() == true
+        }
 
         if (usbPath == null) {
-            Toast.makeText(this, "USB ključ ni najden. Priključi USB ključ.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "USB kljuc ni najden. Prikljuci USB kljuc.", Toast.LENGTH_LONG).show()
             return
         }
 
         val progressDialog = android.app.AlertDialog.Builder(this)
             .setTitle("Kopiranje glasbe")
-            .setMessage("Kopiram z USB ključa...")
+            .setMessage("Kopiram z USB kljuca...")
             .setCancelable(false)
             .create()
+
         progressDialog.show()
 
-        musicManager.copyFromUsb(usbPath,
+        musicManager.copyFromUsb(
+            usbPath,
             onProgress = { current, total ->
                 progressDialog.setMessage("Kopiram $current / $total...")
             },
             onDone = { copied ->
                 progressDialog.dismiss()
-                Toast.makeText(this, "Kopirano $copied novih pesmi. Skupaj ${musicManager.trackCount()}.", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this,
+                    "Kopirano $copied novih pesmi. Skupaj ${musicManager.trackCount()}.",
+                    Toast.LENGTH_LONG
+                ).show()
                 updateTrackInfo()
             }
         )
@@ -254,11 +292,11 @@ class MusicActivity : AppCompatActivity() {
     private fun hideSystemUI() {
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            or View.SYSTEM_UI_FLAG_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        )
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            )
     }
 
     override fun onDestroy() {
@@ -266,5 +304,7 @@ class MusicActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
 }
