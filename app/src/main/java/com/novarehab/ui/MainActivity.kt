@@ -59,18 +59,19 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val MAX_SUBMENU_ITEMS = 18
-        private const val SIGNALING_BASE_URL = "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
+        private const val SIGNALING_BASE_URL =
+            "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
     }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PrefsManager
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var stats: StatsManager
-    private var tts: TextToSpeech? = null
-    private var ttsReady = false
-    private var langDetector: LanguageDetector? = null
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
+
+    private var tts: TextToSpeech? = null
+    private var langDetector: LanguageDetector? = null
 
     private var currentStation = -1
     private var radioPlaying = false
@@ -94,6 +95,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -111,12 +113,14 @@ class MainActivity : AppCompatActivity() {
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val r = tts?.setLanguage(Locale("sl", "SI"))
-                if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
+                val result = tts?.setLanguage(Locale("sl", "SI"))
+                if (
+                    result == TextToSpeech.LANG_MISSING_DATA ||
+                    result == TextToSpeech.LANG_NOT_SUPPORTED
+                ) {
                     tts?.setLanguage(Locale.getDefault())
                 }
                 tts?.setSpeechRate(0.9f)
-                ttsReady = true
             }
         }
 
@@ -131,7 +135,10 @@ class MainActivity : AppCompatActivity() {
         setupGuestLanguageButton()
         updateLanguageFlag()
 
-        if (prefs.isAutoLanguageEnabled()) setupLanguageDetector()
+        if (prefs.isAutoLanguageEnabled()) {
+            setupLanguageDetector()
+        }
+
         scheduleReports()
         scheduleDailyUpdateCheck()
         startIncomingCallPolling()
@@ -195,6 +202,7 @@ class MainActivity : AppCompatActivity() {
         radioButtons.forEachIndexed { index, button ->
             val station = stations.getOrNull(index)
             button.text = station?.name?.take(10) ?: "P${index + 1}"
+
             button.setOnClickListener {
                 if (station?.url == "music://local") {
                     startActivity(Intent(this, MusicActivity::class.java))
@@ -210,15 +218,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playStation(index: Int) {
-        val stations = prefs.getRadioStations()
-        val station = stations.getOrNull(index) ?: return
+        val station = prefs.getRadioStations().getOrNull(index) ?: return
 
         if (station.url == "music://local") {
             startActivity(Intent(this, MusicActivity::class.java))
             return
         }
 
-        if (radioPlaying) stats.log(StatEvent.RADIO_STOP)
+        if (radioPlaying) {
+            stats.log(StatEvent.RADIO_STOP)
+        }
 
         startForegroundService(Intent(this, RadioService::class.java).apply {
             action = RadioService.ACTION_PLAY
@@ -236,7 +245,11 @@ class MainActivity : AppCompatActivity() {
         startService(Intent(this, RadioService::class.java).apply {
             action = RadioService.ACTION_STOP
         })
-        if (radioPlaying) stats.log(StatEvent.RADIO_STOP)
+
+        if (radioPlaying) {
+            stats.log(StatEvent.RADIO_STOP)
+        }
+
         radioPlaying = false
         updateRadioUI()
     }
@@ -249,9 +262,13 @@ class MainActivity : AppCompatActivity() {
             binding.btnRadio4,
             binding.btnRadio5,
             binding.btnRadio6
-        ).forEachIndexed { index, btn ->
-            btn.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                if (index == currentStation && radioPlaying) 0xFFe94560.toInt() else 0xFF0f3460.toInt()
+        ).forEachIndexed { index, button ->
+            button.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                if (index == currentStation && radioPlaying) {
+                    0xFFe94560.toInt()
+                } else {
+                    0xFF0f3460.toInt()
+                }
             )
         }
     }
@@ -266,7 +283,11 @@ class MainActivity : AppCompatActivity() {
 
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (!prefs.isNavigationEnabled()) {
-                    Toast.makeText(this@MainActivity, "Navigacija je izklopljena v Nastavitvah", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Navigacija je izklopljena v Nastavitvah",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else if (prefs.getHomeAddress().isEmpty()) {
                     showHomeAddressDialog()
                 } else {
@@ -284,21 +305,37 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             startGps()
         }
     }
 
     private fun startGps() {
         try {
-            val lm = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                lm.requestLocationUpdates(android.location.LocationManager.GPS_PROVIDER, 1000L, 0.5f) { loc ->
-                    val kmh = (loc.speed * 3.6).toInt()
-                    binding.tvSpeed.text = if (loc.accuracy > 10f || !loc.hasSpeed()) "0" else kmh.toString()
+            val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+
+            if (
+                ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                locationManager.requestLocationUpdates(
+                    android.location.LocationManager.GPS_PROVIDER,
+                    1000L,
+                    0.5f
+                ) { location ->
+                    val kmh = (location.speed * 3.6).toInt()
+                    binding.tvSpeed.text =
+                        if (location.accuracy > 10f || !location.hasSpeed()) "0" else kmh.toString()
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
     }
 
@@ -312,9 +349,9 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Nastavi domaci naslov")
             .setView(input)
             .setPositiveButton("Shrani") { _, _ ->
-                val addr = input.text.toString().trim()
-                if (addr.isNotEmpty()) {
-                    prefs.saveHomeAddress(addr)
+                val address = input.text.toString().trim()
+                if (address.isNotEmpty()) {
+                    prefs.saveHomeAddress(address)
                     stats.log(StatEvent.NAV_START)
                     startActivity(Intent(this, NavigationActivity::class.java))
                 }
@@ -336,6 +373,7 @@ class MainActivity : AppCompatActivity() {
             getLang = { activeLang },
             onItemSelected = { item -> handleCommunicationItem(item) }
         )
+
         binding.viewPagerComm.adapter = adapter
     }
 
@@ -357,7 +395,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun defaultSubmenuEnabled(id: String): Boolean {
-        return id in setOf("piti", "jesti", "slabo", "pomoc")
+        return false
     }
 
     private fun showCommunicationSubmenu(parent: CommunicationItem) {
@@ -369,14 +407,16 @@ class MainActivity : AppCompatActivity() {
 
         overlay.addView(TextView(this).apply {
             text = parent.label
-            textSize = 24f
+            textSize = 20f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 0, 0, dp(10)) }
+            ).apply {
+                setMargins(0, 0, 0, dp(10))
+            }
         })
 
         val submenuItems = parent.children.take(MAX_SUBMENU_ITEMS)
@@ -415,17 +455,22 @@ class MainActivity : AppCompatActivity() {
 
         overlay.addView(Button(this).apply {
             text = "NAZAJ"
-            textSize = 22f
+            textSize = 18f
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF333355.toInt())
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(76)
-            ).apply { setMargins(0, dp(12), 0, 0) }
+                dp(64)
+            ).apply {
+                setMargins(0, dp(12), 0, 0)
+            }
             setOnClickListener { popup.dismiss() }
         })
 
-        val timeout = Runnable { if (popup.isShowing) popup.dismiss() }
+        val timeout = Runnable {
+            if (popup.isShowing) popup.dismiss()
+        }
+
         languageReturnHandler.postDelayed(timeout, prefs.getCommSubmenuTimeoutSeconds() * 1000L)
         popup.setOnDismissListener { languageReturnHandler.removeCallbacks(timeout) }
         popup.showAtLocation(binding.root, Gravity.CENTER, 0, 0)
@@ -445,7 +490,7 @@ class MainActivity : AppCompatActivity() {
             isFocusable = true
             layoutParams = GridLayout.LayoutParams().apply {
                 width = 0
-                height = dp(190)
+                height = dp(140)
                 columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
                 rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
                 setMargins(dp(6), dp(6), dp(6), dp(6))
@@ -455,17 +500,19 @@ class MainActivity : AppCompatActivity() {
             addView(ImageView(this@MainActivity).apply {
                 setImageResource(item.iconRes)
                 scaleType = ImageView.ScaleType.FIT_CENTER
-                minimumHeight = dp(120)
+                minimumHeight = dp(72)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     0,
                     1f
-                ).apply { setMargins(dp(10), dp(8), dp(10), dp(6)) }
+                ).apply {
+                    setMargins(dp(8), dp(6), dp(8), dp(4))
+                }
             })
 
             addView(TextView(this@MainActivity).apply {
                 text = item.label
-                textSize = 24f
+                textSize = 16f
                 setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 gravity = Gravity.CENTER
@@ -474,7 +521,9 @@ class MainActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { setMargins(dp(4), dp(4), dp(4), dp(10)) }
+                ).apply {
+                    setMargins(dp(4), dp(4), dp(4), dp(10))
+                }
             })
 
             setOnClickListener {
@@ -529,7 +578,9 @@ class MainActivity : AppCompatActivity() {
                 onDone()
             }
 
-            if (logEvent) stats.log(StatEvent.COMM_ICON, finalText.take(30))
+            if (logEvent) {
+                stats.log(StatEvent.COMM_ICON, finalText.take(30))
+            }
         }
 
         if (targetLang != "sl") {
@@ -556,7 +607,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvPatientName.maxLines = 2
 
         binding.tvPatientName.setOnClickListener {
-            Toast.makeText(this, "Za spremembo jezika drzite zastavo z imenom.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Za spremembo jezika drzi oznako jezika z imenom.", Toast.LENGTH_SHORT).show()
         }
 
         binding.tvPatientName.setOnLongClickListener {
@@ -594,7 +645,7 @@ class MainActivity : AppCompatActivity() {
         languages.forEach { lang ->
             val button = Button(this).apply {
                 text = "${lang.flag}\n${lang.fullName}"
-                textSize = 20f
+                textSize = 16f
                 gravity = Gravity.CENTER
                 isAllCaps = false
                 setOnClickListener {
@@ -670,12 +721,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun languageChoice(code: String): LanguageChoice {
         return when (code) {
-            "uk" -> LanguageChoice("uk", "UK", "Ukrajinscina")
+            "uk" -> LanguageChoice("uk", "UA", "Ukrajinscina")
             "en" -> LanguageChoice("en", "EN", "Anglescina")
             "de" -> LanguageChoice("de", "DE", "Nemscina")
             "hr" -> LanguageChoice("hr", "HR", "Hrvascina")
             "sr" -> LanguageChoice("sr", "SR", "Srbscina")
-            else -> LanguageChoice("sl", "SL", "Slovenscina")
+            else -> LanguageChoice("sl", "SI", "Slovenscina")
         }
     }
 
@@ -698,9 +749,9 @@ class MainActivity : AppCompatActivity() {
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
         fun updateIndicator() {
-            val cur = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-            val pct = (cur.toFloat() / max * 5).toInt().coerceIn(0, 5)
-            binding.tvVolLevel.text = "O".repeat(pct) + "o".repeat(5 - pct)
+            val current = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+            val pct = (current.toFloat() / max * 5).toInt().coerceIn(0, 5)
+            binding.tvVolLevel.text = "●".repeat(pct) + "○".repeat(5 - pct)
         }
 
         binding.btnVolUp.setOnClickListener {
@@ -717,13 +768,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupClock() {
-        val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+
         clockRunnable = object : Runnable {
             override fun run() {
-                binding.tvClock.text = fmt.format(Date())
+                binding.tvClock.text = format.format(Date())
                 clockHandler.postDelayed(this, 30000L)
             }
         }
+
         clockHandler.post(clockRunnable!!)
     }
 
@@ -803,6 +856,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showIncomingCallDialog(request: IncomingCallRequest) {
         if (activeIncomingRoomId == request.roomId || isFinishing) return
+
         activeIncomingRoomId = request.roomId
 
         android.app.AlertDialog.Builder(this)
@@ -897,7 +951,14 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Administrator")
-            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejsnjo verzijo", "Izhod v Android")) { _, which ->
+            .setItems(
+                arrayOf(
+                    "Nastavitve",
+                    "Statistika",
+                    "Obnovi prejsnjo verzijo",
+                    "Izhod v Android"
+                )
+            ) { _, which ->
                 when (which) {
                     0 -> startActivity(Intent(this, SettingsActivity::class.java))
                     1 -> startActivity(Intent(this, StatsActivity::class.java))
@@ -924,20 +985,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestAllPermissions() {
-        val perms = mutableListOf(
+        val permissions = mutableListOf(
             Manifest.permission.CAMERA,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.RECORD_AUDIO
         )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            perms.add(Manifest.permission.READ_MEDIA_IMAGES)
-            perms.add(Manifest.permission.POST_NOTIFICATIONS)
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            perms.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
 
-        val needed = perms.filter {
+        val needed = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }.toTypedArray()
 
@@ -946,17 +1007,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == 100) {
-            if (grantResults.getOrNull(permissions.indexOf(Manifest.permission.ACCESS_FINE_LOCATION)) == PackageManager.PERMISSION_GRANTED) {
+            if (
+                grantResults.getOrNull(
+                    permissions.indexOf(Manifest.permission.ACCESS_FINE_LOCATION)
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
                 startGps()
             }
 
             if (
                 prefs.isAutoLanguageEnabled() &&
-                grantResults.getOrNull(permissions.indexOf(Manifest.permission.RECORD_AUDIO)) == PackageManager.PERMISSION_GRANTED
+                grantResults.getOrNull(
+                    permissions.indexOf(Manifest.permission.RECORD_AUDIO)
+                ) == PackageManager.PERMISSION_GRANTED
             ) {
                 setupLanguageDetector()
             }
@@ -979,7 +1050,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
+
         setupGuestLanguageButton()
         updateLanguageFlag()
         setupCommPager()
