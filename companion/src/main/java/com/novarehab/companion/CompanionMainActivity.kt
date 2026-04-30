@@ -30,7 +30,10 @@ class CompanionMainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContentView(R.layout.activity_companion_main)
@@ -66,19 +69,11 @@ class CompanionMainActivity : Activity() {
         }
 
         btnCallLana.setOnClickListener {
-            if (!CompanionConfig.outgoingCallsEnabled) {
-                Toast.makeText(this, "Odhodni klici so izklopljeni.", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-
-            Toast.makeText(
-                this,
-                "Odhodni klic iz companion aplikacije je pripravljen v nastavitvah. Za test naj klic zacne tablica.",
-                Toast.LENGTH_LONG
-            ).show()
+            sendTestCallToTablet()
         }
 
         requestVideoPermissions()
+        createCallManager()
         updateStatus()
 
         if (CompanionConfig.incomingCallsEnabled) {
@@ -89,6 +84,13 @@ class CompanionMainActivity : Activity() {
     }
 
     private fun startWaitingForCall() {
+        createCallManager()
+        callManager?.startWaitingForCall()
+    }
+
+    private fun createCallManager() {
+        if (callManager != null) return
+
         callManager = CompanionCallManager(
             context = this,
             localRenderer = localRenderer,
@@ -127,37 +129,55 @@ class CompanionMainActivity : Activity() {
                 }
             }
         )
-        callManager?.startWaitingForCall()
+    }
+
+    private fun sendTestCallToTablet() {
+        if (!CompanionConfig.outgoingCallsEnabled) {
+            Toast.makeText(this, "Odhodni klici so izklopljeni.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        createCallManager()
+        tvStatus.text = "Klic poslan"
+        callManager?.sendOutgoingTestCall(CompanionConfig.contactName)
     }
 
     private fun updateStatus() {
         tvContactInfo.text = "Kontakt: ${CompanionConfig.contactName}"
 
         tvStatus.text = when (callState) {
-            CompanionCallState.WAITING -> {
-                if (CompanionConfig.incomingCallsEnabled) "Povezano z Lano" else "Dohodni klici so izklopljeni"
-            }
+            CompanionCallState.WAITING -> "Cakam povezavo"
             CompanionCallState.INCOMING -> "Lana klice"
             CompanionCallState.CONNECTED -> "Klic vzpostavljen"
             CompanionCallState.ENDED -> "Klic zavrnjen"
         }
 
-        btnAcceptCall.visibility = if (callState == CompanionCallState.INCOMING) View.VISIBLE else View.GONE
-        btnRejectCall.visibility = if (
-            callState == CompanionCallState.INCOMING ||
-            callState == CompanionCallState.CONNECTED
-        ) View.VISIBLE else View.GONE
+        btnAcceptCall.visibility =
+            if (callState == CompanionCallState.INCOMING) View.VISIBLE else View.GONE
 
-        btnRejectCall.text = if (callState == CompanionCallState.CONNECTED) "PREKINI KLIC" else "ZAVRNI KLIC"
+        btnRejectCall.visibility =
+            if (callState == CompanionCallState.INCOMING || callState == CompanionCallState.CONNECTED) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
 
-        btnCallLana.visibility = if (
-            callState == CompanionCallState.WAITING &&
-            CompanionConfig.outgoingCallsEnabled
-        ) View.VISIBLE else View.GONE
+        btnRejectCall.text =
+            if (callState == CompanionCallState.CONNECTED) "PREKINI KLIC" else "ZAVRNI KLIC"
+
+        btnCallLana.visibility =
+            if (callState == CompanionCallState.WAITING && CompanionConfig.outgoingCallsEnabled) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
     }
 
     private fun requestVideoPermissions() {
-        val needed = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filter {
+        val needed = arrayOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
+        ).filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
