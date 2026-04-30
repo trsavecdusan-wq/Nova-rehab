@@ -7,17 +7,17 @@ import android.view.ViewGroup
 import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.novarehab.R
 import com.novarehab.utils.IconTextManager
 import java.io.File
 
 class CommPageAdapter(
     private val context: Context,
-    private val items: List<Triple<String, Int, Pair<String, String>>>,
+    private val items: List<CommunicationItem>,
     private val pageSize: Int = 8,
     private val getLang: () -> String,
-    private val onSpeak: (String, String) -> Unit
+    private val onItemSelected: (CommunicationItem) -> Unit
 ) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
 
     private val iconMgr = IconTextManager(context)
@@ -56,7 +56,7 @@ class CommPageAdapter(
         val start = position * safePageSize
         val end = minOf(start + safePageSize, items.size)
 
-        items.subList(start, end).forEach { (id, iconRes, speeches) ->
+        items.subList(start, end).forEach { item ->
             val cell = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
@@ -75,37 +75,45 @@ class CommPageAdapter(
                         LinearLayout.LayoutParams.MATCH_PARENT, 0
                     ).apply { weight = 1f; setMargins(8, 8, 8, 4) }
                     layoutParams = imgLp
-                    val customFile = File(context.getExternalFilesDir(null), "icons/$id.png")
+                    val customFile = File(context.getExternalFilesDir(null), "icons/${item.id}.png")
                     if (customFile.exists())
                         setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
                     else
-                        setImageResource(iconRes)
+                        setImageResource(item.iconRes)
                 }
                 addView(img)
+
+                addView(TextView(context).apply {
+                    text = displayLabel(item)
+                    textSize = 17f
+                    setTextColor(0xFFFFFFFF.toInt())
+                    gravity = Gravity.CENTER
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    maxLines = 2
+                    includeFontPadding = false
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(6, 2, 6, 10)
+                    }
+                })
 
                 isClickable = true
                 isFocusable = true
                 setOnClickListener {
-                    val targetLang = getLang()
-                    val customTarget = iconMgr.getText(id, targetLang)
-                    val customSl = iconMgr.getText(id, "sl")
-                    val speech: String
-                    val sourceLang: String
-                    if (customTarget.isNotEmpty()) {
-                        speech = customTarget
-                        sourceLang = targetLang
-                    } else if (targetLang == "uk" && speeches.second.isNotEmpty()) {
-                        speech = speeches.second
-                        sourceLang = "uk"
-                    } else {
-                        speech = customSl.ifEmpty { speeches.first }
-                        sourceLang = "sl"
-                    }
-                    onSpeak(speech, sourceLang)
+                    onItemSelected(item)
                 }
             }
             grid.addView(cell)
         }
+    }
+
+    private fun displayLabel(item: CommunicationItem): String {
+        val custom = iconMgr.getText(item.id, getLang()).ifBlank {
+            iconMgr.getText(item.id, "sl")
+        }
+        return custom.ifBlank { item.label }
     }
 
     class PageViewHolder(val grid: GridLayout) : RecyclerView.ViewHolder(grid)
