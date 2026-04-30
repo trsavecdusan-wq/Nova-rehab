@@ -3,6 +3,7 @@ package com.novarehab.ui
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.widget.GridLayout
 import android.widget.ImageView
@@ -35,9 +36,10 @@ class CommPageAdapter(
         else -> 4
     }
 
-    val pageCount get() = maxOf(1, Math.ceil(items.size.toDouble() / safePageSize).toInt())
+    val pageCount: Int
+        get() = maxOf(1, Math.ceil(items.size.toDouble() / safePageSize).toInt())
 
-    override fun getItemCount() = pageCount
+    override fun getItemCount(): Int = pageCount
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
         val grid = GridLayout(context).apply {
@@ -48,6 +50,7 @@ class CommPageAdapter(
             columnCount = gridColumns
             rowCount = gridRows
         }
+
         return PageViewHolder(grid)
     }
 
@@ -57,68 +60,75 @@ class CommPageAdapter(
 
         val start = position * safePageSize
         val end = minOf(start + safePageSize, items.size)
+        val pageItems = items.subList(start, end)
 
-        items.subList(start, end).forEach { item ->
-            val cell = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                setBackgroundColor(0xFF16213e.toInt())
+        for (slot in 0 until safePageSize) {
+            grid.addView(createCell(pageItems.getOrNull(slot)))
+        }
+    }
 
-                layoutParams = GridLayout.LayoutParams().apply {
-                    width = 0
-                    height = 0
-                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                    rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                    setMargins(3, 3, 3, 3)
-                }
+    private fun createCell(item: CommunicationItem?): LinearLayout {
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(0xFF16213e.toInt())
 
-                val img = ImageView(context).apply {
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        0
-                    ).apply {
-                        weight = 1f
-                        setMargins(8, 8, 8, 4)
-                    }
-
-                    val customFile = File(context.getExternalFilesDir(null), "icons/${item.id}.png")
-                    if (customFile.exists()) {
-                        setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
-                    } else {
-                        setImageResource(item.iconRes)
-                    }
-                }
-                addView(img)
-
-                addView(TextView(context).apply {
-                    text = displayLabel(item)
-                    textSize = when (safePageSize) {
-                        12 -> 13f
-                        9 -> 14f
-                        else -> 15f
-                    }
-                    setTextColor(0xFFFFFFFF.toInt())
-                    gravity = Gravity.CENTER
-                    setTypeface(null, android.graphics.Typeface.BOLD)
-                    maxLines = 2
-                    includeFontPadding = false
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        setMargins(6, 2, 6, 10)
-                    }
-                })
-
-                isClickable = true
-                isFocusable = true
-                setOnClickListener {
-                    onItemSelected(item)
-                }
+            layoutParams = GridLayout.LayoutParams().apply {
+                width = 0
+                height = 0
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                setMargins(3, 3, 3, 3)
             }
 
-            grid.addView(cell)
+            if (item == null) {
+                visibility = View.INVISIBLE
+                return@apply
+            }
+
+            addView(ImageView(context).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0
+                ).apply {
+                    weight = 1f
+                    setMargins(8, 8, 8, 4)
+                }
+
+                val customFile = File(context.getExternalFilesDir(null), "icons/${item.id}.png")
+                if (customFile.exists()) {
+                    setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
+                } else {
+                    setImageResource(item.iconRes)
+                }
+            })
+
+            addView(TextView(context).apply {
+                text = displayLabel(item)
+                textSize = when (safePageSize) {
+                    12 -> 13f
+                    9 -> 14f
+                    else -> 15f
+                }
+                setTextColor(0xFFFFFFFF.toInt())
+                gravity = Gravity.CENTER
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                maxLines = 2
+                includeFontPadding = false
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(6, 2, 6, 10)
+                }
+            })
+
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                onItemSelected(item)
+            }
         }
     }
 
