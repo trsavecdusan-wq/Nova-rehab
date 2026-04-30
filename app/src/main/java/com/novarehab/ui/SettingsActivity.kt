@@ -6,15 +6,8 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.Switch
-import android.widget.TextView
-import android.widget.Toast
+import android.util.Log
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.databinding.ActivitySettingsBinding
 import com.novarehab.service.ReportWorker
@@ -52,14 +45,18 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnRestorePreviousVersion: Button
     private lateinit var btnShareCompanionApp: Button
 
-    private val companionContacts = listOf(
-        CompanionShareContact("zana", "Zana"),
-        CompanionShareContact("dedek", "Dedek"),
-        CompanionShareContact("inna", "Inna"),
-        CompanionShareContact("julija", "Julija"),
-        CompanionShareContact("kuma", "Kuma"),
-        CompanionShareContact("dusan", "Dusan")
-    )
+    private fun companionContacts(): List<CompanionShareContact> {
+        val contacts = prefs.getContacts()
+        val fallbackNames = listOf("Kontakt 1", "Kontakt 2", "Kontakt 3", "Kontakt 4", "Kontakt 5", "Kontakt 6")
+
+        return (0 until 6).map { index ->
+            val slot = index + 1
+            CompanionShareContact(
+                contactId = "contact$slot",
+                displayName = contacts.getOrNull(index)?.name?.takeIf { it.isNotBlank() } ?: fallbackNames[index]
+            )
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,7 +155,7 @@ class SettingsActivity : AppCompatActivity() {
             adapter = ArrayAdapter(
                 this@SettingsActivity,
                 android.R.layout.simple_spinner_item,
-                arrayOf("6 ikon", "8 ikon", "12 ikon", "18 ikon")
+                arrayOf("6 ikon", "8 ikon", "9 ikon", "12 ikon")
             ).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
@@ -428,6 +425,7 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.etApiBaseUrl.setText(apiConfig.getApiBaseUrl())
         binding.etOpenAiKey.setText(apiConfig.getApiToken())
+        updateApiStatus()
 
         val voices = arrayOf("nova", "shimmer", "alloy", "echo", "fable", "onyx")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
@@ -451,8 +449,8 @@ class SettingsActivity : AppCompatActivity() {
             when (prefs.getCommIconsPerPage()) {
                 6 -> 0
                 8 -> 1
-                12 -> 2
-                18 -> 3
+                9 -> 2
+                12 -> 3
                 else -> 2
             }
         )
@@ -499,28 +497,38 @@ class SettingsActivity : AppCompatActivity() {
             openApiFilePicker()
         }
 
-        binding.btnTestTts.setOnClickListener {
+        binding.btnTestLocalTts.setOnClickListener {
             saveApiFields()
+            val tts = com.novarehab.utils.OpenAiTtsManager(this)
+            tts.initLocalTts()
+            tts.speakAndroid("Zdravo, to je test lokalnega govora.", "sl") {
+                tts.destroy()
+            }
+            Toast.makeText(this, "Test lokalnega govora.", Toast.LENGTH_SHORT).show()
+        }
 
+        binding.btnTestApiTts.setOnClickListener {
+            saveApiFields()
+            val key = apiConfig.getApiToken()
+            val baseUrl = apiConfig.getApiBaseUrl()
             if (!apiConfig.isApiConfigured()) {
                 Toast.makeText(this, "API ni nastavljen.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
-            val key = apiConfig.getApiToken()
-            val baseUrl = apiConfig.getApiBaseUrl()
             val voice = binding.spinnerTtsVoice.selectedItem.toString()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
-
             tts.initLocalTts()
-            tts.speak("Zdravo, to je test govora aplikacije Nova Rehab.", "sl", key, voice, baseUrl) {
+            tts.speak("Zdravo, to je test API govora aplikacije Nova Rehab.", "sl", key, voice, baseUrl) {
                 tts.destroy()
             }
         }
 
         binding.btnTestApi.setOnClickListener {
             saveApiFields()
+            updateApiStatus()
             apiConfig.testApiConnection { success, message ->
+                updateApiStatus(if (success) "API shranjen" else message)
                 Toast.makeText(this, message, if (success) Toast.LENGTH_SHORT else Toast.LENGTH_LONG).show()
             }
         }
@@ -554,12 +562,13 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showCompanionSharePicker() {
-        val names = companionContacts.map { it.displayName }.toTypedArray()
+        val contacts = companionContacts()
+        val names = contacts.map { it.displayName }.toTypedArray()
 
         AlertDialog.Builder(this)
             .setTitle("Izberi sogovornika")
             .setItems(names) { _, which ->
-                val contact = companionContacts.getOrNull(which)
+                val contact = contacts.getOrNull(which)
                 if (contact == null) {
                     Toast.makeText(this, "Neznan sogovornik.", Toast.LENGTH_LONG).show()
                     return@setItems
@@ -601,7 +610,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun buildCompanionApkUrl(contactId: String): String? {
-        val allowedIds = companionContacts.map { it.contactId }.toSet()
+        val allowedIds = companionContacts().map { it.contactId }.toSet()
         if (contactId !in allowedIds) return null
 
         val baseUrl = "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/"
@@ -611,6 +620,15 @@ class SettingsActivity : AppCompatActivity() {
     private fun saveApiFields() {
         apiConfig.saveApiBaseUrl(binding.etApiBaseUrl.text.toString())
         apiConfig.saveApiToken(binding.etOpenAiKey.text.toString())
+
+        val message = "API shranjen: baseUrl length=${apiConfig.getApiBaseUrl().length}, token length=${apiConfig.getApiToken().length}"
+        Log.d("NovaRehabApi", message)
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        updateApiStatus()
+    }
+
+    private fun updateApiStatus(forced: String? = null) {
+        binding.tvApiStatus.text = forced ?: apiConfig.getStatusText()
     }
 
     private fun openApiFilePicker() {
@@ -652,6 +670,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         Toast.makeText(this, "API podatki so shranjeni.", Toast.LENGTH_SHORT).show()
+        updateApiStatus()
     }
 
     private fun parseApiFile(raw: String): ImportedApiConfig {
@@ -812,9 +831,9 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveCommIconsPerPage(
             when (spinnerCommIconsPerPage.selectedItemPosition) {
                 0 -> 6
-                2 -> 12
-                3 -> 18
-                else -> 8
+                1 -> 8
+                3 -> 12
+                else -> 9
             }
         )
         prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition))
