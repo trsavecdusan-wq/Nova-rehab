@@ -1,17 +1,14 @@
 package com.novarehab.ui
 
 import android.Manifest
-import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.view.GestureDetector
 import android.view.Gravity
@@ -21,7 +18,10 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupWindow
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -30,13 +30,14 @@ import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.novarehab.R
 import com.novarehab.databinding.ActivityMainBinding
 import com.novarehab.service.DailyUpdateCheckWorker
 import com.novarehab.service.RadioBrowserService
 import com.novarehab.service.RadioService
 import com.novarehab.service.ReportWorker
 import com.novarehab.service.UpdateService
+import com.novarehab.utils.ApiConfigManager
+import com.novarehab.utils.IconTextManager
 import com.novarehab.utils.LanguageDetector
 import com.novarehab.utils.OpenAiTranslateManager
 import com.novarehab.utils.OpenAiTtsManager
@@ -44,7 +45,6 @@ import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
 import com.novarehab.utils.UpdateManager
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -52,8 +52,13 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val MAX_SUBMENU_ITEMS = 18
+    }
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PrefsManager
+    private lateinit var apiConfig: ApiConfigManager
     private lateinit var stats: StatsManager
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -75,33 +80,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var speedGestureDetector: GestureDetector
 
-    private val allCommItems = listOf(
-        Triple("pomoc", R.drawable.comm_pomoc, Pair("Potrebujem pomoč, prosim pridite", "")),
-        Triple("piti", R.drawable.comm_piti, Pair("Žejna sem, prinesite mi piti", "")),
-        Triple("jesti", R.drawable.comm_jesti, Pair("Lačna sem, bi rada jedla", "")),
-        Triple("bolecina", R.drawable.comm_bolecina, Pair("Imam bolečine", "")),
-        Triple("kopalnica", R.drawable.comm_kopalnica, Pair("Potrebujem v kopalnico", "")),
-        Triple("dobro", R.drawable.comm_dobro, Pair("Dobro se počutim", "")),
-        Triple("slabo", R.drawable.comm_slabo, Pair("Ne počutim se dobro", "")),
-        Triple("utrujena", R.drawable.comm_utrujena, Pair("Utrujena sem, rada bi počivala", "")),
-        Triple("mraz", R.drawable.comm_mraz, Pair("Mrzlica mi je", "")),
-        Triple("vroce", R.drawable.comm_vroce, Pair("Vroče mi je", "")),
-        Triple("hvala", R.drawable.comm_hvala, Pair("Hvala lepa", "")),
-        Triple("pridi_sem", R.drawable.comm_pridi_sem, Pair("Prosim pridi sem k meni", "")),
-        Triple("pocakaj", R.drawable.comm_pocakaj, Pair("Počakaj prosim", "")),
-        Triple("zdravilo", R.drawable.comm_zdravilo, Pair("Čas je za zdravilo", "")),
-        Triple("telefon", R.drawable.comm_telefon, Pair("Prinesite mi telefon", "")),
-        Triple("tv", R.drawable.comm_tv, Pair("Vklopite televizijo", "")),
-        Triple("postelja", R.drawable.comm_postelja, Pair("Rada bi ležala", "")),
-        Triple("okno", R.drawable.comm_okno, Pair("Odprite okno", "")),
-        Triple("vesela", R.drawable.comm_vesela, Pair("Vesela sem", "")),
-        Triple("zalostna", R.drawable.comm_zalostna, Pair("Žalostna sem", "")),
-        Triple("jezna", R.drawable.comm_jezna, Pair("Jezna sem", "")),
-        Triple("strah", R.drawable.comm_strah, Pair("Prestrašena sem", "")),
-        Triple("tesnoba", R.drawable.comm_tesnoba, Pair("Tesnobno se počutim", "")),
-        Triple("objemi", R.drawable.comm_objemi, Pair("Bi me objel?", ""))
-    )
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -111,13 +89,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = PrefsManager(this)
+        apiConfig = ApiConfigManager(this)
         stats = StatsManager(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
 
         handleUpdateIntent(intent)
-        loadOpenAiKeyFromDownloadIfNeeded()
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
@@ -318,7 +296,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("Nastavi domači naslov")
+            .setTitle("Nastavi domaci naslov")
             .setView(input)
             .setPositiveButton("Shrani") { _, _ ->
                 val addr = input.text.toString().trim()
@@ -328,18 +306,13 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, NavigationActivity::class.java))
                 }
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("Preklici", null)
             .show()
     }
 
-    private fun getCommItems(): List<Triple<String, Int, Pair<String, String>>> {
-        val custom = prefs.getCustomCommIcons()
-            .filter { it.text.isNotBlank() || it.title.isNotBlank() }
-            .map { item ->
-                Triple(item.id, R.drawable.ic_contact_default, Pair(item.text.ifBlank { item.title }, ""))
-            }
-
-        return allCommItems + custom
+    private fun getCommItems(): List<CommunicationItem> {
+        return CommunicationRepository.defaultItems() +
+            CommunicationRepository.customItems(prefs.getCustomCommIcons())
     }
 
     private fun setupCommPager() {
@@ -348,13 +321,167 @@ class MainActivity : AppCompatActivity() {
             items = getCommItems(),
             pageSize = prefs.getCommIconsPerPage(),
             getLang = { activeLang },
-            onSpeak = { text, sourceLang -> speakComm(text, sourceLang) }
+            onItemSelected = { item -> handleCommunicationItem(item) }
         )
         binding.viewPagerComm.adapter = adapter
     }
 
-    fun speakComm(text: String, sourceLang: String = "sl") {
-        if (text.isEmpty()) return
+    private fun handleCommunicationItem(item: CommunicationItem) {
+        val iconTextManager = IconTextManager(this)
+        val mainText = iconTextManager.getText(item.id).ifBlank { item.ttsText }
+        val submenuEnabled = prefs.isCommSubmenuEnabled(item.id, false)
+
+        if (submenuEnabled && item.children.isNotEmpty()) {
+            speakComm(mainText, "sl", logEvent = false) {
+                showCommunicationSubmenu(item)
+                val prompt = iconTextManager.getSubmenuPrompt(item.id).ifBlank { item.ttsText }
+                speakComm(prompt, "sl", logEvent = false)
+            }
+        } else {
+            speakComm(mainText, "sl")
+        }
+    }
+
+    private fun showCommunicationSubmenu(parent: CommunicationItem) {
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            setBackgroundColor(0xF21A1A2E.toInt())
+        }
+
+        overlay.addView(TextView(this).apply {
+            text = parent.label
+            textSize = 24f
+            setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, 0, 0, dp(10)) }
+        })
+
+        val submenuItems = parent.children.take(MAX_SUBMENU_ITEMS)
+        val columns = submenuColumns(submenuItems.size)
+        val rows = Math.ceil(submenuItems.size.toDouble() / columns).toInt().coerceAtLeast(1)
+
+        val grid = GridLayout(this).apply {
+            columnCount = columns
+            rowCount = rows
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        overlay.addView(ScrollView(this).apply {
+            isFillViewport = true
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+            addView(grid)
+        })
+
+        val popup = PopupWindow(
+            overlay,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            true
+        )
+
+        submenuItems.forEach { child ->
+            grid.addView(createSubmenuCell(child, popup, columns))
+        }
+
+        overlay.addView(Button(this).apply {
+            text = "NAZAJ"
+            textSize = 22f
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF333355.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(76)
+            ).apply { setMargins(0, dp(12), 0, 0) }
+            setOnClickListener { popup.dismiss() }
+        })
+
+        val timeout = Runnable { if (popup.isShowing) popup.dismiss() }
+        languageReturnHandler.postDelayed(timeout, prefs.getCommSubmenuTimeoutSeconds() * 1000L)
+        popup.setOnDismissListener { languageReturnHandler.removeCallbacks(timeout) }
+        popup.showAtLocation(binding.root, Gravity.CENTER, 0, 0)
+    }
+
+    private fun createSubmenuCell(
+        item: CommunicationItem,
+        popup: PopupWindow,
+        columns: Int
+    ): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            setBackgroundColor(0xFF16213E.toInt())
+            isClickable = true
+            isFocusable = true
+            layoutParams = GridLayout.LayoutParams().apply {
+                width = 0
+                height = dp(190)
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                setMargins(dp(6), dp(6), dp(6), dp(6))
+            }
+            minimumWidth = resources.displayMetrics.widthPixels / columns - dp(24)
+
+            addView(ImageView(this@MainActivity).apply {
+                setImageResource(item.iconRes)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                minimumHeight = dp(120)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f
+                ).apply { setMargins(dp(10), dp(8), dp(10), dp(6)) }
+            })
+
+            addView(TextView(this@MainActivity).apply {
+                text = item.label
+                textSize = 24f
+                setTextColor(0xFFFFFFFF.toInt())
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                gravity = Gravity.CENTER
+                maxLines = 2
+                includeFontPadding = false
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(dp(4), dp(4), dp(4), dp(10)) }
+            })
+
+            setOnClickListener {
+                popup.dismiss()
+                speakComm(item.ttsText, "sl")
+            }
+        }
+    }
+
+    private fun submenuColumns(count: Int): Int = when {
+        count <= 2 -> count.coerceAtLeast(1)
+        count <= 4 -> 2
+        else -> 3
+    }
+
+    fun speakComm(
+        text: String,
+        sourceLang: String = "sl",
+        logEvent: Boolean = true,
+        onDone: () -> Unit = {}
+    ) {
+        if (text.isEmpty()) {
+            onDone()
+            return
+        }
 
         if (activeLang != prefs.getDefaultSpeechLanguage().ifBlank { "sl" }) {
             scheduleLanguageReturn()
@@ -367,39 +494,36 @@ class MainActivity : AppCompatActivity() {
         }
 
         val targetLang = activeLang
-        var apiKey = prefs.getOpenAiKey()
-
-        if (apiKey.isBlank()) {
-            loadOpenAiKeyFromDownloadIfNeeded()
-            apiKey = prefs.getOpenAiKey()
-        }
-
+        val apiToken = apiConfig.getApiToken()
+        val apiBaseUrl = apiConfig.getApiBaseUrl()
+        val apiReady = apiConfig.isApiConfigured()
         val voice = prefs.getTtsVoice()
 
         fun speakFinal(finalText: String) {
             Toast.makeText(this, finalText, Toast.LENGTH_SHORT).show()
 
-            ttsManager.speak(finalText, targetLang, apiKey, voice) {
+            ttsManager.speak(finalText, targetLang, apiToken, voice, apiBaseUrl) {
                 if (radioPlaying) {
                     startService(Intent(this, RadioService::class.java).apply {
                         action = RadioService.ACTION_RESUME_AFTER_SPEECH
                     })
                 }
+                onDone()
             }
 
-            stats.log(StatEvent.COMM_ICON, finalText.take(30))
+            if (logEvent) stats.log(StatEvent.COMM_ICON, finalText.take(30))
         }
 
         if (targetLang != "sl") {
-            if (apiKey.isBlank()) {
+            if (!apiReady) {
                 Toast.makeText(
                     this,
-                    "API kljuc ni nalozen, zato govor ostane slovenski.",
+                    "API ni nastavljen.",
                     Toast.LENGTH_LONG
                 ).show()
                 speakFinal(text)
             } else {
-                translateManager.translate(text, targetLang, apiKey) { translated ->
+                translateManager.translate(text, targetLang, apiToken, apiBaseUrl) { translated ->
                     speakFinal(translated.ifBlank { text })
                 }
             }
@@ -418,7 +542,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvPatientName.maxLines = 2
 
         binding.tvPatientName.setOnClickListener {
-            Toast.makeText(this, "Za spremembo jezika držite zastavo z imenom.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Za spremembo jezika drzite zastavo z imenom.", Toast.LENGTH_SHORT).show()
         }
 
         binding.tvPatientName.setOnLongClickListener {
@@ -450,7 +574,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("Jezik")
             .setView(wrapper)
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("Preklici", null)
             .create()
 
         languages.forEach { lang ->
@@ -532,12 +656,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun languageChoice(code: String): LanguageChoice {
         return when (code) {
-            "uk" -> LanguageChoice("uk", "🇺🇦", "Ukrajinščina")
-            "en" -> LanguageChoice("en", "🇬🇧", "Angleščina")
-            "de" -> LanguageChoice("de", "🇩🇪", "Nemščina")
-            "hr" -> LanguageChoice("hr", "🇭🇷", "Hrvaščina")
-            "sr" -> LanguageChoice("sr", "🇷🇸", "Srbščina")
-            else -> LanguageChoice("sl", "🇸🇮", "Slovenščina")
+            "uk" -> LanguageChoice("uk", "UK", "Ukrajinscina")
+            "en" -> LanguageChoice("en", "EN", "Anglescina")
+            "de" -> LanguageChoice("de", "DE", "Nemscina")
+            "hr" -> LanguageChoice("hr", "HR", "Hrvascina")
+            "sr" -> LanguageChoice("sr", "SR", "Srbscina")
+            else -> LanguageChoice("sl", "SL", "Slovenscina")
         }
     }
 
@@ -562,7 +686,7 @@ class MainActivity : AppCompatActivity() {
         fun updateIndicator() {
             val cur = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
             val pct = (cur.toFloat() / max * 5).toInt().coerceIn(0, 5)
-            binding.tvVolLevel.text = "●".repeat(pct) + "○".repeat(5 - pct)
+            binding.tvVolLevel.text = "O".repeat(pct) + "o".repeat(5 - pct)
         }
 
         binding.btnVolUp.setOnClickListener {
@@ -606,7 +730,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnRelax.setOnClickListener {
             Toast.makeText(
                 this,
-                "Sprostitev in grafično učenje bova dodala v naslednji fazi.",
+                "Sprostitev in graficno ucenje bova dodala v naslednji fazi.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -617,96 +741,6 @@ class MainActivity : AppCompatActivity() {
         if (prefs.getReportMail1().isNotEmpty() || prefs.getReportMail2().isNotEmpty()) {
             ReportWorker.scheduleDaily(this, hour)
         }
-    }
-
-    private fun loadOpenAiKeyFromDownloadIfNeeded() {
-        if (prefs.getOpenAiKey().isNotBlank()) return
-
-        val key = findApiKeyInDownload()
-        if (key.isNotBlank()) {
-            prefs.saveOpenAiKey(key)
-        }
-    }
-
-    private fun findApiKeyInDownload(): String {
-        val direct = findApiKeyDirectFile()
-        if (direct.isNotBlank()) return direct
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return findApiKeyInMediaStore()
-        }
-
-        return ""
-    }
-
-    private fun findApiKeyDirectFile(): String {
-        val download = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val candidates = listOf(
-            File(download, "api"),
-            File(download, "api.txt"),
-            File(download, "API"),
-            File(download, "API.txt")
-        )
-
-        candidates.forEach { file ->
-            try {
-                if (file.exists() && file.isFile) {
-                    val key = cleanApiKey(file.readText(Charsets.UTF_8))
-                    if (key.isNotBlank()) return key
-                }
-            } catch (e: Exception) {
-            }
-        }
-
-        return ""
-    }
-
-    private fun findApiKeyInMediaStore(): String {
-        val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL)
-        val cursor = contentResolver.query(
-            collection,
-            arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME),
-            "${MediaStore.MediaColumns.DISPLAY_NAME}=? OR ${MediaStore.MediaColumns.DISPLAY_NAME}=?",
-            arrayOf("api", "api.txt"),
-            "${MediaStore.MediaColumns.DATE_MODIFIED} DESC"
-        )
-
-        cursor?.use {
-            while (it.moveToNext()) {
-                val id = it.getLong(0)
-                val uri = ContentUris.withAppendedId(collection, id)
-                try {
-                    val text = contentResolver.openInputStream(uri)?.use { input ->
-                        input.readBytes().toString(Charsets.UTF_8)
-                    } ?: ""
-                    val key = cleanApiKey(text)
-                    if (key.isNotBlank()) return key
-                } catch (e: Exception) {
-                }
-            }
-        }
-
-        return ""
-    }
-
-    private fun cleanApiKey(text: String): String {
-        val normalized = text
-            .replace("\uFEFF", "")
-            .replace("\r", "\n")
-
-        val start = normalized.indexOf("sk-")
-        if (start >= 0) {
-            return normalized.substring(start)
-                .lines()
-                .firstOrNull()
-                ?.trim()
-                ?: ""
-        }
-
-        return normalized.lines()
-            .map { it.trim() }
-            .firstOrNull { it.isNotBlank() }
-            ?: ""
     }
 
     override fun onBackPressed() {
@@ -734,7 +768,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Administrator")
-            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejšnjo verzijo", "Izhod v Android")) { _, which ->
+            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejsnjo verzijo", "Izhod v Android")) { _, which ->
                 when (which) {
                     0 -> startActivity(Intent(this, SettingsActivity::class.java))
                     1 -> startActivity(Intent(this, StatsActivity::class.java))
@@ -816,7 +850,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        loadOpenAiKeyFromDownloadIfNeeded()
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
         setupGuestLanguageButton()
         updateLanguageFlag()
@@ -838,6 +871,10 @@ class MainActivity : AppCompatActivity() {
         languageReturnRunnable?.let { languageReturnHandler.removeCallbacks(it) }
 
         super.onDestroy()
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     data class LanguageChoice(
