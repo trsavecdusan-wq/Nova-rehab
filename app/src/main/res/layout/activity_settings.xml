@@ -11,10 +11,9 @@
         android:padding="16dp">
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="⚙ NASTAVITVE" android:textColor="#e94560" android:textSize="20sp"
+            android:text="NASTAVITVE" android:textColor="#e94560" android:textSize="20sp"
             android:textStyle="bold" android:layout_marginBottom="16dp"/>
 
-        <!-- ═══ IKONE ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Komunikacijske ikone" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
@@ -23,17 +22,28 @@
             android:backgroundTint="#1a3a6b" android:textColor="#ffffff"
             android:textSize="14sp" android:layout_marginBottom="16dp"/>
 
-        <!-- ═══ OPENAI TTS ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Govor — OpenAI TTS" android:textColor="#ffffff" android:textSize="15sp"
+            android:text="API in govor" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="OpenAI API ključ:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="API base URL:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+        <EditText android:id="@+id/etApiBaseUrl" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textColor="#ffffff"
+            android:backgroundTint="#333333" android:layout_marginBottom="8dp"
+            android:hint="https://api.example.com" android:inputType="textUri"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="API key / token:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etOpenAiKey" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff"
             android:backgroundTint="#333333" android:layout_marginBottom="8dp"
-            android:hint="sk-..." android:inputType="textPassword"/>
+            android:hint="Vnesi token" android:inputType="textPassword"/>
+
+        <Button android:id="@+id/btnChooseApiFile" android:layout_width="match_parent"
+            android:layout_height="48dp" android:text="IZBERI API DATOTEKO"
+            android:backgroundTint="#0f3460" android:textColor="#ffffff"
+            android:textSize="14sp" android:layout_marginBottom="8dp"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Glas:" android:textColor="#aaaaaa" android:textSize="12sp"/>
@@ -53,7 +63,11 @@
                 android:textColor="#ffffff"/>
         </LinearLayout>
 
-        <!-- ═══ PACIENT ═══ -->
+        <Button android:id="@+id/btnTestApi" android:layout_width="match_parent"
+            android:layout_height="52dp" android:text="TEST API POVEZAVE"
+            android:backgroundTint="#1b5e20" android:textColor="#ffffff"
+            android:textSize="14sp" android:layout_marginBottom="16dp"/>
+
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Ime pacienta" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
@@ -62,7 +76,6 @@
             android:backgroundTint="#333333" android:layout_marginBottom="16dp"
             android:hint="npr. Ana"/>
 
-        <!-- ═══ NAVIGACIJA ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Navigacija" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
@@ -70,24 +83,23 @@
             android:orientation="horizontal" android:gravity="center_vertical"
             android:layout_marginBottom="8dp">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:text="Vklopi navigacijo (privzeto izklopljeno)"
+                android:layout_weight="1" android:text="Vklopi navigacijo"
                 android:textColor="#aaaaaa" android:textSize="13sp"/>
             <Switch android:id="@+id/switchNavigation" android:layout_width="wrap_content"
                 android:layout_height="wrap_content" android:checked="false"/>
         </LinearLayout>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Domači naslov:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Domaci naslov:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etHomeAddress" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff"
             android:backgroundTint="#333333" android:layout_marginBottom="16dp"
             android:hint="npr. Dunajska cesta 1, Ljubljana"/>
 
-        <!-- ═══ MAIL POROCILA ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Dnevna poročila (Gmail)" android:textColor="#ffffff" android:textSize="15sp"
+            android:text="Dnevna porocila (Gmail)" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="4dp"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Gmail naslov pošiljatelja:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Gmail naslov posiljatelja:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etGmailUser" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff"
             android:backgroundTint="#333333" android:layout_marginBottom="4dp"
@@ -122,24 +134,23 @@
         </LinearLayout>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Ura pošiljanja (0-23):" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Ura posiljanja (0-23):" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etReportHour" android:layout_width="wrap_content"
             android:layout_height="wrap_content" android:textColor="#ffffff"
             android:backgroundTint="#333333" android:layout_marginBottom="8dp"
             android:inputType="number" android:hint="8"/>
 
         <Button android:id="@+id/btnTestMail" android:layout_width="match_parent"
-            android:layout_height="48dp" android:text="NAČRTUJ POŠILJANJE POROČILA"
+            android:layout_height="48dp" android:text="NACRTUJ POSILJANJE POROCILA"
             android:backgroundTint="#4a1942" android:textColor="#ffffff"
             android:layout_marginBottom="16dp"/>
 
-        <!-- ═══ RADIO ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Radio postaje" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Postaja 1 — Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Postaja 1 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etStation1Name" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -149,7 +160,7 @@
             android:backgroundTint="#333333" android:layout_marginBottom="6dp" android:inputType="textUri"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Postaja 2 — Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Postaja 2 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etStation2Name" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -159,7 +170,7 @@
             android:backgroundTint="#333333" android:layout_marginBottom="6dp" android:inputType="textUri"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Postaja 3 — Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Postaja 3 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etStation3Name" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -169,7 +180,7 @@
             android:backgroundTint="#333333" android:layout_marginBottom="6dp" android:inputType="textUri"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Postaja 4 — Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Postaja 4 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etStation4Name" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -179,7 +190,7 @@
             android:backgroundTint="#333333" android:layout_marginBottom="6dp" android:inputType="textUri"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Postaja 5 — Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Postaja 5 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etStation5Name" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -189,7 +200,7 @@
             android:backgroundTint="#333333" android:layout_marginBottom="6dp" android:inputType="textUri"/>
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Postaja 6 — Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
+            android:text="Postaja 6 - Ime:" android:textColor="#aaaaaa" android:textSize="12sp"/>
         <EditText android:id="@+id/etStation6Name" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -198,12 +209,10 @@
             android:layout_height="wrap_content" android:textColor="#ffffff"
             android:backgroundTint="#333333" android:layout_marginBottom="16dp" android:inputType="textUri"/>
 
-        <!-- ═══ KONTAKTI ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Kontakti (video klici)" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
 
-        <!-- Kontakt 1 -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:background="#16213e" android:padding="8dp" android:layout_marginBottom="6dp">
@@ -218,11 +227,11 @@
                     android:layout_height="wrap_content" android:textColor="#ffffff"
                     android:backgroundTint="#333333" android:inputType="phone" android:hint="+386..."/>
                 <LinearLayout android:id="@+id/langContainer1" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Kontakt 2 -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:background="#16213e" android:padding="8dp" android:layout_marginBottom="6dp">
@@ -237,11 +246,11 @@
                     android:layout_height="wrap_content" android:textColor="#ffffff"
                     android:backgroundTint="#333333" android:inputType="phone" android:hint="+386..."/>
                 <LinearLayout android:id="@+id/langContainer2" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Kontakt 3 -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:background="#16213e" android:padding="8dp" android:layout_marginBottom="6dp">
@@ -256,11 +265,11 @@
                     android:layout_height="wrap_content" android:textColor="#ffffff"
                     android:backgroundTint="#333333" android:inputType="phone" android:hint="+386..."/>
                 <LinearLayout android:id="@+id/langContainer3" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Kontakt 4 -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:background="#16213e" android:padding="8dp" android:layout_marginBottom="6dp">
@@ -275,11 +284,11 @@
                     android:layout_height="wrap_content" android:textColor="#ffffff"
                     android:backgroundTint="#333333" android:inputType="phone" android:hint="+386..."/>
                 <LinearLayout android:id="@+id/langContainer4" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Kontakt 5 -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:background="#16213e" android:padding="8dp" android:layout_marginBottom="6dp">
@@ -294,11 +303,11 @@
                     android:layout_height="wrap_content" android:textColor="#ffffff"
                     android:backgroundTint="#333333" android:inputType="phone" android:hint="+386..."/>
                 <LinearLayout android:id="@+id/langContainer5" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Kontakt 6 -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:background="#16213e" android:padding="8dp" android:layout_marginBottom="16dp">
@@ -313,11 +322,11 @@
                     android:layout_height="wrap_content" android:textColor="#ffffff"
                     android:backgroundTint="#333333" android:inputType="phone" android:hint="+386..."/>
                 <LinearLayout android:id="@+id/langContainer6" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:layout_marginTop="4dp"/>
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ═══ SERVER ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Synology NAS Server" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
@@ -334,31 +343,28 @@
             android:backgroundTint="#333333" android:layout_marginBottom="16dp"
             android:inputType="number"/>
 
-        <!-- ═══ KIOSK ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Kiosk — samodejni povratek (minute):" android:textColor="#aaaaaa"
+            android:text="Kiosk - samodejni povratek (minute):" android:textColor="#aaaaaa"
             android:textSize="12sp"/>
         <EditText android:id="@+id/etKioskMinutes" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff"
             android:backgroundTint="#333333" android:layout_marginBottom="16dp"
             android:inputType="number" android:hint="5"/>
 
-        <!-- ═══ PIN ═══ -->
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Nova PIN koda (4 številke):" android:textColor="#ffffff" android:textSize="15sp"
+            android:text="Nova PIN koda (4 stevilke):" android:textColor="#ffffff" android:textSize="15sp"
             android:textStyle="bold" android:layout_marginBottom="8dp"/>
         <EditText android:id="@+id/etNewPin" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:textColor="#ffffff"
             android:backgroundTint="#333333" android:layout_marginBottom="24dp"
             android:inputType="numberPassword" android:maxLength="4"
-            android:hint="Pusti prazno če ne menjaš"/>
+            android:hint="Pusti prazno ce ne menjas"/>
 
-        <!-- GUMBI -->
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal">
             <Button android:id="@+id/btnSave" android:layout_width="0dp"
                 android:layout_height="56dp" android:layout_weight="1"
-                android:text="✓ SHRANI" android:backgroundTint="#e94560"
+                android:text="SHRANI" android:backgroundTint="#e94560"
                 android:textColor="#ffffff" android:textSize="15sp" android:layout_marginEnd="8dp"/>
             <Button android:id="@+id/btnBack" android:layout_width="0dp"
                 android:layout_height="56dp" android:layout_weight="1"
