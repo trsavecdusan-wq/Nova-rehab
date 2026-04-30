@@ -7,6 +7,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.widget.Toast
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -174,12 +175,19 @@ class OpenAiTtsManager(private val context: Context) {
     ) {
         if (!ttsReady) {
             initLocalTts {
-                speakAndroid(text, language, onDone)
+                if (ttsReady) {
+                    speakAndroid(text, language, onDone)
+                } else {
+                    Toast.makeText(context, "Slovenski glas ni namescen.", Toast.LENGTH_LONG).show()
+                    onDone()
+                }
             }
             return
         }
 
-        setBestLocale(language)
+        if (!setBestLocale(language)) {
+            Toast.makeText(context, "Slovenski glas ni namescen.", Toast.LENGTH_LONG).show()
+        }
 
         val uid = "rehab_${System.currentTimeMillis()}"
 
@@ -204,7 +212,7 @@ class OpenAiTtsManager(private val context: Context) {
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
     }
 
-    private fun setBestLocale(language: String) {
+    private fun setBestLocale(language: String): Boolean {
         val candidates = when (language.lowercase()) {
             "sl", "si", "slovenian" -> listOf(
                 Locale("sl", "SI"),
@@ -254,11 +262,13 @@ class OpenAiTtsManager(private val context: Context) {
                 result != TextToSpeech.LANG_MISSING_DATA &&
                 result != TextToSpeech.LANG_NOT_SUPPORTED
             ) {
-                return
+                return true
             }
         }
 
-        tts?.setLanguage(Locale("sl", "SI"))
+        val fallback = tts?.setLanguage(Locale("sl", "SI"))
+        return fallback != TextToSpeech.LANG_MISSING_DATA &&
+            fallback != TextToSpeech.LANG_NOT_SUPPORTED
     }
 
     private fun playFile(file: File, volume: Float, onDone: () -> Unit) {
@@ -297,6 +307,7 @@ class OpenAiTtsManager(private val context: Context) {
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val network = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(network) ?: return false
+
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                 caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } catch (_: Exception) {
@@ -315,6 +326,7 @@ class OpenAiTtsManager(private val context: Context) {
     private fun buildEndpoint(baseUrl: String, path: String): String {
         val base = baseUrl.trim().trimEnd('/')
         val cleanPath = path.trim().trimStart('/')
+
         return if (base.endsWith("/v1")) {
             "$base/${cleanPath.removePrefix("v1/")}"
         } else {
