@@ -62,6 +62,7 @@ class VideoCallManager(
     private var localVideoTrack: VideoTrack? = null
     private var audioSource: AudioSource? = null
     private var localAudioTrack: AudioTrack? = null
+
     private var pollJob: Job? = null
     private var currentRoomId: String? = null
     private var isCaller = false
@@ -99,12 +100,13 @@ class VideoCallManager(
 
     fun endCall() {
         val roomId = currentRoomId
+
         pollJob?.cancel()
         pollJob = null
 
         try {
             videoCapturer?.stopCapture()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
 
         videoCapturer?.dispose()
@@ -132,12 +134,12 @@ class VideoCallManager(
         try {
             localRenderer.clearImage()
             remoteRenderer.clearImage()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
 
         if (roomId != null && isCaller && isSignalingConfigured() && !callEndedByRemote) {
             scope.launch(Dispatchers.IO) {
-                runCatching { markRoomEnded(roomId) }
+                runCatching { deleteRoom(roomId) }
             }
         }
 
@@ -212,6 +214,7 @@ class VideoCallManager(
 
             override fun onIceCandidate(candidate: IceCandidate) {
                 val roomId = currentRoomId ?: return
+
                 scope.launch(Dispatchers.IO) {
                     runCatching {
                         val path = if (isCaller) "callerCandidates" else "receiverCandidates"
@@ -306,11 +309,11 @@ class VideoCallManager(
                         scope.launch(Dispatchers.IO) {
                             try {
                                 sendSessionDescription(roomId, "offer", description)
-                                setRoomStatus(roomId, "calling")
+
                                 withContext(Dispatchers.Main) {
                                     listener.onStatus("Klicem...")
                                 }
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 withContext(Dispatchers.Main) {
                                     listener.onError("Ponudbe ni bilo mogoce poslati.")
                                 }
@@ -371,7 +374,7 @@ class VideoCallManager(
                             peerConnection?.addIceCandidate(candidate)
                         }
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                 }
 
                 delay(1200L)
@@ -403,25 +406,6 @@ class VideoCallManager(
         }
     }
 
-    private fun markRoomEnded(roomId: String) {
-        runCatching { setRoomStatus(roomId, "ended") }
-    }
-
-    private fun setRoomStatus(roomId: String, status: String) {
-        val body = JSONObject()
-            .put("status", status)
-            .toString()
-            .toRequestBody(jsonType)
-
-        val request = Request.Builder()
-            .url(roomUrl(roomId))
-            .patch(body)
-            .build()
-
-        httpClient.newCall(request).execute().use {
-        }
-    }
-
     private fun getRoomStatus(roomId: String): String {
         val request = Request.Builder()
             .url(roomUrl(roomId, "status"))
@@ -430,8 +414,10 @@ class VideoCallManager(
 
         httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return ""
+
             val text = response.body?.string().orEmpty().trim()
             if (text.isBlank() || text == "null") return ""
+
             return text.trim('"')
         }
     }
