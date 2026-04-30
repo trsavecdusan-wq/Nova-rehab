@@ -70,6 +70,7 @@ class CompanionCallManager(
     private var outgoingRequestJob: Job? = null
 
     private var remoteOffer: SessionDescription? = null
+    private var renderersInitialized = false
     private val handledRemoteCandidates = mutableSetOf<String>()
 
     fun startWaitingForCall() {
@@ -213,6 +214,10 @@ class CompanionCallManager(
         } catch (_: Exception) {
         }
 
+        releaseRenderers()
+        eglBase?.release()
+        eglBase = null
+
         if (remoteOffer != null || peerConnection != null) {
             scope.launch(Dispatchers.IO) {
                 runCatching {
@@ -223,6 +228,7 @@ class CompanionCallManager(
         }
 
         remoteOffer = null
+        renderersInitialized = false
         handledRemoteCandidates.clear()
         listener.onCallEnded()
     }
@@ -233,11 +239,16 @@ class CompanionCallManager(
         eglBase = EglBase.create()
         val eglContext = eglBase!!.eglBaseContext
 
+        runCatching { localRenderer.release() }
+        runCatching { remoteRenderer.release() }
+
         localRenderer.init(eglContext, null)
         localRenderer.setMirror(true)
 
         remoteRenderer.init(eglContext, null)
         remoteRenderer.setMirror(false)
+
+        renderersInitialized = true
 
         PeerConnectionFactory.initialize(
             PeerConnectionFactory.InitializationOptions.builder(context)
@@ -251,6 +262,15 @@ class CompanionCallManager(
             .setVideoEncoderFactory(encoderFactory)
             .setVideoDecoderFactory(decoderFactory)
             .createPeerConnectionFactory()
+    }
+
+    private fun releaseRenderers() {
+        if (!renderersInitialized) return
+
+        runCatching { localRenderer.release() }
+        runCatching { remoteRenderer.release() }
+
+        renderersInitialized = false
     }
 
     private fun createPeerConnection() {
