@@ -64,8 +64,11 @@ class CompanionCallManager(
     private var localVideoTrack: VideoTrack? = null
     private var audioSource: AudioSource? = null
     private var localAudioTrack: AudioTrack? = null
+
     private var waitJob: Job? = null
     private var pollJob: Job? = null
+    private var outgoingRequestJob: Job? = null
+
     private var remoteOffer: SessionDescription? = null
     private val handledRemoteCandidates = mutableSetOf<String>()
 
@@ -77,19 +80,10 @@ class CompanionCallManager(
 
         waitJob?.cancel()
         waitJob = scope.launch {
-            listener.onStatus("Povezano z Lano")
+            listener.onStatus("Cakam povezavo")
 
             while (true) {
                 try {
-                    val status = withContext(Dispatchers.IO) {
-                        getRoomStatus()
-                    }
-
-                    if (status == "ended" || status == "rejected") {
-                        delay(1200L)
-                        continue
-                    }
-
                     val offer = withContext(Dispatchers.IO) {
                         getSessionDescription(roomId, "offer")
                     }
@@ -100,7 +94,7 @@ class CompanionCallManager(
                         listener.onStatus("Lana klice")
                         return@launch
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                 }
 
                 delay(1200L)
@@ -153,17 +147,42 @@ class CompanionCallManager(
         }
     }
 
-    fun endCall() {
-        val hadActiveCall = remoteOffer != null || peerConnection != null
+    fun sendOutgoingTestCall(contactName: String) {
+        if (!isSignalingConfigured()) {
+            listener.onError("Povezava ni uspela")
+            return
+        }
 
+        outgoingRequestJob?.cancel()
+        listener.onStatus("Klic poslan")
+
+        scope.launch(Dispatchers.IO) {
+            try {
+                sendOutgoingRequest("calling", contactName)
+
+                withContext(Dispatchers.Main) {
+                    startOutgoingRequestPolling()
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) {
+                    listener.onError("Povezava ni uspela")
+                }
+            }
+        }
+    }
+
+    fun endCall() {
         waitJob?.cancel()
         pollJob?.cancel()
+        outgoingRequestJob?.cancel()
+
         waitJob = null
         pollJob = null
+        outgoingRequestJob = null
 
         try {
             videoCapturer?.stopCapture()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
 
         videoCapturer?.dispose()
@@ -191,10 +210,10 @@ class CompanionCallManager(
         try {
             localRenderer.clearImage()
             remoteRenderer.clearImage()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
 
-        if (hadActiveCall) {
+        if (remoteOffer != null || peerConnection != null) {
             scope.launch(Dispatchers.IO) {
                 runCatching {
                     sendRoomStatus("ended")
@@ -350,12 +369,11 @@ class CompanionCallManager(
                         scope.launch(Dispatchers.IO) {
                             try {
                                 sendSessionDescription(roomId, "answer", description)
-                                sendRoomStatus("connected")
 
                                 withContext(Dispatchers.Main) {
                                     listener.onStatus("Klic vzpostavljen")
                                 }
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 withContext(Dispatchers.Main) {
                                     listener.onError("Odgovora ni bilo mogoce poslati.")
                                 }
@@ -376,16 +394,6 @@ class CompanionCallManager(
         pollJob = scope.launch {
             while (true) {
                 try {
-                    val status = withContext(Dispatchers.IO) {
-                        getRoomStatus()
-                    }
-
-                    if (status == "ended" || status == "rejected") {
-                        listener.onStatus("Klic prekinjen")
-                        endCall()
-                        return@launch
-                    }
-
                     val candidates = withContext(Dispatchers.IO) {
                         getIceCandidates(roomId, "callerCandidates")
                     }
@@ -396,7 +404,7 @@ class CompanionCallManager(
                             peerConnection?.addIceCandidate(candidate)
                         }
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                 }
 
                 delay(1200L)
@@ -414,20 +422,6 @@ class CompanionCallManager(
         return "$base/rooms/$roomId$suffix.json"
     }
 
-    private fun getRoomStatus(): String {
-        val request = Request.Builder()
-            .url(roomUrl(roomId, "status"))
-            .get()
-            .build()
-
-        httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) return ""
-            val text = response.body?.string().orEmpty().trim()
-            if (text.isBlank() || text == "null") return ""
-            return text.trim('"')
-        }
-    }
-
     private fun sendSessionDescription(roomId: String, child: String, description: SessionDescription) {
         val json = JSONObject()
             .put("type", description.type.canonicalForm())
@@ -442,6 +436,41 @@ class CompanionCallManager(
         }
     }
 
+    private fun startOutgoingRequestPolling() {
+        outgoingRequestJob?.cancel()
+        outgoingRequestJob = scope.launch {
+            while (true) {
+                try {
+                    val status = withContext(Dispatchers.IO) {
+                        getOutgoingRequestStatus()
+                    }
+
+                    when (status) {
+                        "accepted" -> {
+                            listener.onStatus("Lana je sprejela klic")
+                            return@launch
+                        }
+
+                        "rejected" -> {
+                            listener.onStatus("Klic zavrnjen")
+                            return@launch
+                        }
+
+                        "ended" -> {
+                            listener.onStatus("Klic koncan")
+                            return@launch
+                        }
+                    }
+                } catch (_: Exception) {
+                    listener.onStatus("Povezava ni uspela")
+                    return@launch
+                }
+
+                delay(1200L)
+            }
+        }
+    }
+
     private fun sendRoomStatus(status: String) {
         val request = Request.Builder()
             .url(roomUrl(roomId, "status"))
@@ -449,6 +478,41 @@ class CompanionCallManager(
             .build()
 
         httpClient.newCall(request).execute().use {
+        }
+    }
+
+    private fun sendOutgoingRequest(status: String, contactName: String) {
+        val body = JSONObject()
+            .put("status", status)
+            .put("contactId", CompanionConfig.contactId)
+            .put("contactName", contactName)
+            .put("updatedAt", System.currentTimeMillis())
+            .toString()
+            .toRequestBody(jsonType)
+
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "outgoingRequest"))
+            .put(body)
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IllegalStateException("Firebase ${response.code}")
+        }
+    }
+
+    private fun getOutgoingRequestStatus(): String {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "outgoingRequest/status"))
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IllegalStateException("Firebase ${response.code}")
+
+            val text = response.body?.string().orEmpty().trim()
+            if (text.isBlank() || text == "null") return ""
+
+            return text.trim('"')
         }
     }
 
