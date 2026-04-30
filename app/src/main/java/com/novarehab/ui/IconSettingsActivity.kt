@@ -3,9 +3,17 @@ package com.novarehab.ui
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.text.InputType
 import android.view.Gravity
 import android.view.WindowManager
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Switch
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.R
 import com.novarehab.utils.CustomCommIcon
@@ -16,7 +24,7 @@ import java.io.File
 class IconSettingsActivity : AppCompatActivity() {
 
     private var pendingIconId: String? = null
-    private val REQUEST_IMAGE = 401
+    private val requestImage = 401
     private lateinit var prefs: PrefsManager
 
     private val allIcons = listOf(
@@ -49,6 +57,7 @@ class IconSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+
         prefs = PrefsManager(this)
 
         val scroll = ScrollView(this)
@@ -56,14 +65,17 @@ class IconSettingsActivity : AppCompatActivity() {
 
         val container = LinearLayout(this)
         container.orientation = LinearLayout.VERTICAL
-        container.setPadding(16, 16, 16, 16)
+        container.setPadding(dp(16), dp(16), dp(16), dp(16))
         scroll.addView(container)
         setContentView(scroll)
 
         val header = LinearLayout(this)
         header.orientation = LinearLayout.HORIZONTAL
         header.gravity = Gravity.CENTER_VERTICAL
-        header.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56))
+        header.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            dp(56)
+        )
 
         val title = TextView(this)
         title.text = "Uredi ikone"
@@ -82,14 +94,16 @@ class IconSettingsActivity : AppCompatActivity() {
         container.addView(header)
 
         val note = TextView(this)
-        note.text = "Vpiši slovensko besedilo. Aplikacija ga po potrebi prevede z OpenAI."
+        note.text = "Vpisi kratke napise za gumbe in daljse besedilo za govor. Podmeni vklopis posebej pri vsaki ikoni."
         note.textSize = 13f
         note.setTextColor(0xFFAAAAAA.toInt())
-        note.setPadding(0, 0, 0, 12)
+        note.setPadding(0, 0, 0, dp(12))
         container.addView(note)
 
-        val iconMgr = IconTextManager(this)
+        container.addView(createTimeoutRow())
+        addSeparator(container)
 
+        val iconMgr = IconTextManager(this)
         allIcons.forEach { (id, defaultRes) ->
             container.addView(createIconRow(id, defaultRes, iconMgr))
             addSeparator(container)
@@ -99,22 +113,69 @@ class IconSettingsActivity : AppCompatActivity() {
             text = "Dodatne ikone"
             textSize = 18f
             setTextColor(0xFFe94560.toInt())
-            setPadding(0, 20, 0, 8)
+            setPadding(0, dp(20), 0, dp(8))
         }
         container.addView(customTitle)
 
-        for (i in 1..12) {
+        for (i in 1..18) {
             container.addView(createCustomIconRow(i))
             addSeparator(container)
         }
     }
 
+    private fun createTimeoutRow(): LinearLayout {
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { setMargins(0, dp(8), 0, dp(10)) }
+
+        val label = TextView(this)
+        label.text = "Cas izhoda iz podmenija (sekunde)"
+        label.textSize = 13f
+        label.setTextColor(0xFFFFFFFF.toInt())
+        label.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        row.addView(label)
+
+        val etTimeout = EditText(this)
+        etTimeout.setText(prefs.getCommSubmenuTimeoutSeconds().toString())
+        etTimeout.inputType = InputType.TYPE_CLASS_NUMBER
+        etTimeout.textSize = 15f
+        etTimeout.gravity = Gravity.CENTER
+        etTimeout.setTextColor(0xFFFFFFFF.toInt())
+        etTimeout.setHintTextColor(0xFF777799.toInt())
+        etTimeout.setBackgroundColor(0xFF16213e.toInt())
+        etTimeout.layoutParams = LinearLayout.LayoutParams(dp(88), dp(48)).apply {
+            setMargins(dp(8), 0, dp(8), 0)
+        }
+        row.addView(etTimeout)
+
+        val btnSave = Button(this)
+        btnSave.text = "SHRANI"
+        btnSave.textSize = 12f
+        btnSave.setBackgroundColor(0xFF1b5e20.toInt())
+        btnSave.setTextColor(0xFFFFFFFF.toInt())
+        btnSave.layoutParams = LinearLayout.LayoutParams(dp(96), dp(48))
+        btnSave.setOnClickListener {
+            val seconds = etTimeout.text.toString().toLongOrNull() ?: 15L
+            prefs.saveCommSubmenuTimeoutSeconds(seconds)
+            etTimeout.setText(prefs.getCommSubmenuTimeoutSeconds().toString())
+            Toast.makeText(this, "Cas shranjen", Toast.LENGTH_SHORT).show()
+        }
+        row.addView(btnSave)
+
+        return row
+    }
+
     private fun addSeparator(container: LinearLayout) {
         val sep = android.view.View(this)
         sep.setBackgroundColor(0xFF222244.toInt())
-        sep.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply {
-            setMargins(0, 4, 0, 4)
-        }
+        sep.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            1
+        ).apply { setMargins(0, dp(4), 0, dp(4)) }
         container.addView(sep)
     }
 
@@ -125,10 +186,12 @@ class IconSettingsActivity : AppCompatActivity() {
         row.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(0, 6, 0, 6) }
+        ).apply { setMargins(0, dp(6), 0, dp(6)) }
 
         val img = ImageView(this)
-        img.layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply { setMargins(0, 0, 12, 0) }
+        img.layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
+            setMargins(0, 0, dp(12), 0)
+        }
         img.scaleType = ImageView.ScaleType.FIT_CENTER
 
         val customFile = File(getExternalFilesDir(null), "icons/$id.png")
@@ -140,7 +203,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
         img.setOnClickListener {
             pendingIconId = id
-            startActivityForResult(Intent(Intent.ACTION_PICK).apply { type = "image/*" }, REQUEST_IMAGE)
+            startActivityForResult(Intent(Intent.ACTION_PICK).apply { type = "image/*" }, requestImage)
         }
         row.addView(img)
 
@@ -150,7 +213,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
         val etText = EditText(this)
         etText.setText(mgr.getText(id))
-        etText.hint = "Slovensko besedilo"
+        etText.hint = "Besedilo za govor"
         etText.textSize = 13f
         etText.setSingleLine(false)
         etText.minLines = 1
@@ -158,7 +221,7 @@ class IconSettingsActivity : AppCompatActivity() {
         etText.setTextColor(0xFFFFFFFF.toInt())
         etText.setHintTextColor(0xFF777799.toInt())
         etText.setBackgroundColor(0xFF16213e.toInt())
-        etText.setPadding(10, 8, 10, 8)
+        etText.setPadding(dp(10), dp(8), dp(10), dp(8))
         textBox.addView(etText)
 
         val submenuSwitch = Switch(this).apply {
@@ -179,18 +242,19 @@ class IconSettingsActivity : AppCompatActivity() {
             setTextColor(0xFFFFFFFF.toInt())
             setHintTextColor(0xFF777799.toInt())
             setBackgroundColor(0xFF0F3460.toInt())
-            setPadding(10, 8, 10, 8)
+            setPadding(dp(10), dp(8), dp(10), dp(8))
         }
         textBox.addView(etSubmenuPrompt)
-
         row.addView(textBox)
 
         val btnSave = Button(this)
-        btnSave.text = "✓"
-        btnSave.textSize = 16f
+        btnSave.text = "OK"
+        btnSave.textSize = 13f
         btnSave.setBackgroundColor(0xFF1b5e20.toInt())
         btnSave.setTextColor(0xFFFFFFFF.toInt())
-        btnSave.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(8, 0, 0, 0) }
+        btnSave.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
+            setMargins(dp(8), 0, 0, 0)
+        }
         btnSave.setOnClickListener {
             mgr.setText(id, etText.text.toString().trim())
             mgr.setSubmenuPrompt(id, etSubmenuPrompt.text.toString().trim())
@@ -200,11 +264,13 @@ class IconSettingsActivity : AppCompatActivity() {
         row.addView(btnSave)
 
         val btnReset = Button(this)
-        btnReset.text = "↶"
-        btnReset.textSize = 16f
+        btnReset.text = "<-"
+        btnReset.textSize = 13f
         btnReset.setBackgroundColor(0xFF333355.toInt())
         btnReset.setTextColor(0xFFFFFFFF.toInt())
-        btnReset.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(4, 0, 0, 0) }
+        btnReset.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
+            setMargins(dp(4), 0, 0, 0)
+        }
         btnReset.setOnClickListener {
             File(getExternalFilesDir(null), "icons/$id.png").delete()
             img.setImageResource(defaultRes)
@@ -225,10 +291,12 @@ class IconSettingsActivity : AppCompatActivity() {
         row.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(0, 6, 0, 6) }
+        ).apply { setMargins(0, dp(6), 0, dp(6)) }
 
         val img = ImageView(this)
-        img.layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply { setMargins(0, 0, 12, 0) }
+        img.layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
+            setMargins(0, 0, dp(12), 0)
+        }
         img.scaleType = ImageView.ScaleType.FIT_CENTER
 
         val iconFile = File(getExternalFilesDir(null), "icons/$id.png")
@@ -240,7 +308,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
         img.setOnClickListener {
             pendingIconId = id
-            startActivityForResult(Intent(Intent.ACTION_PICK).apply { type = "image/*" }, REQUEST_IMAGE)
+            startActivityForResult(Intent(Intent.ACTION_PICK).apply { type = "image/*" }, requestImage)
         }
         row.addView(img)
 
@@ -255,7 +323,7 @@ class IconSettingsActivity : AppCompatActivity() {
         etTitle.setTextColor(0xFFFFFFFF.toInt())
         etTitle.setHintTextColor(0xFF777799.toInt())
         etTitle.setBackgroundColor(0xFF16213e.toInt())
-        etTitle.setPadding(8, 4, 8, 4)
+        etTitle.setPadding(dp(8), dp(4), dp(8), dp(4))
 
         val etSpeech = EditText(this)
         etSpeech.setText(saved?.text ?: "")
@@ -264,18 +332,20 @@ class IconSettingsActivity : AppCompatActivity() {
         etSpeech.setTextColor(0xFFFFFFFF.toInt())
         etSpeech.setHintTextColor(0xFF777799.toInt())
         etSpeech.setBackgroundColor(0xFF16213e.toInt())
-        etSpeech.setPadding(8, 4, 8, 4)
+        etSpeech.setPadding(dp(8), dp(4), dp(8), dp(4))
 
         texts.addView(etTitle)
         texts.addView(etSpeech)
         row.addView(texts)
 
         val btnSave = Button(this)
-        btnSave.text = "✓"
-        btnSave.textSize = 16f
+        btnSave.text = "OK"
+        btnSave.textSize = 13f
         btnSave.setBackgroundColor(0xFF1b5e20.toInt())
         btnSave.setTextColor(0xFFFFFFFF.toInt())
-        btnSave.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(8, 0, 0, 0) }
+        btnSave.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
+            setMargins(dp(8), 0, 0, 0)
+        }
         btnSave.setOnClickListener {
             val list = prefs.getCustomCommIcons().filterNot { it.id == id }.toMutableList()
             val titleText = etTitle.text.toString().trim()
@@ -291,11 +361,13 @@ class IconSettingsActivity : AppCompatActivity() {
         row.addView(btnSave)
 
         val btnReset = Button(this)
-        btnReset.text = "↶"
-        btnReset.textSize = 16f
+        btnReset.text = "<-"
+        btnReset.textSize = 13f
         btnReset.setBackgroundColor(0xFF333355.toInt())
         btnReset.setTextColor(0xFFFFFFFF.toInt())
-        btnReset.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply { setMargins(4, 0, 0, 0) }
+        btnReset.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
+            setMargins(dp(4), 0, 0, 0)
+        }
         btnReset.setOnClickListener {
             prefs.saveCustomCommIcons(prefs.getCustomCommIcons().filterNot { it.id == id })
             File(getExternalFilesDir(null), "icons/$id.png").delete()
@@ -308,7 +380,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_IMAGE && resultCode == RESULT_OK) {
+        if (requestCode == requestImage && resultCode == RESULT_OK) {
             val uri = data?.data ?: return
             val id = pendingIconId ?: return
 
@@ -322,7 +394,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
                 Toast.makeText(this, "Slika zamenjana", Toast.LENGTH_SHORT).show()
                 recreate()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Toast.makeText(this, "Napaka pri shranjevanju slike", Toast.LENGTH_SHORT).show()
             }
         }
