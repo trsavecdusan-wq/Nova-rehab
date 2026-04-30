@@ -8,8 +8,8 @@ object CommunicationRepository {
     fun defaultItems(): List<CommunicationItem> = listOf(
         CommunicationItem(
             id = "piti",
-            label = "ZEJNA SEM",
-            ttsText = "Kaj zelis piti?",
+            label = "ZEJNA",
+            ttsText = "Zejna sem.",
             iconRes = R.drawable.comm_piti,
             children = listOf(
                 CommunicationItem("voda", "VODA", "Zelim vodo.", R.drawable.comm_piti),
@@ -19,8 +19,8 @@ object CommunicationRepository {
         ),
         CommunicationItem(
             id = "jesti",
-            label = "LACNA SEM",
-            ttsText = "Kaj zelis jesti?",
+            label = "LACNA",
+            ttsText = "Lacna sem.",
             iconRes = R.drawable.comm_jesti,
             children = listOf(
                 CommunicationItem("zajtrk", "ZAJTRK", "Zelim zajtrk.", R.drawable.comm_jesti),
@@ -30,8 +30,8 @@ object CommunicationRepository {
         ),
         CommunicationItem(
             id = "slabo",
-            label = "NE POCUTIM SE DOBRO",
-            ttsText = "Kaj te moti?",
+            label = "SLABO",
+            ttsText = "Ne pocutim se dobro.",
             iconRes = R.drawable.comm_slabo,
             children = listOf(
                 CommunicationItem("bolecina", "BOLECINA", "Imam bolecino.", R.drawable.comm_bolecina),
@@ -39,14 +39,24 @@ object CommunicationRepository {
                 CommunicationItem("tesnoba", "TESNOBA", "Cutim tesnobo.", R.drawable.comm_tesnoba)
             )
         ),
-        CommunicationItem("pomoc", "POMOC", "Potrebujem pomoc, prosim pridite.", R.drawable.comm_pomoc),
-        CommunicationItem("kopalnica", "KOPALNICA", "Potrebujem v kopalnico.", R.drawable.comm_kopalnica),
+        CommunicationItem(
+            id = "pomoc",
+            label = "POMOC",
+            ttsText = "Potrebujem pomoc.",
+            iconRes = R.drawable.comm_pomoc,
+            children = listOf(
+                CommunicationItem("pomoc_pridi", "PRIDI", "Prosim pridi k meni.", R.drawable.comm_pridi_sem),
+                CommunicationItem("pomoc_dvigni", "DVIGNI ME", "Prosim dvigni me.", R.drawable.comm_pomoc),
+                CommunicationItem("pomoc_polozaj", "POPRAVI POLOZAJ", "Prosim popravi moj polozaj.", R.drawable.comm_postelja)
+            )
+        ),
+        CommunicationItem("kopalnica", "WC", "Potrebujem v kopalnico.", R.drawable.comm_kopalnica),
         CommunicationItem("dobro", "DOBRO", "Dobro se pocutim.", R.drawable.comm_dobro),
         CommunicationItem("utrujena", "UTRUJENA", "Utrujena sem, rada bi pocivala.", R.drawable.comm_utrujena),
         CommunicationItem("mraz", "MRAZ", "Mrzlo mi je.", R.drawable.comm_mraz),
         CommunicationItem("vroce", "VROCE", "Vroce mi je.", R.drawable.comm_vroce),
         CommunicationItem("hvala", "HVALA", "Hvala lepa.", R.drawable.comm_hvala),
-        CommunicationItem("pridi_sem", "PRIDI SEM", "Prosim pridi sem k meni.", R.drawable.comm_pridi_sem),
+        CommunicationItem("pridi_sem", "PRIDI", "Prosim pridi sem k meni.", R.drawable.comm_pridi_sem),
         CommunicationItem("pocakaj", "POCAKAJ", "Pocakaj prosim.", R.drawable.comm_pocakaj),
         CommunicationItem("zdravilo", "ZDRAVILO", "Cas je za zdravilo.", R.drawable.comm_zdravilo),
         CommunicationItem("telefon", "TELEFON", "Prinesite mi telefon.", R.drawable.comm_telefon),
