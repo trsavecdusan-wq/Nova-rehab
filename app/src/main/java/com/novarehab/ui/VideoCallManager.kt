@@ -68,6 +68,7 @@ class VideoCallManager(
     private var isCaller = false
     private var remoteDescriptionSet = false
     private var callEndedByRemote = false
+    private var renderersInitialized = false
     private val handledRemoteCandidates = mutableSetOf<String>()
 
     fun startOutgoingCall(roomId: String) {
@@ -89,9 +90,22 @@ class VideoCallManager(
             initializeWebRtc()
             createPeerConnection()
             startLocalMedia()
-            clearRoom(roomId)
-            createOffer(roomId)
-            startCallerPolling(roomId)
+
+            listener.onStatus("Povezujem s streznikom...")
+
+            scope.launch(Dispatchers.IO) {
+                val cleared = runCatching { clearRoom(roomId) }.isSuccess
+
+                withContext(Dispatchers.Main) {
+                    if (cleared) {
+                        createOffer(roomId)
+                        startCallerPolling(roomId)
+                    } else {
+                        listener.onError("Povezava s streznikom ni uspela. Preveri internet.")
+                        endCall()
+                    }
+                }
+            }
         } catch (e: Exception) {
             listener.onError("Klica ni bilo mogoce zagnati: ${e.message}")
             endCall()
@@ -137,6 +151,10 @@ class VideoCallManager(
         } catch (_: Exception) {
         }
 
+        releaseRenderers()
+        eglBase?.release()
+        eglBase = null
+
         if (roomId != null && isCaller && isSignalingConfigured() && !callEndedByRemote) {
             scope.launch(Dispatchers.IO) {
                 runCatching { deleteRoom(roomId) }
@@ -169,11 +187,16 @@ class VideoCallManager(
         eglBase = EglBase.create()
         val eglContext = eglBase!!.eglBaseContext
 
+        runCatching { localRenderer.release() }
+        runCatching { remoteRenderer.release() }
+
         localRenderer.init(eglContext, null)
         localRenderer.setMirror(true)
 
         remoteRenderer.init(eglContext, null)
         remoteRenderer.setMirror(false)
+
+        renderersInitialized = true
 
         PeerConnectionFactory.initialize(
             PeerConnectionFactory.InitializationOptions.builder(context)
@@ -187,6 +210,15 @@ class VideoCallManager(
             .setVideoEncoderFactory(encoderFactory)
             .setVideoDecoderFactory(decoderFactory)
             .createPeerConnectionFactory()
+    }
+
+    private fun releaseRenderers() {
+        if (!renderersInitialized) return
+
+        runCatching { localRenderer.release() }
+        runCatching { remoteRenderer.release() }
+
+        renderersInitialized = false
     }
 
     private fun createPeerConnection() {
