@@ -64,11 +64,9 @@ class CompanionCallManager(
     private var localVideoTrack: VideoTrack? = null
     private var audioSource: AudioSource? = null
     private var localAudioTrack: AudioTrack? = null
-
     private var waitJob: Job? = null
     private var pollJob: Job? = null
     private var outgoingRequestJob: Job? = null
-
     private var remoteOffer: SessionDescription? = null
     private var renderersInitialized = false
     private val handledRemoteCandidates = mutableSetOf<String>()
@@ -81,7 +79,7 @@ class CompanionCallManager(
 
         waitJob?.cancel()
         waitJob = scope.launch {
-            listener.onStatus("Cakam povezavo")
+            listener.onStatus("Čakam povezavo")
 
             while (true) {
                 try {
@@ -92,7 +90,7 @@ class CompanionCallManager(
                     if (offer != null) {
                         remoteOffer = offer
                         listener.onIncomingCall()
-                        listener.onStatus("Lana klice")
+                        listener.onStatus("Lana kliče")
                         return@launch
                     }
                 } catch (_: Exception) {
@@ -105,8 +103,9 @@ class CompanionCallManager(
 
     fun acceptCall() {
         val offer = remoteOffer
+
         if (offer == null) {
-            listener.onStatus("Cakam Lanin klic")
+            listener.onStatus("Čakam Lanin klic")
             startWaitingForCall()
             return
         }
@@ -127,7 +126,7 @@ class CompanionCallManager(
             listener.onStatus("Povezujem...")
             startReceiverPolling()
         } catch (e: Exception) {
-            listener.onError("Klica ni bilo mogoce sprejeti: ${e.message}")
+            listener.onError("Klica ni bilo mogoče sprejeti: ${e.message}")
             endCall()
         }
     }
@@ -218,7 +217,7 @@ class CompanionCallManager(
         eglBase?.release()
         eglBase = null
 
-        if (remoteOffer != null || peerConnection != null) {
+        if (remoteOffer != null) {
             scope.launch(Dispatchers.IO) {
                 runCatching {
                     sendRoomStatus("ended")
@@ -228,7 +227,6 @@ class CompanionCallManager(
         }
 
         remoteOffer = null
-        renderersInitialized = false
         handledRemoteCandidates.clear()
         listener.onCallEnded()
     }
@@ -242,11 +240,13 @@ class CompanionCallManager(
         runCatching { localRenderer.release() }
         runCatching { remoteRenderer.release() }
 
-        localRenderer.init(eglContext, null)
-        localRenderer.setMirror(true)
-
         remoteRenderer.init(eglContext, null)
         remoteRenderer.setMirror(false)
+        remoteRenderer.setZOrderMediaOverlay(false)
+
+        localRenderer.init(eglContext, null)
+        localRenderer.setMirror(true)
+        localRenderer.setZOrderMediaOverlay(true)
 
         renderersInitialized = true
 
@@ -275,9 +275,11 @@ class CompanionCallManager(
 
     private fun createPeerConnection() {
         val factory = peerConnectionFactory ?: return
+
         val iceServers = listOf(
             PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
         )
+
         val config = PeerConnection.RTCConfiguration(iceServers)
 
         peerConnection = factory.createPeerConnection(config, object : PeerConnection.Observer {
@@ -287,6 +289,13 @@ class CompanionCallManager(
             override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState) {
                 if (newState == PeerConnection.IceConnectionState.CONNECTED) {
                     listener.onStatus("Klic vzpostavljen")
+                }
+
+                if (
+                    newState == PeerConnection.IceConnectionState.DISCONNECTED ||
+                    newState == PeerConnection.IceConnectionState.FAILED
+                ) {
+                    listener.onStatus("Povezava je prekinjena")
                 }
             }
 
@@ -395,7 +404,7 @@ class CompanionCallManager(
                                 }
                             } catch (_: Exception) {
                                 withContext(Dispatchers.Main) {
-                                    listener.onError("Odgovora ni bilo mogoce poslati.")
+                                    listener.onError("Odgovora ni bilo mogoče poslati.")
                                 }
                             }
                         }
@@ -404,7 +413,7 @@ class CompanionCallManager(
             }
 
             override fun onCreateFailure(error: String) {
-                listener.onError("Odgovora ni bilo mogoce ustvariti.")
+                listener.onError("Odgovora ni bilo mogoče ustvariti.")
             }
         }, MediaConstraints())
     }
@@ -425,6 +434,41 @@ class CompanionCallManager(
                         }
                     }
                 } catch (_: Exception) {
+                }
+
+                delay(1200L)
+            }
+        }
+    }
+
+    private fun startOutgoingRequestPolling() {
+        outgoingRequestJob?.cancel()
+        outgoingRequestJob = scope.launch {
+            while (true) {
+                try {
+                    val status = withContext(Dispatchers.IO) {
+                        getOutgoingRequestStatus()
+                    }
+
+                    when (status) {
+                        "accepted" -> {
+                            listener.onStatus("Lana je sprejela klic")
+                            return@launch
+                        }
+
+                        "rejected" -> {
+                            listener.onStatus("Klic zavrnjen")
+                            return@launch
+                        }
+
+                        "ended" -> {
+                            listener.onStatus("Klic končan")
+                            return@launch
+                        }
+                    }
+                } catch (_: Exception) {
+                    listener.onStatus("Povezava ni uspela")
+                    return@launch
                 }
 
                 delay(1200L)
@@ -453,41 +497,6 @@ class CompanionCallManager(
             .build()
 
         httpClient.newCall(request).execute().use {
-        }
-    }
-
-    private fun startOutgoingRequestPolling() {
-        outgoingRequestJob?.cancel()
-        outgoingRequestJob = scope.launch {
-            while (true) {
-                try {
-                    val status = withContext(Dispatchers.IO) {
-                        getOutgoingRequestStatus()
-                    }
-
-                    when (status) {
-                        "accepted" -> {
-                            listener.onStatus("Lana je sprejela klic")
-                            return@launch
-                        }
-
-                        "rejected" -> {
-                            listener.onStatus("Klic zavrnjen")
-                            return@launch
-                        }
-
-                        "ended" -> {
-                            listener.onStatus("Klic koncan")
-                            return@launch
-                        }
-                    }
-                } catch (_: Exception) {
-                    listener.onStatus("Povezava ni uspela")
-                    return@launch
-                }
-
-                delay(1200L)
-            }
         }
     }
 
