@@ -11,10 +11,11 @@
 
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/localRenderer"
-        android:layout_width="120dp"
-        android:layout_height="160dp"
+        android:layout_width="96dp"
+        android:layout_height="128dp"
         android:layout_gravity="top|end"
-        android:layout_margin="16dp" />
+        android:layout_marginTop="128dp"
+        android:layout_marginEnd="12dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -39,7 +40,7 @@
             android:id="@+id/tvStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Cakam povezavo"
+            android:text="Čakam povezavo"
             android:textColor="#FFFFFF"
             android:textSize="26sp"
             android:textStyle="bold"
@@ -91,7 +92,7 @@
             android:id="@+id/btnCallLana"
             android:layout_width="match_parent"
             android:layout_height="76dp"
-            android:text="POKLICI LANO"
+            android:text="POKLIČI LANO"
             android:textSize="26sp"
             android:textStyle="bold"
             android:backgroundTint="#0F3460"
