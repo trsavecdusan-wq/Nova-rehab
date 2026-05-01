@@ -10,6 +10,34 @@ class SettingsBackupManager(private val context: Context) {
 
     private val prefs = PrefsManager(context)
     private val apiConfig = ApiConfigManager(context)
+    private val iconTextManager = IconTextManager(context)
+
+    private val standardIconIds = listOf(
+        "pomoc",
+        "piti",
+        "jesti",
+        "bolecina",
+        "kopalnica",
+        "dobro",
+        "slabo",
+        "utrujena",
+        "mraz",
+        "vroce",
+        "hvala",
+        "pridi_sem",
+        "pocakaj",
+        "zdravilo",
+        "telefon",
+        "tv",
+        "postelja",
+        "okno",
+        "vesela",
+        "zalostna",
+        "jezna",
+        "strah",
+        "tesnoba",
+        "objemi"
+    )
 
     fun restoreIfAvailable(): Boolean {
         val file = backupFile()
@@ -28,15 +56,19 @@ class SettingsBackupManager(private val context: Context) {
 
     fun backupNow(): Boolean {
         return try {
+            val json = exportJson()
+
             val file = backupFile()
             file.parentFile?.mkdirs()
-            file.writeText(exportJson().toString(2), Charsets.UTF_8)
+            file.writeText(json.toString(2), Charsets.UTF_8)
+
             backupMediaFolder("icons")
             backupMediaFolder("contacts")
 
             val appFile = File(context.getExternalFilesDir(null), "backup/novarehab-settings.json")
             appFile.parentFile?.mkdirs()
-            appFile.writeText(exportJson().toString(2), Charsets.UTF_8)
+            appFile.writeText(json.toString(2), Charsets.UTF_8)
+
             true
         } catch (_: Exception) {
             false
@@ -113,6 +145,8 @@ class SettingsBackupManager(private val context: Context) {
             .put("reportHour", prefs.getReportHour())
             .put("apiBaseUrl", apiConfig.getApiBaseUrl())
             .put("apiToken", apiConfig.getApiToken())
+            .put("iconTexts", iconTextManager.exportTexts(standardIconIds))
+            .put("submenuPrompts", iconTextManager.exportSubmenuPrompts(standardIconIds))
             .put("radioStations", JSONArray(prefs.getRadioStations().map {
                 JSONObject()
                     .put("name", it.name)
@@ -160,8 +194,12 @@ class SettingsBackupManager(private val context: Context) {
         prefs.saveReportMail1Enabled(json.optBoolean("reportMail1Enabled", prefs.isReportMail1Enabled()))
         prefs.saveReportMail2Enabled(json.optBoolean("reportMail2Enabled", prefs.isReportMail2Enabled()))
         prefs.saveReportHour(json.optInt("reportHour", prefs.getReportHour()))
+
         apiConfig.saveApiBaseUrl(json.optString("apiBaseUrl", apiConfig.getApiBaseUrl()))
         apiConfig.saveApiToken(json.optString("apiToken", apiConfig.getApiToken()))
+
+        json.optJSONObject("iconTexts")?.let { iconTextManager.importTexts(it) }
+        json.optJSONObject("submenuPrompts")?.let { iconTextManager.importSubmenuPrompts(it) }
 
         json.optJSONArray("radioStations")?.let { array ->
             val stations = (0 until array.length()).mapNotNull { index ->
@@ -193,7 +231,6 @@ class SettingsBackupManager(private val context: Context) {
         json.optJSONArray("customCommIcons")?.let { array ->
             val icons = (0 until array.length()).mapNotNull { index ->
                 val item = array.optJSONObject(index) ?: return@mapNotNull null
-
                 CustomCommIcon(
                     id = item.optString("id"),
                     title = item.optString("title"),
