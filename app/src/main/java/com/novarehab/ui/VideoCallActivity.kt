@@ -37,6 +37,7 @@ class VideoCallActivity : AppCompatActivity() {
     private lateinit var callScreen: View
 
     private lateinit var gridContacts: GridLayout
+
     private lateinit var imgConfirmContact: ImageView
     private lateinit var tvConfirmName: TextView
     private lateinit var tvConfirmLanguage: TextView
@@ -112,7 +113,7 @@ class VideoCallActivity : AppCompatActivity() {
 
         val savedContacts = prefs.getContacts()
         val defaultIds = listOf("contact1", "contact2", "contact3", "contact4", "contact5", "contact6")
-        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
+        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
         val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
         for (index in 0 until 6) {
@@ -173,9 +174,9 @@ class VideoCallActivity : AppCompatActivity() {
             })
 
             addView(TextView(this@VideoCallActivity).apply {
-                text = languageLabel(contact.language)
-                textSize = 18f
-                setTextColor(0xFFB8D8FF.toInt())
+                text = languageFlag(contact.language)
+                textSize = 26f
+                setTextColor(0xFFFFFFFF.toInt())
                 gravity = Gravity.CENTER
                 includeFontPadding = false
             })
@@ -206,7 +207,7 @@ class VideoCallActivity : AppCompatActivity() {
         selectedContact = contact
         loadContactImage(imgConfirmContact, contact.index)
         tvConfirmName.text = contact.name
-        tvConfirmLanguage.text = languageLabel(contact.language)
+        tvConfirmLanguage.text = languageFlag(contact.language)
 
         contactGridScreen.visibility = View.GONE
         confirmScreen.visibility = View.VISIBLE
@@ -270,6 +271,7 @@ class VideoCallActivity : AppCompatActivity() {
         val columns = 3
         val rows = when (pageSize) {
             6 -> 2
+            8, 9 -> 3
             12 -> 4
             15 -> 5
             18 -> 6
@@ -281,21 +283,25 @@ class VideoCallActivity : AppCompatActivity() {
 
         for (slot in 0 until pageSize) {
             gridCallCommunication.addView(
-                createCallCommunicationCell(visibleItems.getOrNull(slot), contact)
+                createCallCommunicationCell(
+                    item = visibleItems.getOrNull(slot),
+                    contact = contact,
+                    pageSize = pageSize
+                )
             )
         }
     }
 
     private fun createCallCommunicationCell(
         item: CommunicationItem?,
-        contact: VideoContact
+        contact: VideoContact,
+        pageSize: Int
     ): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(4), dp(4), dp(4), dp(4))
             setBackgroundColor(0xFF16213E.toInt())
-
             layoutParams = GridLayout.LayoutParams().apply {
                 width = 0
                 height = 0
@@ -330,7 +336,7 @@ class VideoCallActivity : AppCompatActivity() {
 
             addView(TextView(this@VideoCallActivity).apply {
                 text = item.label
-                textSize = when (prefs.getCommIconsPerPage()) {
+                textSize = when (pageSize) {
                     18 -> 10f
                     15 -> 11f
                     12 -> 12f
@@ -373,6 +379,7 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun loadContactImage(imageView: ImageView, index: Int) {
         val file = File(getExternalFilesDir(null), "contacts/contact_${index + 1}.png")
+
         if (file.exists()) {
             imageView.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
         } else {
@@ -381,14 +388,14 @@ class VideoCallActivity : AppCompatActivity() {
         }
     }
 
-    private fun languageLabel(code: String): String {
+    private fun languageFlag(code: String): String {
         return when (code.lowercase()) {
-            "uk", "ua" -> "Ukrajinščina"
-            "en" -> "Angleščina"
-            "de" -> "Nemščina"
-            "hr" -> "Hrvaščina"
-            "sr" -> "Srbščina"
-            else -> "Slovenščina"
+            "uk", "ua" -> "🇺🇦"
+            "en" -> "🇬🇧"
+            "de" -> "🇩🇪"
+            "hr" -> "🇭🇷"
+            "sr" -> "🇷🇸"
+            else -> "🇸🇮"
         }
     }
 
