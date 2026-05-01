@@ -19,6 +19,7 @@ import com.novarehab.R
 import com.novarehab.utils.CustomCommIcon
 import com.novarehab.utils.IconTextManager
 import com.novarehab.utils.PrefsManager
+import com.novarehab.utils.SettingsBackupManager
 import java.io.File
 
 class IconSettingsActivity : AppCompatActivity() {
@@ -94,7 +95,7 @@ class IconSettingsActivity : AppCompatActivity() {
         container.addView(header)
 
         val note = TextView(this)
-        note.text = "Vpisi kratke napise za gumbe in daljse besedilo za govor. Podmeni vklopis posebej pri vsaki ikoni."
+        note.text = "Vpiši besedilo za govor. Podmeni vklopiš posebej pri vsaki glavni ikoni."
         note.textSize = 13f
         note.setTextColor(0xFFAAAAAA.toInt())
         note.setPadding(0, 0, 0, dp(12))
@@ -133,7 +134,7 @@ class IconSettingsActivity : AppCompatActivity() {
         ).apply { setMargins(0, dp(8), 0, dp(10)) }
 
         val label = TextView(this)
-        label.text = "Cas izhoda iz podmenija (sekunde)"
+        label.text = "Čas izhoda iz podmenija (sekunde)"
         label.textSize = 13f
         label.setTextColor(0xFFFFFFFF.toInt())
         label.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -162,7 +163,8 @@ class IconSettingsActivity : AppCompatActivity() {
             val seconds = etTimeout.text.toString().toLongOrNull() ?: 15L
             prefs.saveCommSubmenuTimeoutSeconds(seconds)
             etTimeout.setText(prefs.getCommSubmenuTimeoutSeconds().toString())
-            Toast.makeText(this, "Cas shranjen", Toast.LENGTH_SHORT).show()
+            SettingsBackupManager(this).backupNow()
+            Toast.makeText(this, "Čas shranjen", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnSave)
 
@@ -234,7 +236,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
         val etSubmenuPrompt = EditText(this).apply {
             setText(mgr.getSubmenuPrompt(id))
-            hint = "Vprasanje po kliku, npr. Kaj zelis piti?"
+            hint = "Vprašanje po kliku, npr. Kaj želiš piti?"
             textSize = 12f
             setSingleLine(false)
             minLines = 1
@@ -259,6 +261,7 @@ class IconSettingsActivity : AppCompatActivity() {
             mgr.setText(id, etText.text.toString().trim())
             mgr.setSubmenuPrompt(id, etSubmenuPrompt.text.toString().trim())
             prefs.saveCommSubmenuEnabled(id, submenuSwitch.isChecked)
+            SettingsBackupManager(this).backupNow()
             Toast.makeText(this, "Shranjeno", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnSave)
@@ -274,6 +277,7 @@ class IconSettingsActivity : AppCompatActivity() {
         btnReset.setOnClickListener {
             File(getExternalFilesDir(null), "icons/$id.png").delete()
             img.setImageResource(defaultRes)
+            SettingsBackupManager(this).backupNow()
             Toast.makeText(this, "Ikona ponastavljena", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnReset)
@@ -356,6 +360,7 @@ class IconSettingsActivity : AppCompatActivity() {
             }
 
             prefs.saveCustomCommIcons(list.sortedBy { it.id })
+            SettingsBackupManager(this).backupNow()
             Toast.makeText(this, "Shranjeno", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnSave)
@@ -371,6 +376,7 @@ class IconSettingsActivity : AppCompatActivity() {
         btnReset.setOnClickListener {
             prefs.saveCustomCommIcons(prefs.getCustomCommIcons().filterNot { it.id == id })
             File(getExternalFilesDir(null), "icons/$id.png").delete()
+            SettingsBackupManager(this).backupNow()
             recreate()
         }
         row.addView(btnReset)
@@ -380,6 +386,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
         if (requestCode == requestImage && resultCode == RESULT_OK) {
             val uri = data?.data ?: return
             val id = pendingIconId ?: return
@@ -389,9 +396,12 @@ class IconSettingsActivity : AppCompatActivity() {
                 dir.mkdirs()
 
                 contentResolver.openInputStream(uri)?.use { input ->
-                    File(dir, "$id.png").outputStream().use { output -> input.copyTo(output) }
+                    File(dir, "$id.png").outputStream().use { output ->
+                        input.copyTo(output)
+                    }
                 }
 
+                SettingsBackupManager(this).backupNow()
                 Toast.makeText(this, "Slika zamenjana", Toast.LENGTH_SHORT).show()
                 recreate()
             } catch (_: Exception) {
