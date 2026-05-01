@@ -20,20 +20,20 @@ class CommPageAdapter(
     private val onItemSelected: (CommunicationItem) -> Unit
 ) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
 
-    private val safePageSize = if (pageSize in setOf(6, 8, 9, 12)) pageSize else 9
+    private val safePageSize = if (pageSize in setOf(6, 9, 12, 15, 18)) pageSize else 9
 
     private val gridColumns = when (safePageSize) {
-        6 -> 2
-        8 -> 2
+        6 -> 3
         9 -> 3
         else -> 3
     }
 
     private val gridRows = when (safePageSize) {
-        6 -> 3
-        8 -> 4
+        6 -> 2
         9 -> 3
-        else -> 4
+        12 -> 4
+        15 -> 5
+        else -> 6
     }
 
     val pageCount: Int
@@ -107,6 +107,8 @@ class CommPageAdapter(
             addView(TextView(context).apply {
                 text = displayLabel(item)
                 textSize = when (safePageSize) {
+                    18 -> 11f
+                    15 -> 12f
                     12 -> 13f
                     9 -> 14f
                     else -> 15f
