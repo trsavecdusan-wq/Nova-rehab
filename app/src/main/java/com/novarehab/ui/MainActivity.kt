@@ -42,6 +42,7 @@ import com.novarehab.utils.LanguageDetector
 import com.novarehab.utils.OpenAiTranslateManager
 import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.utils.PrefsManager
+import com.novarehab.utils.SettingsBackupManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
 import com.novarehab.utils.UpdateManager
@@ -103,6 +104,8 @@ class MainActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         apiConfig = ApiConfigManager(this)
+        SettingsBackupManager(this).restoreIfAvailable()
+
         stats = StatsManager(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
@@ -112,8 +115,8 @@ class MainActivity : AppCompatActivity() {
 
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val result = tts?.setLanguage(Locale("sl", "SI"))
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                val r = tts?.setLanguage(Locale("sl", "SI"))
+                if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.setLanguage(Locale.getDefault())
                 }
                 tts?.setSpeechRate(0.9f)
@@ -579,7 +582,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvPatientName.maxLines = 2
 
         binding.tvPatientName.setOnClickListener {
-            Toast.makeText(this, "Za spremembo jezika držite zastavo z imenom.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Za spremembo jezika držite zastavo.", Toast.LENGTH_SHORT).show()
         }
 
         binding.tvPatientName.setOnLongClickListener {
@@ -596,13 +599,6 @@ class MainActivity : AppCompatActivity() {
             setPadding(24, 16, 24, 8)
         }
 
-        val info = TextView(this).apply {
-            text = "Izberi jezik pogovora."
-            textSize = 16f
-            setPadding(0, 0, 0, 16)
-        }
-        wrapper.addView(info)
-
         val grid = GridLayout(this).apply {
             columnCount = 2
             rowCount = 1
@@ -616,8 +612,8 @@ class MainActivity : AppCompatActivity() {
 
         languages.forEach { lang ->
             val button = Button(this).apply {
-                text = "${lang.flag}\n${lang.fullName}"
-                textSize = 16f
+                text = lang.flag
+                textSize = 42f
                 gravity = Gravity.CENTER
                 isAllCaps = false
                 setOnClickListener {
@@ -626,10 +622,10 @@ class MainActivity : AppCompatActivity() {
                 }
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = 0
-                    height = 150
+                    height = dp(118)
                     columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                    setMargins(8, 8, 8, 8)
+                    setMargins(dp(8), dp(8), dp(8), dp(8))
                 }
             }
             grid.addView(button)
