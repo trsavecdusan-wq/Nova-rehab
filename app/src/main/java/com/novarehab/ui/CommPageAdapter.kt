@@ -20,9 +20,10 @@ class CommPageAdapter(
     private val onItemSelected: (CommunicationItem) -> Unit
 ) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
 
-    private val safePageSize = if (pageSize in setOf(6, 9, 12, 15, 18)) pageSize else 9
+    private val safePageSize = if (pageSize in setOf(6, 8, 9, 12)) pageSize else 9
 
     private val gridColumns = when (safePageSize) {
+        8 -> 4
         6 -> 3
         9 -> 3
         else -> 3
@@ -30,16 +31,18 @@ class CommPageAdapter(
 
     private val gridRows = when (safePageSize) {
         6 -> 2
+        8 -> 2
         9 -> 3
         12 -> 4
-        15 -> 5
-        else -> 6
+        else -> 3
     }
 
     val pageCount: Int
         get() = maxOf(1, Math.ceil(items.size.toDouble() / safePageSize).toInt())
 
-    override fun getItemCount(): Int = pageCount
+    override fun getItemCount(): Int {
+        return pageCount
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
         val grid = GridLayout(context).apply {
@@ -63,7 +66,8 @@ class CommPageAdapter(
         val pageItems = items.subList(start, end)
 
         for (slot in 0 until safePageSize) {
-            grid.addView(createCell(pageItems.getOrNull(slot)))
+            val item = pageItems.getOrNull(slot)
+            grid.addView(createCell(item))
         }
     }
 
@@ -107,10 +111,9 @@ class CommPageAdapter(
             addView(TextView(context).apply {
                 text = displayLabel(item)
                 textSize = when (safePageSize) {
-                    18 -> 11f
-                    15 -> 12f
                     12 -> 13f
                     9 -> 14f
+                    8 -> 13f
                     else -> 15f
                 }
                 setTextColor(0xFFFFFFFF.toInt())
