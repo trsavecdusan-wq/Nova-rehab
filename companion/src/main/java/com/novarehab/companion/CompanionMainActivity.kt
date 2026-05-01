@@ -30,10 +30,7 @@ class CompanionMainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN
-        )
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContentView(R.layout.activity_companion_main)
@@ -146,38 +143,40 @@ class CompanionMainActivity : Activity() {
         tvContactInfo.text = "Kontakt: ${CompanionConfig.contactName}"
 
         tvStatus.text = when (callState) {
-            CompanionCallState.WAITING -> "Cakam povezavo"
-            CompanionCallState.INCOMING -> "Lana klice"
+            CompanionCallState.WAITING -> "Čakam povezavo"
+            CompanionCallState.INCOMING -> "Lana kliče"
             CompanionCallState.CONNECTED -> "Klic vzpostavljen"
             CompanionCallState.ENDED -> "Klic zavrnjen"
         }
 
-        btnAcceptCall.visibility =
-            if (callState == CompanionCallState.INCOMING) View.VISIBLE else View.GONE
+        btnAcceptCall.visibility = if (callState == CompanionCallState.INCOMING) View.VISIBLE else View.GONE
+        btnRejectCall.visibility = if (
+            callState == CompanionCallState.INCOMING ||
+            callState == CompanionCallState.CONNECTED
+        ) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
 
-        btnRejectCall.visibility =
-            if (callState == CompanionCallState.INCOMING || callState == CompanionCallState.CONNECTED) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
+        btnRejectCall.text = if (callState == CompanionCallState.CONNECTED) {
+            "PREKINI KLIC"
+        } else {
+            "ZAVRNI KLIC"
+        }
 
-        btnRejectCall.text =
-            if (callState == CompanionCallState.CONNECTED) "PREKINI KLIC" else "ZAVRNI KLIC"
-
-        btnCallLana.visibility =
-            if (callState == CompanionCallState.WAITING && CompanionConfig.outgoingCallsEnabled) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
+        btnCallLana.visibility = if (
+            callState == CompanionCallState.WAITING &&
+            CompanionConfig.outgoingCallsEnabled
+        ) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
     }
 
     private fun requestVideoPermissions() {
-        val needed = arrayOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
-        ).filter {
+        val needed = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
