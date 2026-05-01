@@ -21,22 +21,25 @@ class ApiConfigManager(context: Context) {
 
     fun saveApiBaseUrl(baseUrl: String) {
         prefs.edit().putString(KEY_BASE_URL, normalizeBaseUrl(baseUrl)).commit()
+        Log.d("NovaRehabApi", "API saved: baseUrl length=${getApiBaseUrl().length}, token length=${getApiToken().length}")
     }
 
     fun saveApiToken(token: String) {
         prefs.edit().putString(KEY_TOKEN, token.trim()).commit()
-        Log.d(
-            "NovaRehabApi",
-            "API saved: baseUrl length=${getApiBaseUrl().length}, token length=${getApiToken().length}"
-        )
+        Log.d("NovaRehabApi", "API saved: baseUrl length=${getApiBaseUrl().length}, token length=${getApiToken().length}")
     }
 
-    fun getApiBaseUrl(): String = prefs.getString(KEY_BASE_URL, "") ?: ""
+    fun getApiBaseUrl(): String {
+        return prefs.getString(KEY_BASE_URL, "") ?: ""
+    }
 
-    fun getApiToken(): String = prefs.getString(KEY_TOKEN, "") ?: ""
+    fun getApiToken(): String {
+        return prefs.getString(KEY_TOKEN, "") ?: ""
+    }
 
-    fun isApiConfigured(): Boolean =
-        getApiBaseUrl().isNotBlank() && getApiToken().isNotBlank()
+    fun isApiConfigured(): Boolean {
+        return getApiBaseUrl().isNotBlank() && getApiToken().isNotBlank()
+    }
 
     fun clearApiConfig() {
         prefs.edit()
