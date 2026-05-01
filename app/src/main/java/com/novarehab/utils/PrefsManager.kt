@@ -50,91 +50,114 @@ class PrefsManager(context: Context) {
     fun getKioskReturnMinutes(): Long = prefs.getLong("kiosk_return_minutes", 5L)
     fun saveKioskReturnMinutes(m: Long) = prefs.edit().putLong("kiosk_return_minutes", m).apply()
 
-    fun getGuestLanguageReturnMinutes(): Long =
-        prefs.getLong("guest_language_return_minutes", 15L).coerceIn(1L, 240L)
-
-    fun saveGuestLanguageReturnMinutes(minutes: Long) =
-        prefs.edit().putLong("guest_language_return_minutes", minutes.coerceIn(1L, 240L)).apply()
-
-    fun getCommSubmenuTimeoutSeconds(): Long =
-        prefs.getLong("comm_submenu_timeout_seconds", 15L).coerceIn(5L, 120L)
-
-    fun saveCommSubmenuTimeoutSeconds(seconds: Long) =
-        prefs.edit().putLong("comm_submenu_timeout_seconds", seconds.coerceIn(5L, 120L)).apply()
-
-    fun isCommSubmenuEnabled(iconId: String, defaultValue: Boolean): Boolean =
-        prefs.getBoolean("comm_submenu_enabled_$iconId", defaultValue)
-
-    fun saveCommSubmenuEnabled(iconId: String, enabled: Boolean) =
-        prefs.edit().putBoolean("comm_submenu_enabled_$iconId", enabled).apply()
-
-    fun getDefaultSpeechLanguage(): String =
-        prefs.getString("default_speech_language", "sl") ?: "sl"
-
-    fun saveDefaultSpeechLanguage(lang: String) =
-        prefs.edit().putString("default_speech_language", lang).apply()
-
-    fun isAutoLanguageEnabled(): Boolean =
-        prefs.getBoolean("auto_language_enabled", false)
-
-    fun saveAutoLanguageEnabled(v: Boolean) =
-        prefs.edit().putBoolean("auto_language_enabled", v).apply()
-
-    fun getPatientLanguage1(): String =
-        prefs.getString("patient_language_1", "sl") ?: "sl"
-
-    fun savePatientLanguage1(lang: String) =
-        prefs.edit().putString("patient_language_1", lang).apply()
-
-    fun getPatientLanguage2(): String =
-        prefs.getString("patient_language_2", "uk") ?: "uk"
-
-    fun savePatientLanguage2(lang: String) =
-        prefs.edit().putString("patient_language_2", lang).apply()
-
-    fun getCommIconsPerPage(): Int {
-        val v = prefs.getInt("comm_icons_per_page", 9)
-        return if (v in setOf(6, 9, 12, 15, 18)) v else 9
+    fun getGuestLanguageReturnMinutes(): Long {
+        return prefs.getLong("guest_language_return_minutes", 15L).coerceIn(1L, 240L)
     }
 
-    fun saveCommIconsPerPage(v: Int) {
-        val safe = if (v in setOf(6, 9, 12, 15, 18)) v else 9
+    fun saveGuestLanguageReturnMinutes(minutes: Long) {
+        prefs.edit().putLong("guest_language_return_minutes", minutes.coerceIn(1L, 240L)).apply()
+    }
+
+    fun getCommSubmenuTimeoutSeconds(): Long {
+        return prefs.getLong("comm_submenu_timeout_seconds", 15L).coerceIn(5L, 120L)
+    }
+
+    fun saveCommSubmenuTimeoutSeconds(seconds: Long) {
+        prefs.edit().putLong("comm_submenu_timeout_seconds", seconds.coerceIn(5L, 120L)).apply()
+    }
+
+    fun isCommSubmenuEnabled(iconId: String, defaultValue: Boolean): Boolean {
+        return prefs.getBoolean("comm_submenu_enabled_$iconId", defaultValue)
+    }
+
+    fun saveCommSubmenuEnabled(iconId: String, enabled: Boolean) {
+        prefs.edit().putBoolean("comm_submenu_enabled_$iconId", enabled).apply()
+    }
+
+    fun getDefaultSpeechLanguage(): String {
+        return prefs.getString("default_speech_language", "sl") ?: "sl"
+    }
+
+    fun saveDefaultSpeechLanguage(lang: String) {
+        prefs.edit().putString("default_speech_language", lang).apply()
+    }
+
+    fun isAutoLanguageEnabled(): Boolean {
+        return prefs.getBoolean("auto_language_enabled", false)
+    }
+
+    fun saveAutoLanguageEnabled(v: Boolean) {
+        prefs.edit().putBoolean("auto_language_enabled", v).apply()
+    }
+
+    fun getPatientLanguage1(): String {
+        return prefs.getString("patient_language_1", "sl") ?: "sl"
+    }
+
+    fun savePatientLanguage1(lang: String) {
+        prefs.edit().putString("patient_language_1", lang).apply()
+    }
+
+    fun getPatientLanguage2(): String {
+        return prefs.getString("patient_language_2", "uk") ?: "uk"
+    }
+
+    fun savePatientLanguage2(lang: String) {
+        prefs.edit().putString("patient_language_2", lang).apply()
+    }
+
+    fun getCommIconsPerPage(): Int {
+        val value = prefs.getInt("comm_icons_per_page", 9)
+        return if (value in setOf(6, 8, 9, 12)) value else 9
+    }
+
+    fun saveCommIconsPerPage(value: Int) {
+        val safe = if (value in setOf(6, 8, 9, 12)) value else 9
         prefs.edit().putInt("comm_icons_per_page", safe).apply()
     }
 
     fun getTtsVoice(): String = prefs.getString("tts_voice", "marin") ?: "marin"
     fun saveTtsVoice(voice: String) = prefs.edit().putString("tts_voice", voice).apply()
 
-    fun getTtsTestLanguage(): String =
-        prefs.getString("tts_test_language", "sl") ?: "sl"
+    fun getTtsTestLanguage(): String {
+        return prefs.getString("tts_test_language", "sl") ?: "sl"
+    }
 
-    fun saveTtsTestLanguage(lang: String) =
+    fun saveTtsTestLanguage(lang: String) {
         prefs.edit().putString("tts_test_language", lang).apply()
+    }
 
-    fun getTtsVoiceGender(): String =
-        prefs.getString("tts_voice_gender", "naravni") ?: "naravni"
+    fun getTtsVoiceGender(): String {
+        return prefs.getString("tts_voice_gender", "naravni") ?: "naravni"
+    }
 
-    fun saveTtsVoiceGender(gender: String) =
+    fun saveTtsVoiceGender(gender: String) {
         prefs.edit().putString("tts_voice_gender", gender).apply()
+    }
 
-    fun getTtsSpeed(): Float =
-        prefs.getFloat("tts_speed", 0.88f).coerceIn(0.80f, 1.06f)
+    fun getTtsSpeed(): Float {
+        return prefs.getFloat("tts_speed", 0.88f).coerceIn(0.80f, 1.06f)
+    }
 
-    fun saveTtsSpeed(speed: Float) =
+    fun saveTtsSpeed(speed: Float) {
         prefs.edit().putFloat("tts_speed", speed.coerceIn(0.80f, 1.06f)).apply()
+    }
 
-    fun getTtsVolume(): Float =
-        prefs.getFloat("tts_volume", 1.0f).coerceIn(0.7f, 1.0f)
+    fun getTtsVolume(): Float {
+        return prefs.getFloat("tts_volume", 1.0f).coerceIn(0.7f, 1.0f)
+    }
 
-    fun saveTtsVolume(volume: Float) =
+    fun saveTtsVolume(volume: Float) {
         prefs.edit().putFloat("tts_volume", volume.coerceIn(0.7f, 1.0f)).apply()
+    }
 
     fun getCustomCommIcons(): List<CustomCommIcon> {
         val json = prefs.getString("custom_comm_icons", null) ?: return emptyList()
+
         return try {
             val type = object : TypeToken<List<CustomCommIcon>>() {}.type
             gson.fromJson(json, type)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -156,12 +179,16 @@ class PrefsManager(context: Context) {
     fun saveReportMail2(email: String) = prefs.edit().putString("report_mail2", email).apply()
 
     fun isReportMail1Enabled(): Boolean = prefs.getBoolean("report_mail1_enabled", true)
-    fun saveReportMail1Enabled(v: Boolean) =
-        prefs.edit().putBoolean("report_mail1_enabled", v).apply()
+
+    fun saveReportMail1Enabled(value: Boolean) {
+        prefs.edit().putBoolean("report_mail1_enabled", value).apply()
+    }
 
     fun isReportMail2Enabled(): Boolean = prefs.getBoolean("report_mail2_enabled", false)
-    fun saveReportMail2Enabled(v: Boolean) =
-        prefs.edit().putBoolean("report_mail2_enabled", v).apply()
+
+    fun saveReportMail2Enabled(value: Boolean) {
+        prefs.edit().putBoolean("report_mail2_enabled", value).apply()
+    }
 
     fun getReportHour(): Int = prefs.getInt("report_hour", 8)
     fun saveReportHour(hour: Int) = prefs.edit().putInt("report_hour", hour).apply()
@@ -183,7 +210,7 @@ class PrefsManager(context: Context) {
             return try {
                 val type = object : TypeToken<List<RadioStation>>() {}.type
                 gson.fromJson(json, type)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 defaultStations()
             }
         }
@@ -205,14 +232,16 @@ class PrefsManager(context: Context) {
 
     fun getContacts(): List<Contact> {
         val json = prefs.getString("contacts", null)
+
         if (json != null) {
             return try {
                 val type = object : TypeToken<List<Contact>>() {}.type
                 gson.fromJson(json, type)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 defaultContacts()
             }
         }
+
         return defaultContacts()
     }
 
@@ -220,17 +249,21 @@ class PrefsManager(context: Context) {
         prefs.edit().putString("contacts", gson.toJson(contacts)).apply()
     }
 
-    fun isContactIncomingCallEnabled(index: Int): Boolean =
-        prefs.getBoolean("contact_${index}_incoming_calls_enabled", true)
+    fun isContactIncomingCallEnabled(index: Int): Boolean {
+        return prefs.getBoolean("contact_${index}_incoming_calls_enabled", true)
+    }
 
-    fun saveContactIncomingCallEnabled(index: Int, enabled: Boolean) =
+    fun saveContactIncomingCallEnabled(index: Int, enabled: Boolean) {
         prefs.edit().putBoolean("contact_${index}_incoming_calls_enabled", enabled).apply()
+    }
 
-    fun isContactOutgoingCallEnabled(index: Int): Boolean =
-        prefs.getBoolean("contact_${index}_outgoing_calls_enabled", true)
+    fun isContactOutgoingCallEnabled(index: Int): Boolean {
+        return prefs.getBoolean("contact_${index}_outgoing_calls_enabled", true)
+    }
 
-    fun saveContactOutgoingCallEnabled(index: Int, enabled: Boolean) =
+    fun saveContactOutgoingCallEnabled(index: Int, enabled: Boolean) {
         prefs.edit().putBoolean("contact_${index}_outgoing_calls_enabled", enabled).apply()
+    }
 
     private fun defaultContacts(): List<Contact> = listOf(
         Contact("Mama", "", "", "sl"),
