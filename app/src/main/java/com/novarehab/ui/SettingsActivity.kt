@@ -15,6 +15,7 @@ import com.novarehab.utils.ApiConfigManager
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.RadioStation
+import com.novarehab.utils.SettingsBackupManager
 import com.novarehab.utils.UpdateManager
 import java.io.File
 
@@ -888,7 +889,12 @@ class SettingsActivity : AppCompatActivity() {
             prefs.savePin(pin)
         }
 
-        Toast.makeText(this, "Nastavitve shranjene", Toast.LENGTH_SHORT).show()
+        val backupOk = SettingsBackupManager(this).backupNow()
+        Toast.makeText(
+            this,
+            if (backupOk) "Nastavitve shranjene in kopirane v Download/NovaRehab" else "Nastavitve shranjene",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private data class CompanionShareContact(
