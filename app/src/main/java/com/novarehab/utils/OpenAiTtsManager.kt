@@ -67,7 +67,7 @@ class OpenAiTtsManager(private val context: Context) {
             apiBaseUrl = apiBaseUrl,
             speed = 0.92f,
             volume = 1.0f,
-            style = "Speak clearly, warmly, calmly and naturally. Use a gentle rehabilitation assistant voice. Keep the speech easy to understand, with good articulation and a natural Slovenian rhythm when speaking Slovenian.",
+            style = "Speak clearly, warmly, calmly and naturally. Use a gentle rehabilitation assistant voice. Keep the speech easy to understand.",
             onDone = onDone
         )
     }
@@ -178,7 +178,7 @@ class OpenAiTtsManager(private val context: Context) {
                 if (ttsReady) {
                     speakAndroid(text, language, onDone)
                 } else {
-                    Toast.makeText(context, "Slovenski glas ni namescen.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Slovenski glas ni nameščen.", Toast.LENGTH_LONG).show()
                     onDone()
                 }
             }
@@ -186,13 +186,14 @@ class OpenAiTtsManager(private val context: Context) {
         }
 
         if (!setBestLocale(language)) {
-            Toast.makeText(context, "Slovenski glas ni namescen.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Slovenski glas ni nameščen.", Toast.LENGTH_LONG).show()
         }
 
         val uid = "rehab_${System.currentTimeMillis()}"
 
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {}
+            override fun onStart(utteranceId: String?) {
+            }
 
             override fun onDone(utteranceId: String?) {
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
@@ -304,12 +305,12 @@ class OpenAiTtsManager(private val context: Context) {
 
     private fun isOnline(): Boolean {
         return try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val network = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(network) ?: return false
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
 
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } catch (_: Exception) {
             false
         }
