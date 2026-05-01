@@ -62,7 +62,6 @@ class VideoCallManager(
     private var localVideoTrack: VideoTrack? = null
     private var audioSource: AudioSource? = null
     private var localAudioTrack: AudioTrack? = null
-
     private var pollJob: Job? = null
     private var currentRoomId: String? = null
     private var isCaller = false
@@ -90,8 +89,7 @@ class VideoCallManager(
             initializeWebRtc()
             createPeerConnection()
             startLocalMedia()
-
-            listener.onStatus("Povezujem s streznikom...")
+            listener.onStatus("Povezujem s strežnikom...")
 
             scope.launch(Dispatchers.IO) {
                 val cleared = runCatching { clearRoom(roomId) }.isSuccess
@@ -101,20 +99,19 @@ class VideoCallManager(
                         createOffer(roomId)
                         startCallerPolling(roomId)
                     } else {
-                        listener.onError("Povezava s streznikom ni uspela. Preveri internet.")
+                        listener.onError("Povezava s strežnikom ni uspela. Preveri internet.")
                         endCall()
                     }
                 }
             }
         } catch (e: Exception) {
-            listener.onError("Klica ni bilo mogoce zagnati: ${e.message}")
+            listener.onError("Klica ni bilo mogoče zagnati: ${e.message}")
             endCall()
         }
     }
 
     fun endCall() {
         val roomId = currentRoomId
-
         pollJob?.cancel()
         pollJob = null
 
@@ -190,11 +187,13 @@ class VideoCallManager(
         runCatching { localRenderer.release() }
         runCatching { remoteRenderer.release() }
 
-        localRenderer.init(eglContext, null)
-        localRenderer.setMirror(true)
-
         remoteRenderer.init(eglContext, null)
         remoteRenderer.setMirror(false)
+        remoteRenderer.setZOrderMediaOverlay(false)
+
+        localRenderer.init(eglContext, null)
+        localRenderer.setMirror(true)
+        localRenderer.setZOrderMediaOverlay(true)
 
         renderersInitialized = true
 
@@ -223,9 +222,11 @@ class VideoCallManager(
 
     private fun createPeerConnection() {
         val factory = peerConnectionFactory ?: return
+
         val iceServers = listOf(
             PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
         )
+
         val config = PeerConnection.RTCConfiguration(iceServers)
 
         peerConnection = factory.createPeerConnection(config, object : PeerConnection.Observer {
@@ -235,6 +236,13 @@ class VideoCallManager(
             override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState) {
                 if (newState == PeerConnection.IceConnectionState.CONNECTED) {
                     listener.onStatus("Klic vzpostavljen")
+                }
+
+                if (
+                    newState == PeerConnection.IceConnectionState.DISCONNECTED ||
+                    newState == PeerConnection.IceConnectionState.FAILED
+                ) {
+                    listener.onStatus("Povezava je prekinjena")
                 }
             }
 
@@ -343,11 +351,11 @@ class VideoCallManager(
                                 sendSessionDescription(roomId, "offer", description)
 
                                 withContext(Dispatchers.Main) {
-                                    listener.onStatus("Klicem...")
+                                    listener.onStatus("Kličem...")
                                 }
                             } catch (_: Exception) {
                                 withContext(Dispatchers.Main) {
-                                    listener.onError("Ponudbe ni bilo mogoce poslati.")
+                                    listener.onError("Ponudbe ni bilo mogoče poslati.")
                                 }
                             }
                         }
@@ -356,7 +364,7 @@ class VideoCallManager(
             }
 
             override fun onCreateFailure(error: String) {
-                listener.onError("Ponudbe ni bilo mogoce ustvariti.")
+                listener.onError("Ponudbe ni bilo mogoče ustvariti.")
             }
         }, constraints)
     }
