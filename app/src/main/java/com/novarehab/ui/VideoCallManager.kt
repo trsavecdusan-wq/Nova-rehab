@@ -92,11 +92,13 @@ class VideoCallManager(
             listener.onStatus("Povezujem s strežnikom...")
 
             scope.launch(Dispatchers.IO) {
-                val cleared = runCatching { clearRoom(roomId) }.isSuccess
+                val prepared = runCatching {
+                    clearRoom(roomId)
+                    sendIncomingRequest(roomId, "calling")
+                }.isSuccess
 
                 withContext(Dispatchers.Main) {
-                    if (cleared) {
-                        sendIncomingRequest(roomId, "calling")
+                    if (prepared) {
                         createOffer(roomId)
                         startCallerPolling(roomId)
                     } else {
