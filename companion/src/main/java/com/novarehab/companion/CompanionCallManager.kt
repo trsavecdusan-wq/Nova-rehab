@@ -93,6 +93,16 @@ class CompanionCallManager(
                         listener.onStatus("Lana kliče")
                         return@launch
                     }
+
+                    val incomingStatus = withContext(Dispatchers.IO) {
+                        getIncomingRequestStatus()
+                    }
+
+                    if (incomingStatus == "calling") {
+                        listener.onIncomingCall()
+                        listener.onStatus("Lana kliče")
+                        return@launch
+                    }
                 } catch (_: Exception) {
                 }
 
@@ -102,7 +112,11 @@ class CompanionCallManager(
     }
 
     fun acceptCall() {
-        val offer = remoteOffer
+        val offer = remoteOffer ?: runCatching {
+            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                getSessionDescription(roomId, "offer")
+            }
+        }.getOrNull()
 
         if (offer == null) {
             listener.onStatus("Čakam Lanin klic")
@@ -526,6 +540,22 @@ class CompanionCallManager(
 
         httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IllegalStateException("Firebase ${response.code}")
+        }
+    }
+
+    private fun getIncomingRequestStatus(): String {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "incomingRequest/status"))
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return ""
+
+            val text = response.body?.string().orEmpty().trim()
+            if (text.isBlank() || text == "null") return ""
+
+            return text.trim('"')
         }
     }
 

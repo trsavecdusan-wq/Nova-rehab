@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.novarehab.R
 import com.novarehab.utils.ApiConfigManager
+import com.novarehab.utils.IconTextManager
 import com.novarehab.utils.OpenAiTranslateManager
 import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.utils.PrefsManager
@@ -283,7 +284,8 @@ class VideoCallActivity : AppCompatActivity() {
             pageSize = prefs.getCommIconsPerPage(),
             getLang = { contact.language },
             onItemSelected = { item ->
-                speakVideoAnswer(item.ttsText, contact.language)
+                val savedText = IconTextManager(this).getText(item.id).ifBlank { item.ttsText }
+                speakVideoAnswer(savedText, contact.language)
             }
         )
     }

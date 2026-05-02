@@ -96,6 +96,7 @@ class VideoCallManager(
 
                 withContext(Dispatchers.Main) {
                     if (cleared) {
+                        sendIncomingRequest(roomId, "calling")
                         createOffer(roomId)
                         startCallerPolling(roomId)
                     } else {
@@ -469,6 +470,21 @@ class VideoCallManager(
 
         val request = Request.Builder()
             .url(roomUrl(roomId, child))
+            .put(json.toString().toRequestBody(jsonType))
+            .build()
+
+        httpClient.newCall(request).execute().use {
+        }
+    }
+
+    private fun sendIncomingRequest(roomId: String, status: String) {
+        val json = JSONObject()
+            .put("status", status)
+            .put("from", "tablet")
+            .put("updatedAt", System.currentTimeMillis())
+
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "incomingRequest"))
             .put(json.toString().toRequestBody(jsonType))
             .build()
 
