@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -16,6 +18,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.viewpager2.widget.ViewPager2
 import com.novarehab.R
 import com.novarehab.utils.ApiConfigManager
 import com.novarehab.utils.OpenAiTranslateManager
@@ -44,10 +47,12 @@ class VideoCallActivity : AppCompatActivity() {
 
     private lateinit var tvCallName: TextView
     private lateinit var tvCallStatus: TextView
-    private lateinit var gridCallCommunication: GridLayout
+    private lateinit var pagerCallCommunication: ViewPager2
     private lateinit var localRenderer: SurfaceViewRenderer
     private lateinit var remoteRenderer: SurfaceViewRenderer
 
+    private val callTimeoutHandler = Handler(Looper.getMainLooper())
+    private var callTimeoutRunnable: Runnable? = null
     private var selectedContact: VideoContact? = null
 
     private data class VideoContact(
@@ -83,7 +88,7 @@ class VideoCallActivity : AppCompatActivity() {
 
         tvCallName = findViewById(R.id.tvCallName)
         tvCallStatus = findViewById(R.id.tvCallStatus)
-        gridCallCommunication = findViewById(R.id.gridCallCommunication)
+        pagerCallCommunication = findViewById(R.id.gridCallCommunication)
         localRenderer = findViewById(R.id.localRenderer)
         remoteRenderer = findViewById(R.id.remoteRenderer)
 
@@ -100,6 +105,7 @@ class VideoCallActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnEndCall).setOnClickListener {
+            cancelCallTimeout()
             videoCallManager?.endCall()
         }
 
@@ -197,6 +203,7 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     private fun showContactGrid() {
+        cancelCallTimeout()
         selectedContact = null
         contactGridScreen.visibility = View.VISIBLE
         confirmScreen.visibility = View.GONE
@@ -240,6 +247,9 @@ class VideoCallActivity : AppCompatActivity() {
             listener = object : VideoCallManager.Listener {
                 override fun onStatus(text: String) {
                     tvCallStatus.text = text
+                    if (text.contains("vzpostavljen", ignoreCase = true)) {
+                        cancelCallTimeout()
+                    }
                 }
 
                 override fun onCallStarted() {
@@ -247,114 +257,35 @@ class VideoCallActivity : AppCompatActivity() {
                 }
 
                 override fun onCallEnded() {
+                    cancelCallTimeout()
                     showContactGrid()
                 }
 
                 override fun onError(text: String) {
+                    cancelCallTimeout()
                     Toast.makeText(this@VideoCallActivity, text, Toast.LENGTH_LONG).show()
                     tvCallStatus.text = text
                 }
             }
         )
 
+        startCallTimeout()
         videoCallManager?.startOutgoingCall(contact.roomId)
     }
 
     private fun renderCallCommunication(contact: VideoContact) {
-        gridCallCommunication.removeAllViews()
-
         val allItems = CommunicationRepository.defaultItems() +
             CommunicationRepository.customItems(prefs.getCustomCommIcons())
 
-        val pageSize = prefs.getCommIconsPerPage()
-        val visibleItems = allItems.take(pageSize)
-        val columns = 3
-        val rows = when (pageSize) {
-            6 -> 2
-            8, 9 -> 3
-            12 -> 4
-            15 -> 5
-            18 -> 6
-            else -> 3
-        }
-
-        gridCallCommunication.columnCount = columns
-        gridCallCommunication.rowCount = rows
-
-        for (slot in 0 until pageSize) {
-            gridCallCommunication.addView(
-                createCallCommunicationCell(
-                    item = visibleItems.getOrNull(slot),
-                    contact = contact,
-                    pageSize = pageSize
-                )
-            )
-        }
-    }
-
-    private fun createCallCommunicationCell(
-        item: CommunicationItem?,
-        contact: VideoContact,
-        pageSize: Int
-    ): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(4), dp(4), dp(4), dp(4))
-            setBackgroundColor(0xFF16213E.toInt())
-            layoutParams = GridLayout.LayoutParams().apply {
-                width = 0
-                height = 0
-                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-                setMargins(dp(3), dp(3), dp(3), dp(3))
-            }
-
-            if (item == null) {
-                visibility = View.INVISIBLE
-                return@apply
-            }
-
-            addView(ImageView(this@VideoCallActivity).apply {
-                scaleType = ImageView.ScaleType.FIT_CENTER
-
-                val customFile = File(getExternalFilesDir(null), "icons/${item.id}.png")
-                if (customFile.exists()) {
-                    setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
-                } else {
-                    setImageResource(item.iconRes)
-                }
-
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    0,
-                    1f
-                ).apply {
-                    setMargins(dp(4), dp(2), dp(4), dp(2))
-                }
-            })
-
-            addView(TextView(this@VideoCallActivity).apply {
-                text = item.label
-                textSize = when (pageSize) {
-                    18 -> 10f
-                    15 -> 11f
-                    12 -> 12f
-                    else -> 13f
-                }
-                setTextColor(0xFFFFFFFF.toInt())
-                gravity = Gravity.CENTER
-                setTypeface(null, android.graphics.Typeface.BOLD)
-                maxLines = 2
-                includeFontPadding = false
-            })
-
-            isClickable = true
-            isFocusable = true
-            setOnClickListener {
+        pagerCallCommunication.adapter = CommPageAdapter(
+            context = this,
+            items = allItems,
+            pageSize = prefs.getCommIconsPerPage(),
+            getLang = { contact.language },
+            onItemSelected = { item ->
                 speakVideoAnswer(item.ttsText, contact.language)
             }
-        }
+        )
     }
 
     private fun speakVideoAnswer(text: String, targetLanguage: String) {
@@ -399,6 +330,21 @@ class VideoCallActivity : AppCompatActivity() {
         }
     }
 
+    private fun startCallTimeout() {
+        cancelCallTimeout()
+        callTimeoutRunnable = Runnable {
+            Toast.makeText(this, "Klicani ni dosegljiv.", Toast.LENGTH_LONG).show()
+            videoCallManager?.endCall()
+            showContactGrid()
+        }
+        callTimeoutHandler.postDelayed(callTimeoutRunnable!!, 45000L)
+    }
+
+    private fun cancelCallTimeout() {
+        callTimeoutRunnable?.let { callTimeoutHandler.removeCallbacks(it) }
+        callTimeoutRunnable = null
+    }
+
     private fun requestVideoPermissions() {
         val needed = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO).filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
@@ -430,6 +376,7 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        cancelCallTimeout()
         videoCallManager?.endCall()
         videoCallManager = null
         ttsManager.destroy()

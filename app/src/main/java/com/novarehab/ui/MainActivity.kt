@@ -201,7 +201,9 @@ class MainActivity : AppCompatActivity() {
 
         radioButtons.forEachIndexed { index, button ->
             val station = stations.getOrNull(index)
-            button.text = station?.name?.take(10) ?: "P${index + 1}"
+            button.text = twoLineButtonText(station?.name ?: "P${index + 1}")
+            button.maxLines = 2
+            button.isSingleLine = false
             button.setOnClickListener {
                 if (station?.url == "music://local") {
                     startActivity(Intent(this, MusicActivity::class.java))
@@ -214,6 +216,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnRadioToggle.visibility = View.GONE
+    }
+
+    private fun twoLineButtonText(text: String): String {
+        val clean = text.trim()
+        if (clean.length <= 10 || clean.contains("\n")) return clean
+
+        val middle = clean.length / 2
+        val split = clean.indices
+            .filter { clean[it].isWhitespace() || clean[it] == '-' }
+            .minByOrNull { kotlin.math.abs(it - middle) }
+
+        return if (split != null) {
+            clean.substring(0, split).trim() + "\n" + clean.substring(split + 1).trim()
+        } else {
+            clean.take(10) + "\n" + clean.drop(10).take(10)
+        }
     }
 
     private fun playStation(index: Int) {
@@ -515,6 +533,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun commGridColumns(pageSize: Int): Int = when (pageSize) {
         8 -> 4
+        6 -> 3
         else -> 3
     }
 
@@ -522,6 +541,8 @@ class MainActivity : AppCompatActivity() {
         6 -> 2
         8 -> 2
         12 -> 4
+        15 -> 5
+        18 -> 6
         else -> 3
     }
 

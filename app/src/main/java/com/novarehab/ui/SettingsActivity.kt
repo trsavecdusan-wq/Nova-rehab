@@ -164,7 +164,7 @@ class SettingsActivity : AppCompatActivity() {
             adapter = ArrayAdapter(
                 this@SettingsActivity,
                 android.R.layout.simple_spinner_item,
-                arrayOf("6 ikon", "8 ikon", "9 ikon", "12 ikon")
+                arrayOf("6 ikon", "8 ikon", "9 ikon", "12 ikon", "15 ikon", "18 ikon")
             ).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
@@ -325,6 +325,8 @@ class SettingsActivity : AppCompatActivity() {
                 8 -> 1
                 9 -> 2
                 12 -> 3
+                15 -> 4
+                18 -> 5
                 else -> 2
             }
         )
@@ -800,6 +802,8 @@ class SettingsActivity : AppCompatActivity() {
                 0 -> 6
                 1 -> 8
                 3 -> 12
+                4 -> 15
+                5 -> 18
                 else -> 9
             }
         )

@@ -20,29 +20,25 @@ class CommPageAdapter(
     private val onItemSelected: (CommunicationItem) -> Unit
 ) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
 
-    private val safePageSize = if (pageSize in setOf(6, 8, 9, 12)) pageSize else 9
-
+    private val safePageSize = if (pageSize in setOf(6, 8, 9, 12, 15, 18)) pageSize else 9
     private val gridColumns = when (safePageSize) {
         8 -> 4
         6 -> 3
         9 -> 3
         else -> 3
     }
-
     private val gridRows = when (safePageSize) {
         6 -> 2
         8 -> 2
         9 -> 3
         12 -> 4
+        15 -> 5
+        18 -> 6
         else -> 3
     }
+    val pageCount get() = maxOf(1, Math.ceil(items.size.toDouble() / safePageSize).toInt())
 
-    val pageCount: Int
-        get() = maxOf(1, Math.ceil(items.size.toDouble() / safePageSize).toInt())
-
-    override fun getItemCount(): Int {
-        return pageCount
-    }
+    override fun getItemCount() = pageCount
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
         val grid = GridLayout(context).apply {
@@ -53,16 +49,15 @@ class CommPageAdapter(
             columnCount = gridColumns
             rowCount = gridRows
         }
-
         return PageViewHolder(grid)
     }
 
     override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
         val grid = holder.grid
         grid.removeAllViews()
-
         val start = position * safePageSize
         val end = minOf(start + safePageSize, items.size)
+
         val pageItems = items.subList(start, end)
 
         for (slot in 0 until safePageSize) {
@@ -76,7 +71,6 @@ class CommPageAdapter(
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setBackgroundColor(0xFF16213e.toInt())
-
             layoutParams = GridLayout.LayoutParams().apply {
                 width = 0
                 height = 0
@@ -111,6 +105,8 @@ class CommPageAdapter(
             addView(TextView(context).apply {
                 text = displayLabel(item)
                 textSize = when (safePageSize) {
+                    18 -> 11f
+                    15 -> 12f
                     12 -> 13f
                     9 -> 14f
                     8 -> 13f
