@@ -13,9 +13,6 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
-
-        // TODO: Before real use, configure release signing keystore.
-        // Same signing key is required for future upgrades.
     }
 
     buildFeatures {
@@ -25,92 +22,92 @@ android {
     flavorDimensions "contact"
 
     productFlavors {
-        contact1 {
+        zana {
             dimension "contact"
-            applicationId "com.novarehab.companion.contact1"
-            resValue "string", "app_name", "Companion 1"
-            buildConfigField "String", "CONTACT_ID", "\"contact1\""
-            buildConfigField "String", "CONTACT_NAME", "\"Kontakt 1\""
-            buildConfigField "String", "ROOM_ID", "\"novarehab_contact1\""
+            applicationId "com.novarehab.companion.zana"
+            resValue "string", "app_name", "NovaRehab Žana"
+            buildConfigField "String", "CONTACT_ID", "\"zana\""
+            buildConfigField "String", "CONTACT_NAME", "\"Žana\""
+            buildConfigField "String", "ROOM_ID", "\"novarehab_zana\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"uk\""
             buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
-            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-contact1.json\""
-            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact1-debug.apk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-zana.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-zana-debug.apk\""
             buildConfigField "boolean", "INCOMING_CALLS_ENABLED", "true"
             buildConfigField "boolean", "OUTGOING_CALLS_ENABLED", "true"
         }
 
-        contact2 {
+        dedek {
             dimension "contact"
-            applicationId "com.novarehab.companion.contact2"
-            resValue "string", "app_name", "Companion 2"
-            buildConfigField "String", "CONTACT_ID", "\"contact2\""
-            buildConfigField "String", "CONTACT_NAME", "\"Kontakt 2\""
-            buildConfigField "String", "ROOM_ID", "\"novarehab_contact2\""
+            applicationId "com.novarehab.companion.dedek"
+            resValue "string", "app_name", "NovaRehab Dedek"
+            buildConfigField "String", "CONTACT_ID", "\"dedek\""
+            buildConfigField "String", "CONTACT_NAME", "\"Dedek\""
+            buildConfigField "String", "ROOM_ID", "\"novarehab_dedek\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"uk\""
             buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
-            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-contact2.json\""
-            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact2-debug.apk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-dedek.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dedek-debug.apk\""
             buildConfigField "boolean", "INCOMING_CALLS_ENABLED", "true"
             buildConfigField "boolean", "OUTGOING_CALLS_ENABLED", "true"
         }
 
-        contact3 {
+        inna {
             dimension "contact"
-            applicationId "com.novarehab.companion.contact3"
-            resValue "string", "app_name", "Companion 3"
-            buildConfigField "String", "CONTACT_ID", "\"contact3\""
-            buildConfigField "String", "CONTACT_NAME", "\"Kontakt 3\""
-            buildConfigField "String", "ROOM_ID", "\"novarehab_contact3\""
+            applicationId "com.novarehab.companion.inna"
+            resValue "string", "app_name", "NovaRehab Inna"
+            buildConfigField "String", "CONTACT_ID", "\"inna\""
+            buildConfigField "String", "CONTACT_NAME", "\"Inna\""
+            buildConfigField "String", "ROOM_ID", "\"novarehab_inna\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"uk\""
             buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
-            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-contact3.json\""
-            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact3-debug.apk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-inna.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-inna-debug.apk\""
             buildConfigField "boolean", "INCOMING_CALLS_ENABLED", "true"
             buildConfigField "boolean", "OUTGOING_CALLS_ENABLED", "true"
         }
 
-        contact4 {
+        julija {
             dimension "contact"
-            applicationId "com.novarehab.companion.contact4"
-            resValue "string", "app_name", "Companion 4"
-            buildConfigField "String", "CONTACT_ID", "\"contact4\""
-            buildConfigField "String", "CONTACT_NAME", "\"Kontakt 4\""
-            buildConfigField "String", "ROOM_ID", "\"novarehab_contact4\""
+            applicationId "com.novarehab.companion.julija"
+            resValue "string", "app_name", "NovaRehab Julija"
+            buildConfigField "String", "CONTACT_ID", "\"julija\""
+            buildConfigField "String", "CONTACT_NAME", "\"Julija\""
+            buildConfigField "String", "ROOM_ID", "\"novarehab_julija\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"uk\""
             buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
-            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-contact4.json\""
-            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact4-debug.apk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-julija.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-julija-debug.apk\""
             buildConfigField "boolean", "INCOMING_CALLS_ENABLED", "true"
             buildConfigField "boolean", "OUTGOING_CALLS_ENABLED", "true"
         }
 
-        contact5 {
+        kuma {
             dimension "contact"
-            applicationId "com.novarehab.companion.contact5"
-            resValue "string", "app_name", "Companion 5"
-            buildConfigField "String", "CONTACT_ID", "\"contact5\""
-            buildConfigField "String", "CONTACT_NAME", "\"Kontakt 5\""
-            buildConfigField "String", "ROOM_ID", "\"novarehab_contact5\""
+            applicationId "com.novarehab.companion.kuma"
+            resValue "string", "app_name", "NovaRehab Kuma"
+            buildConfigField "String", "CONTACT_ID", "\"kuma\""
+            buildConfigField "String", "CONTACT_NAME", "\"Kuma\""
+            buildConfigField "String", "ROOM_ID", "\"novarehab_kuma\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"uk\""
             buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
-            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-contact5.json\""
-            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact5-debug.apk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-kuma.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-kuma-debug.apk\""
             buildConfigField "boolean", "INCOMING_CALLS_ENABLED", "true"
             buildConfigField "boolean", "OUTGOING_CALLS_ENABLED", "true"
         }
 
-        contact6 {
+        dusan {
             dimension "contact"
-            applicationId "com.novarehab.companion.contact6"
-            resValue "string", "app_name", "Companion 6"
-            buildConfigField "String", "CONTACT_ID", "\"contact6\""
-            buildConfigField "String", "CONTACT_NAME", "\"Kontakt 6\""
-            buildConfigField "String", "ROOM_ID", "\"novarehab_contact6\""
+            applicationId "com.novarehab.companion.dusan"
+            resValue "string", "app_name", "NovaRehab Dušan"
+            buildConfigField "String", "CONTACT_ID", "\"dusan\""
+            buildConfigField "String", "CONTACT_NAME", "\"Dušan\""
+            buildConfigField "String", "ROOM_ID", "\"novarehab_dusan\""
             buildConfigField "String", "PREFERRED_LANGUAGE_CODE", "\"sl\""
             buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
-            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-contact6.json\""
-            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact6-debug.apk\""
+            buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update-dusan.json\""
+            buildConfigField "String", "APK_DOWNLOAD_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dusan-debug.apk\""
             buildConfigField "boolean", "INCOMING_CALLS_ENABLED", "true"
             buildConfigField "boolean", "OUTGOING_CALLS_ENABLED", "true"
         }

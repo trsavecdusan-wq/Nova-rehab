@@ -134,7 +134,8 @@ class CommPageAdapter(
     }
 
     private fun displayLabel(item: CommunicationItem): String {
-        return item.label
+        return item.shortLabel
+            .ifBlank { item.label }
             .replace(",", "")
             .replace(".", "")
             .replace(" SEM", "")

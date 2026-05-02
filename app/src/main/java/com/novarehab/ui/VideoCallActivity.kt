@@ -13,6 +13,8 @@ import android.widget.Button
 import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupWindow
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -119,7 +121,7 @@ class VideoCallActivity : AppCompatActivity() {
         gridContacts.removeAllViews()
 
         val savedContacts = prefs.getContacts()
-        val defaultIds = listOf("contact1", "contact2", "contact3", "contact4", "contact5", "contact6")
+        val defaultIds = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
         val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
         val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
@@ -275,7 +277,7 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     private fun renderCallCommunication(contact: VideoContact) {
-        val allItems = CommunicationRepository.defaultItems() +
+        val allItems = CommunicationRepository.load(this, contact.language) +
             CommunicationRepository.customItems(prefs.getCustomCommIcons())
 
         pagerCallCommunication.adapter = CommPageAdapter(
@@ -284,20 +286,163 @@ class VideoCallActivity : AppCompatActivity() {
             pageSize = prefs.getCommIconsPerPage(),
             getLang = { contact.language },
             onItemSelected = { item ->
-                val savedText = IconTextManager(this).getText(item.id).ifBlank { item.ttsText }
-                speakVideoAnswer(savedText, contact.language)
+                handleCallCommunicationItem(item, contact)
             }
         )
     }
 
-    private fun speakVideoAnswer(text: String, targetLanguage: String) {
+    private fun handleCallCommunicationItem(item: CommunicationItem, contact: VideoContact) {
+        val iconTextManager = IconTextManager(this)
+        val savedText = iconTextManager.getText(item.id).ifBlank { item.ttsText }
+        val submenuEnabled = prefs.isCommSubmenuEnabled(item.id, false)
+
+        if (submenuEnabled && item.children.isNotEmpty()) {
+            val prompt = iconTextManager.getSubmenuPrompt(item.id)
+                .ifBlank { item.questionText }
+                .ifBlank { item.ttsText }
+            speakVideoAnswer(savedText, contact.language) {
+                speakVideoAnswer(prompt, contact.language) {
+                    showCallCommunicationSubmenu(item, contact)
+                }
+            }
+        } else {
+            speakVideoAnswer(savedText, contact.language)
+        }
+    }
+
+    private fun showCallCommunicationSubmenu(parent: CommunicationItem, contact: VideoContact) {
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            setBackgroundColor(0xF21A1A2E.toInt())
+        }
+
+        overlay.addView(TextView(this).apply {
+            text = parent.shortLabel.ifBlank { parent.label }
+            textSize = 20f
+            setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = Gravity.CENTER
+        })
+
+        val popup = PopupWindow(
+            overlay,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            true
+        )
+
+        val items = parent.children.take(6)
+        val grid = GridLayout(this).apply {
+            columnCount = 3
+            rowCount = 2
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
+
+        overlay.addView(ScrollView(this).apply {
+            isFillViewport = true
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+            addView(grid)
+        })
+
+        for (slot in 0 until 6) {
+            grid.addView(createCallSubmenuCell(items.getOrNull(slot), contact, popup))
+        }
+
+        overlay.addView(Button(this).apply {
+            text = "NAZAJ"
+            textSize = 18f
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF333355.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(64)
+            )
+            setOnClickListener { popup.dismiss() }
+        })
+
+        val timeout = Runnable { if (popup.isShowing) popup.dismiss() }
+        callTimeoutHandler.postDelayed(timeout, prefs.getCommSubmenuTimeoutSeconds() * 1000L)
+        popup.setOnDismissListener { callTimeoutHandler.removeCallbacks(timeout) }
+        popup.showAtLocation(findViewById(android.R.id.content), Gravity.CENTER, 0, 0)
+    }
+
+    private fun createCallSubmenuCell(
+        item: CommunicationItem?,
+        contact: VideoContact,
+        popup: PopupWindow
+    ): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            setBackgroundColor(0xFF16213E.toInt())
+            layoutParams = GridLayout.LayoutParams().apply {
+                width = 0
+                height = 0
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                setMargins(dp(6), dp(6), dp(6), dp(6))
+            }
+
+            if (item == null) {
+                visibility = View.INVISIBLE
+                return@apply
+            }
+
+            addView(ImageView(this@VideoCallActivity).apply {
+                val customFile = File(getExternalFilesDir(null), "icons/${item.id}.png")
+                if (customFile.exists()) {
+                    setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
+                } else {
+                    setImageResource(item.iconRes)
+                }
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f
+                ).apply {
+                    setMargins(dp(8), dp(6), dp(8), dp(4))
+                }
+            })
+
+            addView(TextView(this@VideoCallActivity).apply {
+                text = item.shortLabel.ifBlank { item.label }
+                textSize = 16f
+                setTextColor(0xFFFFFFFF.toInt())
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                gravity = Gravity.CENTER
+                maxLines = 2
+                includeFontPadding = false
+            })
+
+            setOnClickListener {
+                isEnabled = false
+                animate().scaleX(1.18f).scaleY(1.18f).setDuration(120L).start()
+                speakVideoAnswer(item.ttsText, contact.language) {
+                    popup.dismiss()
+                }
+            }
+        }
+    }
+
+    private fun speakVideoAnswer(text: String, targetLanguage: String, onDone: () -> Unit = {}) {
         val token = apiConfig.getApiToken()
         val baseUrl = apiConfig.getApiBaseUrl()
         val voice = prefs.getTtsVoice()
 
         fun speakFinal(finalText: String) {
             Toast.makeText(this, finalText, Toast.LENGTH_SHORT).show()
-            ttsManager.speak(finalText, targetLanguage, token, voice, baseUrl)
+            ttsManager.speak(finalText, targetLanguage, token, voice, baseUrl, onDone)
         }
 
         if (targetLanguage == "sl") {

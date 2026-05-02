@@ -56,12 +56,12 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun companionContacts(): List<CompanionShareContact> {
         val contacts = prefs.getContacts()
-        val fallbackNames = listOf("Kontakt 1", "Kontakt 2", "Kontakt 3", "Kontakt 4", "Kontakt 5", "Kontakt 6")
+        val contactIds = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
+        val fallbackNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
 
         return (0 until 6).map { index ->
-            val slot = index + 1
             CompanionShareContact(
-                contactId = "contact$slot",
+                contactId = contactIds[index],
                 displayName = contacts.getOrNull(index)?.name?.takeIf { it.isNotBlank() } ?: fallbackNames[index]
             )
         }

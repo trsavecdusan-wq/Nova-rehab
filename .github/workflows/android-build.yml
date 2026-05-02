@@ -36,12 +36,12 @@ jobs:
         run: |
           ./gradlew --no-daemon clean \
             :app:assembleDebug \
-            :companion:assembleContact1Debug \
-            :companion:assembleContact2Debug \
-            :companion:assembleContact3Debug \
-            :companion:assembleContact4Debug \
-            :companion:assembleContact5Debug \
-            :companion:assembleContact6Debug \
+            :companion:assembleZanaDebug \
+            :companion:assembleDedekDebug \
+            :companion:assembleInnaDebug \
+            :companion:assembleJulijaDebug \
+            :companion:assembleKumaDebug \
+            :companion:assembleDusanDebug \
             --stacktrace
 
       - name: Pripravi APK output
@@ -50,12 +50,12 @@ jobs:
           mkdir -p output
 
           cp app/build/outputs/apk/debug/app-debug.apk output/app-debug.apk
-          cp companion/build/outputs/apk/contact1/debug/companion-contact1-debug.apk output/companion-contact1-debug.apk
-          cp companion/build/outputs/apk/contact2/debug/companion-contact2-debug.apk output/companion-contact2-debug.apk
-          cp companion/build/outputs/apk/contact3/debug/companion-contact3-debug.apk output/companion-contact3-debug.apk
-          cp companion/build/outputs/apk/contact4/debug/companion-contact4-debug.apk output/companion-contact4-debug.apk
-          cp companion/build/outputs/apk/contact5/debug/companion-contact5-debug.apk output/companion-contact5-debug.apk
-          cp companion/build/outputs/apk/contact6/debug/companion-contact6-debug.apk output/companion-contact6-debug.apk
+          cp companion/build/outputs/apk/zana/debug/companion-zana-debug.apk output/companion-zana-debug.apk
+          cp companion/build/outputs/apk/dedek/debug/companion-dedek-debug.apk output/companion-dedek-debug.apk
+          cp companion/build/outputs/apk/inna/debug/companion-inna-debug.apk output/companion-inna-debug.apk
+          cp companion/build/outputs/apk/julija/debug/companion-julija-debug.apk output/companion-julija-debug.apk
+          cp companion/build/outputs/apk/kuma/debug/companion-kuma-debug.apk output/companion-kuma-debug.apk
+          cp companion/build/outputs/apk/dusan/debug/companion-dusan-debug.apk output/companion-dusan-debug.apk
 
       - name: Ustvari app-version.json
         run: |
@@ -65,12 +65,12 @@ jobs:
             "versionName": "1.0",
             "apkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-debug.apk",
             "companionApkUrls": {
-              "contact1": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact1-debug.apk",
-              "contact2": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact2-debug.apk",
-              "contact3": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact3-debug.apk",
-              "contact4": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact4-debug.apk",
-              "contact5": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact5-debug.apk",
-              "contact6": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-contact6-debug.apk"
+              "zana": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-zana-debug.apk",
+              "dedek": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dedek-debug.apk",
+              "inna": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-inna-debug.apk",
+              "julija": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-julija-debug.apk",
+              "kuma": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-kuma-debug.apk",
+              "dusan": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-dusan-debug.apk"
             },
             "message": "Nova verzija aplikacije NovaRehab je na voljo."
           }
@@ -82,12 +82,12 @@ jobs:
           find output -maxdepth 1 -type f -name '*.apk' -print | sort
 
           test -f output/app-debug.apk
-          test -f output/companion-contact1-debug.apk
-          test -f output/companion-contact2-debug.apk
-          test -f output/companion-contact3-debug.apk
-          test -f output/companion-contact4-debug.apk
-          test -f output/companion-contact5-debug.apk
-          test -f output/companion-contact6-debug.apk
+          test -f output/companion-zana-debug.apk
+          test -f output/companion-dedek-debug.apk
+          test -f output/companion-inna-debug.apk
+          test -f output/companion-julija-debug.apk
+          test -f output/companion-kuma-debug.apk
+          test -f output/companion-dusan-debug.apk
           test -f app-version.json
 
           apk_count=$(find output -maxdepth 1 -type f -name '*.apk' | wc -l | tr -d ' ')
@@ -122,12 +122,12 @@ jobs:
             fi
           }
 
-          check_package output/companion-contact1-debug.apk com.novarehab.companion.contact1
-          check_package output/companion-contact2-debug.apk com.novarehab.companion.contact2
-          check_package output/companion-contact3-debug.apk com.novarehab.companion.contact3
-          check_package output/companion-contact4-debug.apk com.novarehab.companion.contact4
-          check_package output/companion-contact5-debug.apk com.novarehab.companion.contact5
-          check_package output/companion-contact6-debug.apk com.novarehab.companion.contact6
+          check_package output/companion-zana-debug.apk com.novarehab.companion.zana
+          check_package output/companion-dedek-debug.apk com.novarehab.companion.dedek
+          check_package output/companion-inna-debug.apk com.novarehab.companion.inna
+          check_package output/companion-julija-debug.apk com.novarehab.companion.julija
+          check_package output/companion-kuma-debug.apk com.novarehab.companion.kuma
+          check_package output/companion-dusan-debug.apk com.novarehab.companion.dusan
 
       - name: Nalozi debug APK artifact
         uses: actions/upload-artifact@v4
@@ -141,6 +141,12 @@ jobs:
       - name: Odstrani stare companion APK-je iz release
         run: |
           gh release delete-asset novarehab-companion-latest companion-debug.apk --yes || true
+          gh release delete-asset novarehab-companion-latest companion-contact1-debug.apk --yes || true
+          gh release delete-asset novarehab-companion-latest companion-contact2-debug.apk --yes || true
+          gh release delete-asset novarehab-companion-latest companion-contact3-debug.apk --yes || true
+          gh release delete-asset novarehab-companion-latest companion-contact4-debug.apk --yes || true
+          gh release delete-asset novarehab-companion-latest companion-contact5-debug.apk --yes || true
+          gh release delete-asset novarehab-companion-latest companion-contact6-debug.apk --yes || true
           gh release delete-asset novarehab-companion-latest companion-zana-debug.apk --yes || true
           gh release delete-asset novarehab-companion-latest companion-dedek-debug.apk --yes || true
           gh release delete-asset novarehab-companion-latest companion-inna-debug.apk --yes || true

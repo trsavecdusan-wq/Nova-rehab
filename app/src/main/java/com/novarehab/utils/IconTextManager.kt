@@ -30,6 +30,16 @@ class IconTextManager(context: Context) {
         "jezna" to "Jezna sem.",
         "strah" to "Prestrašena sem.",
         "tesnoba" to "Tesnobno se počutim.",
+        "voda" to "Želim vodo.",
+        "caj" to "Želim čaj.",
+        "sok" to "Želim sok.",
+        "zajtrk" to "Želim zajtrk.",
+        "kosilo" to "Želim kosilo.",
+        "prigrizek" to "Želim prigrizek.",
+        "slabost" to "Slabo mi je.",
+        "pomoc_pridi" to "Prosim pridi k meni.",
+        "pomoc_dvigni" to "Prosim dvigni me.",
+        "pomoc_polozaj" to "Prosim popravi moj položaj.",
         "objemi" to "Bi me objel?"
     )
 

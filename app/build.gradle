@@ -64,4 +64,6 @@ dependencies {
 
     // VIDEO KLIC PHASE 1
     implementation "io.github.webrtc-sdk:android:144.7559.01"
+
+    testImplementation "junit:junit:4.13.2"
 }

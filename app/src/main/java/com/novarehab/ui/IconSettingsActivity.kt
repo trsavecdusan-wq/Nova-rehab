@@ -52,6 +52,16 @@ class IconSettingsActivity : AppCompatActivity() {
         "jezna" to R.drawable.comm_jezna,
         "strah" to R.drawable.comm_strah,
         "tesnoba" to R.drawable.comm_tesnoba,
+        "voda" to R.drawable.comm_piti,
+        "caj" to R.drawable.comm_piti,
+        "sok" to R.drawable.comm_piti,
+        "zajtrk" to R.drawable.comm_jesti,
+        "kosilo" to R.drawable.comm_jesti,
+        "prigrizek" to R.drawable.comm_jesti,
+        "slabost" to R.drawable.comm_slabo,
+        "pomoc_pridi" to R.drawable.comm_pridi_sem,
+        "pomoc_dvigni" to R.drawable.comm_pomoc,
+        "pomoc_polozaj" to R.drawable.comm_postelja,
         "objemi" to R.drawable.comm_objemi
     )
 

@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
@@ -53,6 +54,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -350,7 +352,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getCommItems(): List<CommunicationItem> {
-        return CommunicationRepository.defaultItems() +
+        val language = activeLang.ifBlank { prefs.getDefaultSpeechLanguage().ifBlank { "sl" } }
+        return CommunicationRepository.load(this, language) +
             CommunicationRepository.customItems(prefs.getCustomCommIcons())
     }
 
@@ -373,7 +376,9 @@ class MainActivity : AppCompatActivity() {
 
         if (submenuEnabled && item.children.isNotEmpty()) {
             speakComm(mainText, "sl", logEvent = false) {
-                val prompt = iconTextManager.getSubmenuPrompt(item.id).ifBlank { item.ttsText }
+                val prompt = iconTextManager.getSubmenuPrompt(item.id)
+                    .ifBlank { item.questionText }
+                    .ifBlank { item.ttsText }
                 speakComm(prompt, "sl", logEvent = false) {
                     showCommunicationSubmenu(item)
                 }
@@ -395,7 +400,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         overlay.addView(TextView(this).apply {
-            text = parent.label
+            text = parent.shortLabel.ifBlank { parent.label }
             textSize = 20f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -488,7 +493,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             addView(ImageView(this@MainActivity).apply {
-                setImageResource(item.iconRes)
+                val customFile = File(getExternalFilesDir(null), "icons/${item.id}.png")
+                if (customFile.exists()) {
+                    setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
+                } else {
+                    setImageResource(item.iconRes)
+                }
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 minimumHeight = dp(72)
                 layoutParams = LinearLayout.LayoutParams(
@@ -501,7 +511,7 @@ class MainActivity : AppCompatActivity() {
             })
 
             addView(TextView(this@MainActivity).apply {
-                text = item.label
+                text = item.shortLabel.ifBlank { item.label }
                 textSize = 16f
                 setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -811,7 +821,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findIncomingCallRequest(): IncomingCallRequest? {
-        val ids = listOf("contact1", "contact2", "contact3", "contact4", "contact5", "contact6")
+        val ids = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
         val contacts = prefs.getContacts()
 
         ids.forEachIndexed { index, id ->

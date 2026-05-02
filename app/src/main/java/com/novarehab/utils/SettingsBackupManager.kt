@@ -48,6 +48,16 @@ class SettingsBackupManager(private val context: Context) {
         "jezna",
         "strah",
         "tesnoba",
+        "voda",
+        "caj",
+        "sok",
+        "zajtrk",
+        "kosilo",
+        "prigrizek",
+        "slabost",
+        "pomoc_pridi",
+        "pomoc_dvigni",
+        "pomoc_polozaj",
         "objemi"
     )
 
