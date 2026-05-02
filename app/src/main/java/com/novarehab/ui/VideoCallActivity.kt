@@ -27,6 +27,11 @@ import com.novarehab.utils.IconTextManager
 import com.novarehab.utils.OpenAiTranslateManager
 import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.utils.PrefsManager
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import org.webrtc.SurfaceViewRenderer
 import java.io.File
 
@@ -37,6 +42,8 @@ class VideoCallActivity : AppCompatActivity() {
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
     private var videoCallManager: VideoCallManager? = null
+    private val httpClient = OkHttpClient()
+    private val jsonType = "application/json; charset=utf-8".toMediaType()
 
     private lateinit var contactGridScreen: View
     private lateinit var confirmScreen: View
@@ -121,7 +128,7 @@ class VideoCallActivity : AppCompatActivity() {
         gridContacts.removeAllViews()
 
         val savedContacts = prefs.getContacts()
-        val defaultIds = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
+        val defaultIds = listOf("c01", "c02", "c03", "c04", "c05", "c06")
         val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
         val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
@@ -306,6 +313,7 @@ class VideoCallActivity : AppCompatActivity() {
                 }
             }
         } else {
+            sendVideoAnswerToCompanion(contact.roomId, savedText)
             speakVideoAnswer(savedText, contact.language)
         }
     }
@@ -428,11 +436,37 @@ class VideoCallActivity : AppCompatActivity() {
             setOnClickListener {
                 isEnabled = false
                 animate().scaleX(1.18f).scaleY(1.18f).setDuration(120L).start()
-                speakVideoAnswer(item.ttsText, contact.language) {
+                val iconTextManager = IconTextManager(this@VideoCallActivity)
+                val answerText = iconTextManager.getText(item.id).ifBlank { item.ttsText }
+                sendVideoAnswerToCompanion(contact.roomId, answerText)
+                speakVideoAnswer(answerText, contact.language) {
                     popup.dismiss()
                 }
             }
         }
+    }
+
+    private fun sendVideoAnswerToCompanion(roomId: String, text: String) {
+        if (text.isBlank()) return
+
+        Thread {
+            runCatching {
+                val body = JSONObject()
+                    .put("from", "tablet")
+                    .put("speaker", "Lana")
+                    .put("text", text)
+                    .put("updatedAt", System.currentTimeMillis())
+                    .toString()
+                    .toRequestBody(jsonType)
+
+                val request = Request.Builder()
+                    .url(roomUrl(roomId, "communicationMessage"))
+                    .put(body)
+                    .build()
+
+                httpClient.newCall(request).execute().close()
+            }
+        }.start()
     }
 
     private fun speakVideoAnswer(text: String, targetLanguage: String, onDone: () -> Unit = {}) {
@@ -532,6 +566,12 @@ class VideoCallActivity : AppCompatActivity() {
 
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun roomUrl(roomId: String, child: String = ""): String {
+        val base = SIGNALING_BASE_URL.trimEnd('/')
+        val path = if (child.isBlank()) roomId else "$roomId/$child"
+        return "$base/calls/$path.json"
     }
 
     companion object {

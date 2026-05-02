@@ -102,6 +102,12 @@ class PrefsManager(context: Context) {
         prefs.edit().putInt("comm_icons_per_page", safe).apply()
     }
 
+    fun isAutoSortCommunicationIconsEnabled(): Boolean =
+        prefs.getBoolean("comm_auto_sort_icons", false)
+
+    fun saveAutoSortCommunicationIconsEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("comm_auto_sort_icons", enabled).apply()
+
     fun getTtsVoice(): String = prefs.getString("tts_voice", "marin") ?: "marin"
     fun saveTtsVoice(voice: String) = prefs.edit().putString("tts_voice", voice).apply()
 

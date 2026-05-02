@@ -120,6 +120,12 @@ class CompanionMainActivity : Activity() {
                     }
                 }
 
+                override fun onTabletMessage(text: String) {
+                    val message = "Lana: $text"
+                    tvStatus.text = message
+                    Toast.makeText(this@CompanionMainActivity, message, Toast.LENGTH_LONG).show()
+                }
+
                 override fun onError(text: String) {
                     tvStatus.text = text
                     Toast.makeText(this@CompanionMainActivity, text, Toast.LENGTH_LONG).show()
@@ -135,12 +141,12 @@ class CompanionMainActivity : Activity() {
         }
 
         createCallManager()
-        tvStatus.text = "Klic poslan"
+        tvStatus.text = "Čakam odgovor Lane"
         callManager?.sendOutgoingTestCall(CompanionConfig.contactName)
     }
 
     private fun updateStatus() {
-        tvContactInfo.text = "Kontakt: ${CompanionConfig.contactName}"
+        tvContactInfo.text = "Klic Lani"
 
         tvStatus.text = when (callState) {
             CompanionCallState.WAITING -> "Čakam povezavo"

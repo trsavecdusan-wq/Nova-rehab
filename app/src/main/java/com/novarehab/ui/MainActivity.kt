@@ -31,7 +31,9 @@ import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.novarehab.core.config.ApiConfigImportManager
 import com.novarehab.databinding.ActivityMainBinding
+import com.novarehab.learning.LearningProfileManager
 import com.novarehab.service.DailyUpdateCheckWorker
 import com.novarehab.service.RadioBrowserService
 import com.novarehab.service.RadioService
@@ -70,6 +72,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: PrefsManager
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var stats: StatsManager
+    private lateinit var learningProfile: LearningProfileManager
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
 
@@ -108,9 +111,11 @@ class MainActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         apiConfig = ApiConfigManager(this)
+        importApiConfigFromDevice()
         SettingsBackupManager(this).restoreIfAvailable()
 
         stats = StatsManager(this)
+        learningProfile = LearningProfileManager(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
@@ -169,6 +174,20 @@ class MainActivity : AppCompatActivity() {
             apkUrl = intent.getStringExtra(DailyUpdateCheckWorker.EXTRA_UPDATE_APK_URL).orEmpty(),
             message = intent.getStringExtra(DailyUpdateCheckWorker.EXTRA_UPDATE_MESSAGE).orEmpty()
         )
+    }
+
+    private fun importApiConfigFromDevice() {
+        when (ApiConfigImportManager(this).importIfAvailable()) {
+            is ApiConfigImportManager.ImportResult.Imported -> {
+                Toast.makeText(this, "API nastavitve so bile uvožene.", Toast.LENGTH_LONG).show()
+            }
+            ApiConfigImportManager.ImportResult.Invalid -> {
+                Toast.makeText(this, "API config datoteka ni pravilna.", Toast.LENGTH_LONG).show()
+            }
+            ApiConfigImportManager.ImportResult.NotFound -> {
+                // Lokalni govor in komunikator delujeta tudi brez API datoteke.
+            }
+        }
     }
 
     private fun scheduleDailyUpdateCheck() {
@@ -353,8 +372,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCommItems(): List<CommunicationItem> {
         val language = activeLang.ifBlank { prefs.getDefaultSpeechLanguage().ifBlank { "sl" } }
-        return CommunicationRepository.load(this, language) +
+        val items = CommunicationRepository.load(this, language) +
             CommunicationRepository.customItems(prefs.getCustomCommIcons())
+
+        return sortCommunicationItems(items)
+    }
+
+    private fun sortCommunicationItems(items: List<CommunicationItem>): List<CommunicationItem> {
+        if (!prefs.isAutoSortCommunicationIconsEnabled()) return items
+
+        val urgentIds = setOf("pomoc", "kopalnica", "bolecina", "slabo")
+        return items.sortedWith(
+            compareByDescending<CommunicationItem> { it.id in urgentIds || it.pinned }
+                .thenByDescending { learningProfile.usageCount(it.id) }
+                .thenBy { it.priority }
+        )
     }
 
     private fun setupCommPager() {
@@ -370,6 +402,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleCommunicationItem(item: CommunicationItem) {
+        learningProfile.recordIconUsed(item.id)
         val iconTextManager = IconTextManager(this)
         val mainText = iconTextManager.getText(item.id).ifBlank { item.ttsText }
         val submenuEnabled = prefs.isCommSubmenuEnabled(item.id, defaultSubmenuEnabled(item.id))
@@ -528,6 +561,7 @@ class MainActivity : AppCompatActivity() {
 
             setOnClickListener {
                 isEnabled = false
+                learningProfile.recordIconUsed(item.id)
                 animate()
                     .scaleX(1.18f)
                     .scaleY(1.18f)
@@ -821,7 +855,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun findIncomingCallRequest(): IncomingCallRequest? {
-        val ids = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
+        val ids = listOf("c01", "c02", "c03", "c04", "c05", "c06")
         val contacts = prefs.getContacts()
 
         ids.forEachIndexed { index, id ->

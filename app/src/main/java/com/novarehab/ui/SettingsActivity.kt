@@ -50,13 +50,14 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerCommIconsPerPage: Spinner
     private lateinit var spinnerCommSubmenuTimeout: Spinner
     private lateinit var switchAutoLanguage: Switch
+    private lateinit var switchAutoSortIcons: Switch
     private lateinit var btnCheckUpdateNow: Button
     private lateinit var btnRestorePreviousVersion: Button
     private lateinit var btnShareCompanionApp: Button
 
     private fun companionContacts(): List<CompanionShareContact> {
         val contacts = prefs.getContacts()
-        val contactIds = listOf("zana", "dedek", "inna", "julija", "kuma", "dusan")
+        val contactIds = listOf("c01", "c02", "c03", "c04", "c05", "c06")
         val fallbackNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
 
         return (0 until 6).map { index ->
@@ -170,6 +171,22 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         panel.addView(spinnerCommIconsPerPage)
+
+        val autoSortRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+
+        autoSortRow.addView(TextView(this).apply {
+            text = "Samodejno razvrščanje ikon"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 13f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+
+        switchAutoSortIcons = Switch(this)
+        autoSortRow.addView(switchAutoSortIcons)
+        panel.addView(autoSortRow)
 
         panel.addView(TextView(this).apply {
             text = "Čas izhoda iz podmenija:"
@@ -330,6 +347,7 @@ class SettingsActivity : AppCompatActivity() {
                 else -> 2
             }
         )
+        switchAutoSortIcons.isChecked = prefs.isAutoSortCommunicationIconsEnabled()
         spinnerCommSubmenuTimeout.setSelection(timeoutIndex(prefs.getCommSubmenuTimeoutSeconds()))
 
         spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
@@ -623,7 +641,8 @@ class SettingsActivity : AppCompatActivity() {
         if (contactId !in allowedIds) return null
 
         val baseUrl = "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/"
-        return baseUrl + "companion-$contactId-debug.apk"
+        val contactNumber = contactId.removePrefix("c").padStart(2, '0')
+        return baseUrl + "companion-$contactNumber-debug.apk"
     }
 
     private fun saveApiFields() {
@@ -807,6 +826,7 @@ class SettingsActivity : AppCompatActivity() {
                 else -> 9
             }
         )
+        prefs.saveAutoSortCommunicationIconsEnabled(switchAutoSortIcons.isChecked)
         prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition))
 
         prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))

@@ -116,6 +116,7 @@
       "category": "feeling",
       "icon": "comm_slabo",
       "priority": 30,
+      "pinned": true,
       "emotionalTags": ["discomfort"],
       "aiPromptHint": "počutje",
       "enabled": true,
@@ -166,6 +167,7 @@
       "category": "help",
       "icon": "comm_pomoc",
       "priority": 40,
+      "pinned": true,
       "emotionalTags": ["help"],
       "aiPromptHint": "pomoč",
       "enabled": true,
@@ -215,6 +217,7 @@
       "category": "basic",
       "icon": "comm_kopalnica",
       "priority": 50,
+      "pinned": true,
       "enabled": true,
       "symbolKey": "toilet",
       "logEventType": "toilet"

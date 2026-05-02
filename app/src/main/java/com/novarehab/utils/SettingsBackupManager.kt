@@ -279,6 +279,7 @@ class SettingsBackupManager(private val context: Context) {
             .put("patientLanguage2", prefs.getPatientLanguage2())
             .put("autoLanguageEnabled", prefs.isAutoLanguageEnabled())
             .put("commIconsPerPage", prefs.getCommIconsPerPage())
+            .put("autoSortCommunicationIcons", prefs.isAutoSortCommunicationIconsEnabled())
             .put("commSubmenuTimeoutSeconds", prefs.getCommSubmenuTimeoutSeconds())
             .put("ttsVoice", prefs.getTtsVoice())
             .put("ttsSpeed", prefs.getTtsSpeed().toDouble())
@@ -330,6 +331,9 @@ class SettingsBackupManager(private val context: Context) {
         prefs.savePatientLanguage2(json.optString("patientLanguage2", prefs.getPatientLanguage2()))
         prefs.saveAutoLanguageEnabled(json.optBoolean("autoLanguageEnabled", prefs.isAutoLanguageEnabled()))
         prefs.saveCommIconsPerPage(json.optInt("commIconsPerPage", prefs.getCommIconsPerPage()))
+        prefs.saveAutoSortCommunicationIconsEnabled(
+            json.optBoolean("autoSortCommunicationIcons", prefs.isAutoSortCommunicationIconsEnabled())
+        )
         prefs.saveCommSubmenuTimeoutSeconds(json.optLong("commSubmenuTimeoutSeconds", prefs.getCommSubmenuTimeoutSeconds()))
         prefs.saveTtsVoice(json.optString("ttsVoice", prefs.getTtsVoice()))
         prefs.saveTtsSpeed(json.optDouble("ttsSpeed", prefs.getTtsSpeed().toDouble()).toFloat())

@@ -181,7 +181,9 @@ object CommunicationRepository {
             enabled = json.optBoolean("enabled", true),
             arasaacKey = json.optString("arasaacKey"),
             symbolKey = json.optString("symbolKey"),
-            logEventType = json.optString("logEventType", "iconClicked")
+            logEventType = json.optString("logEventType", "iconClicked"),
+            pinned = json.optBoolean("pinned", false),
+            usageRank = json.optInt("usageRank", 0)
         )
     }
 

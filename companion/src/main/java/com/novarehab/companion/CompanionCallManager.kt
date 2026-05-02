@@ -49,6 +49,7 @@ class CompanionCallManager(
         fun onIncomingCall()
         fun onCallStarted()
         fun onCallEnded()
+        fun onTabletMessage(text: String)
         fun onError(text: String)
     }
 
@@ -69,6 +70,7 @@ class CompanionCallManager(
     private var outgoingRequestJob: Job? = null
     private var remoteOffer: SessionDescription? = null
     private var renderersInitialized = false
+    private var lastTabletMessageAt = 0L
     private val handledRemoteCandidates = mutableSetOf<String>()
 
     fun startWaitingForCall() {
@@ -467,7 +469,6 @@ class CompanionCallManager(
                     when (status) {
                         "accepted" -> {
                             listener.onStatus("Lana je sprejela klic")
-                            return@launch
                         }
 
                         "rejected" -> {
@@ -479,6 +480,15 @@ class CompanionCallManager(
                             listener.onStatus("Klic končan")
                             return@launch
                         }
+                    }
+
+                    val message = withContext(Dispatchers.IO) {
+                        getTabletCommunicationMessage()
+                    }
+
+                    if (message != null && message.updatedAt > lastTabletMessageAt) {
+                        lastTabletMessageAt = message.updatedAt
+                        listener.onTabletMessage(message.text)
                     }
                 } catch (_: Exception) {
                     listener.onStatus("Povezava ni uspela")
@@ -572,6 +582,27 @@ class CompanionCallManager(
             if (text.isBlank() || text == "null") return ""
 
             return text.trim('"')
+        }
+    }
+
+    private fun getTabletCommunicationMessage(): TabletMessage? {
+        val request = Request.Builder()
+            .url(roomUrl(roomId, "communicationMessage"))
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            val text = response.body?.string().orEmpty()
+            if (text.isBlank() || text == "null") return null
+
+            val json = JSONObject(text)
+            if (json.optString("from") != "tablet") return null
+
+            val messageText = json.optString("text").trim()
+            if (messageText.isBlank()) return null
+
+            return TabletMessage(messageText, json.optLong("updatedAt", 0L))
         }
     }
 
@@ -671,4 +702,9 @@ class CompanionCallManager(
         override fun onSetFailure(error: String) {
         }
     }
+
+    private data class TabletMessage(
+        val text: String,
+        val updatedAt: Long
+    )
 }

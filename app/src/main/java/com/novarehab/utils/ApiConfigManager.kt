@@ -29,12 +29,20 @@ class ApiConfigManager(context: Context) {
         Log.d("NovaRehabApi", "API saved: baseUrl length=${getApiBaseUrl().length}, token length=${getApiToken().length}")
     }
 
+    fun saveSelectedProvider(provider: String) {
+        prefs.edit().putString(KEY_PROVIDER, provider.trim().ifBlank { "openai" }).commit()
+    }
+
     fun getApiBaseUrl(): String {
         return prefs.getString(KEY_BASE_URL, "") ?: ""
     }
 
     fun getApiToken(): String {
         return prefs.getString(KEY_TOKEN, "") ?: ""
+    }
+
+    fun getSelectedProvider(): String {
+        return prefs.getString(KEY_PROVIDER, "openai") ?: "openai"
     }
 
     fun isApiConfigured(): Boolean {
@@ -45,6 +53,7 @@ class ApiConfigManager(context: Context) {
         prefs.edit()
             .remove(KEY_BASE_URL)
             .remove(KEY_TOKEN)
+            .remove(KEY_PROVIDER)
             .apply()
     }
 
@@ -137,5 +146,6 @@ class ApiConfigManager(context: Context) {
         private const val PREFS_NAME = "nova_rehab_api_config"
         private const val KEY_BASE_URL = "api_base_url"
         private const val KEY_TOKEN = "api_token"
+        private const val KEY_PROVIDER = "api_provider"
     }
 }
