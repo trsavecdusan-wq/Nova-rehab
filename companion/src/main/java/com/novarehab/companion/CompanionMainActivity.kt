@@ -2,7 +2,9 @@ package com.novarehab.companion
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
@@ -20,11 +22,13 @@ class CompanionMainActivity : Activity() {
     private lateinit var btnAcceptCall: Button
     private lateinit var btnRejectCall: Button
     private lateinit var btnCallLana: Button
+    private lateinit var btnSendImage: Button
     private lateinit var localRenderer: SurfaceViewRenderer
     private lateinit var remoteRenderer: SurfaceViewRenderer
 
     private var callState: CompanionCallState = CompanionCallState.WAITING
     private var callManager: CompanionCallManager? = null
+    private val mediaSender = CompanionMediaSender(CompanionConfig.signalingBaseUrl)
     private var destroyed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +44,7 @@ class CompanionMainActivity : Activity() {
         btnAcceptCall = findViewById(R.id.btnAcceptCall)
         btnRejectCall = findViewById(R.id.btnRejectCall)
         btnCallLana = findViewById(R.id.btnCallLana)
+        btnSendImage = findViewById(R.id.btnSendImage)
         localRenderer = findViewById(R.id.localRenderer)
         remoteRenderer = findViewById(R.id.remoteRenderer)
 
@@ -67,6 +72,10 @@ class CompanionMainActivity : Activity() {
 
         btnCallLana.setOnClickListener {
             sendTestCallToTablet()
+        }
+
+        btnSendImage.setOnClickListener {
+            openImagePicker()
         }
 
         requestVideoPermissions()
@@ -145,6 +154,14 @@ class CompanionMainActivity : Activity() {
         callManager?.sendOutgoingTestCall(CompanionConfig.contactName)
     }
 
+    private fun openImagePicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "image/*"
+        }
+        startActivityForResult(intent, 701)
+    }
+
     private fun updateStatus() {
         tvContactInfo.text = "Klic Lani"
 
@@ -194,6 +211,32 @@ class CompanionMainActivity : Activity() {
     private fun hasVideoPermissions(): Boolean {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 701 && resultCode == RESULT_OK) {
+            val uri: Uri = data?.data ?: return
+            Thread {
+                try {
+                    mediaSender.sendImage(
+                        contentResolver = contentResolver,
+                        imageUri = uri,
+                        senderId = CompanionConfig.contactId,
+                        senderName = CompanionConfig.contactName
+                    )
+                    runOnUiThread {
+                        tvStatus.text = "Slika poslana Lani"
+                        Toast.makeText(this, "Slika je bila poslana tablici.", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        Toast.makeText(this, e.localizedMessage ?: "Pošiljanje slike ni uspelo.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }.start()
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

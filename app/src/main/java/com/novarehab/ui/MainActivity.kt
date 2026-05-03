@@ -34,6 +34,9 @@ import androidx.work.WorkManager
 import com.novarehab.core.config.ApiConfigImportManager
 import com.novarehab.databinding.ActivityMainBinding
 import com.novarehab.learning.LearningProfileManager
+import com.novarehab.media_messaging.repository.MediaGalleryRepository
+import com.novarehab.media_messaging.service.MediaDownloadWorker
+import com.novarehab.media_messaging.ui.MediaInboxBadge
 import com.novarehab.service.DailyUpdateCheckWorker
 import com.novarehab.service.RadioBrowserService
 import com.novarehab.service.RadioService
@@ -73,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var stats: StatsManager
     private lateinit var learningProfile: LearningProfileManager
+    private lateinit var mediaGalleryRepository: MediaGalleryRepository
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
 
@@ -89,13 +93,16 @@ class MainActivity : AppCompatActivity() {
     private val clockHandler = Handler(Looper.getMainLooper())
     private val languageReturnHandler = Handler(Looper.getMainLooper())
     private val incomingCallHandler = Handler(Looper.getMainLooper())
+    private val mediaInboxHandler = Handler(Looper.getMainLooper())
     private val httpClient = OkHttpClient()
+    private val mediaDownloadWorker = MediaDownloadWorker()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
 
     private var kioskRunnable: Runnable? = null
     private var clockRunnable: Runnable? = null
     private var languageReturnRunnable: Runnable? = null
     private var incomingCallRunnable: Runnable? = null
+    private var mediaInboxRunnable: Runnable? = null
     private var activeIncomingRoomId: String? = null
 
     private lateinit var speedGestureDetector: GestureDetector
@@ -116,6 +123,7 @@ class MainActivity : AppCompatActivity() {
 
         stats = StatsManager(this)
         learningProfile = LearningProfileManager(this)
+        mediaGalleryRepository = MediaGalleryRepository(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
@@ -143,12 +151,14 @@ class MainActivity : AppCompatActivity() {
         setupClock()
         setupGuestLanguageButton()
         updateLanguageFlag()
+        updateGalleryButton()
 
         if (prefs.isAutoLanguageEnabled()) setupLanguageDetector()
 
         scheduleReports()
         scheduleDailyUpdateCheck()
         startIncomingCallPolling()
+        startMediaInboxPolling()
 
         stats.log(StatEvent.APP_START)
         startService(Intent(this, UpdateService::class.java))
@@ -947,6 +957,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomActionButtons() {
+        binding.btnGallery.setOnClickListener {
+            mediaGalleryRepository.markAllSeen()
+            updateGalleryButton()
+            startActivity(Intent(this, GalleryActivity::class.java))
+        }
+
         binding.btnMirror.setOnClickListener {
             keepRadioOnNextStop = true
             startActivity(Intent(this, MirrorActivity::class.java))
@@ -959,6 +975,73 @@ class MainActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    private fun startMediaInboxPolling() {
+        mediaInboxRunnable?.let { mediaInboxHandler.removeCallbacks(it) }
+        mediaInboxRunnable = object : Runnable {
+            override fun run() {
+                pollIncomingMediaImage()
+                mediaInboxHandler.postDelayed(this, 8000L)
+            }
+        }
+        mediaInboxHandler.post(mediaInboxRunnable!!)
+    }
+
+    private fun pollIncomingMediaImage() {
+        Thread {
+            try {
+                val allowedIds = setOf("c01", "c02", "c03", "c04", "c05", "c06")
+                val payload = mediaDownloadWorker.fetchLatestAllowedImage(SIGNALING_BASE_URL, allowedIds) ?: return@Thread
+                val senderName = resolveContactName(payload.senderId, payload.senderName)
+                val saved = mediaGalleryRepository.saveIncomingImage(
+                    messageId = payload.messageId,
+                    senderId = payload.senderId,
+                    senderName = senderName,
+                    base64Data = payload.base64Data,
+                    mimeType = payload.mimeType,
+                    receivedAt = payload.createdAt,
+                    messageText = payload.messageText
+                ) ?: return@Thread
+
+                mediaDownloadWorker.deleteRemoteMessage(SIGNALING_BASE_URL, payload.messageId)
+
+                runOnUiThread {
+                    updateGalleryButton()
+                    showIncomingImageDialog(saved.senderName, saved.receivedAt)
+                }
+            } catch (_: Exception) {
+            }
+        }.start()
+    }
+
+    private fun resolveContactName(senderId: String, fallbackName: String): String {
+        val ids = listOf("c01", "c02", "c03", "c04", "c05", "c06")
+        val index = ids.indexOf(senderId)
+        if (index == -1) return fallbackName.ifBlank { "neznanega kontakta" }
+        return prefs.getContacts().getOrNull(index)?.name?.takeIf { it.isNotBlank() }
+            ?: fallbackName.ifBlank { senderId.uppercase() }
+    }
+
+    private fun updateGalleryButton() {
+        binding.btnGallery.text = MediaInboxBadge.format(mediaGalleryRepository.unseenCount())
+    }
+
+    private fun showIncomingImageDialog(senderName: String, receivedAt: Long) {
+        if (isFinishing) return
+
+        val time = android.text.format.DateFormat.format("HH:mm", receivedAt)
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Prejeta nova slika od: $senderName")
+            .setMessage("Čas prejema: $time")
+            .setPositiveButton("POKAŽI") { _, _ ->
+                mediaGalleryRepository.markAllSeen()
+                updateGalleryButton()
+                startActivity(Intent(this, GalleryActivity::class.java))
+            }
+            .setNegativeButton("KASNEJE", null)
+            .show()
     }
 
     private fun scheduleReports() {
@@ -1080,6 +1163,7 @@ class MainActivity : AppCompatActivity() {
         updateLanguageFlag()
         setupCommPager()
         updateRadioUI()
+        updateGalleryButton()
     }
 
     override fun onDestroy() {
@@ -1096,6 +1180,7 @@ class MainActivity : AppCompatActivity() {
         clockRunnable?.let { clockHandler.removeCallbacks(it) }
         languageReturnRunnable?.let { languageReturnHandler.removeCallbacks(it) }
         incomingCallRunnable?.let { incomingCallHandler.removeCallbacks(it) }
+        mediaInboxRunnable?.let { mediaInboxHandler.removeCallbacks(it) }
 
         super.onDestroy()
     }

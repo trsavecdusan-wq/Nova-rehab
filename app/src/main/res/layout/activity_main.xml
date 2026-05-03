@@ -131,7 +131,7 @@
             android:layout_weight="3.5"
             android:layout_marginBottom="5dp"/>
 
-        <!-- SPODNJE TIPKE: VIDEO / OGLEDALO / SPROSTITEV -->
+        <!-- SPODNJE TIPKE: VIDEO / GALERIJA / OGLEDALO / SPROSTITEV -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -148,6 +148,18 @@
                 android:textStyle="bold"
                 android:textColor="#ffffff"
                 android:backgroundTint="#1a3a6b"
+                android:layout_marginEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btnGallery"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="🖼\nGALERIJA"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#ffffff"
+                android:backgroundTint="#305b2e"
                 android:layout_marginEnd="4dp"/>
 
             <Button

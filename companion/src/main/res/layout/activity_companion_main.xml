@@ -96,6 +96,17 @@
             android:textSize="26sp"
             android:textStyle="bold"
             android:backgroundTint="#0F3460"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="14dp" />
+
+        <Button
+            android:id="@+id/btnSendImage"
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:text="POŠLJI SLIKO"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:backgroundTint="#305b2e"
             android:textColor="#FFFFFF" />
 
     </LinearLayout>

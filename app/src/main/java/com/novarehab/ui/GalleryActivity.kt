@@ -1,24 +1,19 @@
 package com.novarehab.ui
 
-import android.content.ContentUris
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.provider.MediaStore
 import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.novarehab.databinding.ActivityGalleryBinding
+import com.novarehab.media_messaging.repository.MediaGalleryRepository
 
 class GalleryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGalleryBinding
-    private val handler = Handler(Looper.getMainLooper())
-    private var imageUris = mutableListOf<Uri>()
+    private lateinit var repository: MediaGalleryRepository
     private var currentIndex = 0
-    private val slideshowDelay = 5000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,78 +23,60 @@ class GalleryActivity : AppCompatActivity() {
         )
         binding = ActivityGalleryBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        loadImages()
+
+        repository = MediaGalleryRepository(this)
+        repository.markAllSeen()
+
+        loadImage()
         setupButtons()
     }
 
-    private fun loadImages() {
-        imageUris.clear()
-
-        val projection = arrayOf(
-            MediaStore.Images.Media._ID,
-            MediaStore.Images.Media.DATE_ADDED
-        )
-        val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
-
-        val queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-
-        try {
-            contentResolver.query(
-                queryUri,
-                projection,
-                null,
-                null,
-                sortOrder
-            )?.use { cursor ->
-                val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-                while (cursor.moveToNext()) {
-                    val id = cursor.getLong(idColumn)
-                    val contentUri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
-                    )
-                    imageUris.add(contentUri)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        if (imageUris.isNotEmpty()) {
-            showImage(0)
-            startSlideshow()
-        } else {
+    private fun loadImage() {
+        val items = repository.loadAll()
+        if (items.isEmpty()) {
+            binding.ivGallery.setImageDrawable(null)
             binding.tvNoImages.visibility = View.VISIBLE
-            binding.tvNoImages.text = "Ni slik. Najprej dovoli dostop do slik in posnami fotografije."
+            binding.tvNoImages.text = "Ni prejetih slik v NovaRehab galeriji."
+            binding.tvImageCount.text = ""
+            binding.tvImageMeta.text = ""
+            binding.btnDelete.visibility = View.GONE
+            return
         }
-    }
 
-    private fun showImage(index: Int) {
-        if (imageUris.isEmpty()) return
-        currentIndex = index % imageUris.size
-        if (currentIndex < 0) currentIndex += imageUris.size
-        Glide.with(this).load(imageUris[currentIndex]).into(binding.ivGallery)
-        binding.tvImageCount.text = "${currentIndex + 1} / ${imageUris.size}"
-    }
+        if (currentIndex >= items.size) currentIndex = items.lastIndex
+        if (currentIndex < 0) currentIndex = 0
 
-    private fun startSlideshow() {
-        handler.postDelayed(object : Runnable {
-            override fun run() {
-                showImage(currentIndex + 1)
-                handler.postDelayed(this, slideshowDelay)
-            }
-        }, slideshowDelay)
+        val item = items[currentIndex]
+        binding.tvNoImages.visibility = View.GONE
+        binding.btnDelete.visibility = View.VISIBLE
+        binding.tvImageCount.text = "${currentIndex + 1} / ${items.size}"
+        binding.tvImageMeta.text = "Od: ${item.senderName}\n${android.text.format.DateFormat.format("dd.MM.yyyy HH:mm", item.receivedAt)}"
+        Glide.with(this).load(Uri.fromFile(java.io.File(item.localPath))).into(binding.ivGallery)
     }
 
     private fun setupButtons() {
         binding.btnPrev.setOnClickListener {
-            showImage(if (currentIndex > 0) currentIndex - 1 else imageUris.size - 1)
+            val size = repository.loadAll().size
+            if (size == 0) return@setOnClickListener
+            currentIndex = if (currentIndex > 0) currentIndex - 1 else size - 1
+            loadImage()
         }
-        binding.btnNext.setOnClickListener { showImage(currentIndex + 1) }
-        binding.btnClose.setOnClickListener { finish() }
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacksAndMessages(null)
+        binding.btnNext.setOnClickListener {
+            val size = repository.loadAll().size
+            if (size == 0) return@setOnClickListener
+            currentIndex = (currentIndex + 1) % size
+            loadImage()
+        }
+
+        binding.btnDelete.setOnClickListener {
+            val items = repository.loadAll()
+            val item = items.getOrNull(currentIndex) ?: return@setOnClickListener
+            repository.delete(item.messageId)
+            if (currentIndex > 0) currentIndex--
+            loadImage()
+        }
+
+        binding.btnClose.setOnClickListener { finish() }
     }
 }
