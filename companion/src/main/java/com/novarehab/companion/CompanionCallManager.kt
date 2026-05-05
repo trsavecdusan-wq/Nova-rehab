@@ -83,6 +83,7 @@ class CompanionCallManager(
             return
         }
 
+        updateCallState(CallState.IDLE)
         waitJob?.cancel()
         waitJob = scope.launch {
             listener.onStatus("Čakam povezavo")
@@ -95,6 +96,7 @@ class CompanionCallManager(
 
                     if (offer != null) {
                         remoteOffer = offer
+                        updateCallState(CallState.RINGING)
                         listener.onIncomingCall()
                         listener.onStatus("Lana kliče")
                         return@launch
@@ -105,6 +107,7 @@ class CompanionCallManager(
                     }
 
                     if (incomingStatus == "calling") {
+                        updateCallState(CallState.RINGING)
                         listener.onIncomingCall()
                         listener.onStatus("Lana kliče")
                         return@launch
@@ -142,10 +145,12 @@ class CompanionCallManager(
                 }
             }, offer)
 
+            updateCallState(CallState.ACTIVE)
             listener.onCallStarted()
             listener.onStatus("Povezujem...")
             startReceiverPolling()
         } catch (e: Exception) {
+            updateCallState(CallState.MISSED, e.message.orEmpty())
             listener.onError("Klica ni bilo mogoče sprejeti: ${e.message}")
             endCall()
         }
@@ -153,6 +158,7 @@ class CompanionCallManager(
 
     fun rejectCall() {
         remoteOffer = null
+        updateCallState(CallState.MISSED)
         listener.onStatus("Klic zavrnjen")
 
         scope.launch(Dispatchers.IO) {
@@ -174,6 +180,7 @@ class CompanionCallManager(
         }
 
         outgoingRequestJob?.cancel()
+        updateCallState(CallState.RINGING)
         listener.onStatus("Klic poslan")
 
         scope.launch(Dispatchers.IO) {
@@ -185,6 +192,7 @@ class CompanionCallManager(
                 }
             } catch (_: Exception) {
                 withContext(Dispatchers.Main) {
+                    updateCallState(CallState.MISSED)
                     listener.onError("Povezava ni uspela")
                 }
             }
@@ -246,6 +254,7 @@ class CompanionCallManager(
             }
         }
 
+        updateCallState(CallState.IDLE)
         remoteOffer = null
         handledRemoteCandidates.clear()
         listener.onCallEnded()
@@ -472,15 +481,24 @@ class CompanionCallManager(
 
                     when (status) {
                         "accepted" -> {
+                            updateCallState(CallState.ACTIVE)
                             listener.onStatus("Lana je sprejela klic")
                         }
 
                         "rejected" -> {
+                            updateCallState(CallState.MISSED)
                             listener.onStatus("Klic zavrnjen")
                             return@launch
                         }
 
+                        "busy" -> {
+                            updateCallState(CallState.BUSY)
+                            listener.onError("Kontakt je zaseden")
+                            return@launch
+                        }
+
                         "ended" -> {
+                            updateCallState(CallState.IDLE)
                             listener.onStatus("Klic končan")
                             return@launch
                         }
