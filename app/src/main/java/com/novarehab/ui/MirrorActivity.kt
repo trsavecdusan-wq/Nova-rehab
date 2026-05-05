@@ -13,6 +13,8 @@ import androidx.core.content.ContextCompat
 import com.novarehab.camera.MirrorCameraManager
 import com.novarehab.databinding.ActivityMirrorBinding
 import com.novarehab.media_messaging.repository.MediaGalleryRepository
+import com.novarehab.utils.StatEvent
+import com.novarehab.utils.StatsManager
 
 class MirrorActivity : AppCompatActivity() {
 
@@ -21,6 +23,7 @@ class MirrorActivity : AppCompatActivity() {
     private val cameraPermissionRequest = 200
     private lateinit var cameraManager: MirrorCameraManager
     private lateinit var mediaGalleryRepository: MediaGalleryRepository
+    private lateinit var statsManager: StatsManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,6 +36,8 @@ class MirrorActivity : AppCompatActivity() {
 
         cameraManager = MirrorCameraManager(this)
         mediaGalleryRepository = MediaGalleryRepository(this)
+        statsManager = StatsManager(this)
+        statsManager.log(StatEvent.MIRROR_OPEN)
 
         binding.btnCloseMirror.setOnClickListener { finish() }
         binding.btnSwitchCamera.setOnClickListener {
@@ -46,6 +51,7 @@ class MirrorActivity : AppCompatActivity() {
                 onSaved = { file ->
                     mediaGalleryRepository.saveCameraCapture(file)
                     runOnUiThread {
+                        cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
                         Toast.makeText(this, "Slika shranjena v galerijo.", Toast.LENGTH_SHORT).show()
                     }
                 },
@@ -68,6 +74,14 @@ class MirrorActivity : AppCompatActivity() {
         }
 
         resetCloseTimer()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        resetCloseTimer()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        }
     }
 
     override fun onRequestPermissionsResult(
