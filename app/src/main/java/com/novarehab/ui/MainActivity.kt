@@ -31,7 +31,10 @@ import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.novarehab.communication.data.CommunicationRepository
+import com.novarehab.communication.model.CommunicationItem
 import com.novarehab.core.config.ApiConfigImportManager
+import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.databinding.ActivityMainBinding
 import com.novarehab.learning.LearningProfileManager
 import com.novarehab.media_messaging.repository.MediaGalleryRepository
@@ -59,7 +62,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -79,6 +81,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mediaGalleryRepository: MediaGalleryRepository
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
+    private lateinit var paths: NovaRehabPaths
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -118,6 +121,7 @@ class MainActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         apiConfig = ApiConfigManager(this)
+        paths = NovaRehabPaths(this)
         importApiConfigFromDevice()
         SettingsBackupManager(this).restoreIfAvailable()
 
@@ -536,7 +540,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             addView(ImageView(this@MainActivity).apply {
-                val customFile = File(getExternalFilesDir(null), "icons/${item.id}.png")
+                val customFile = paths.customIconFile(item.id)
                 if (customFile.exists()) {
                     setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
                 } else {

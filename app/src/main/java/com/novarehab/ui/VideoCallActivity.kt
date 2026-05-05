@@ -22,6 +22,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.novarehab.R
+import com.novarehab.communication.data.CommunicationRepository
+import com.novarehab.communication.model.CommunicationItem
+import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.utils.ApiConfigManager
 import com.novarehab.utils.IconTextManager
 import com.novarehab.utils.OpenAiTranslateManager
@@ -33,11 +36,10 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import org.webrtc.SurfaceViewRenderer
-import java.io.File
-
 class VideoCallActivity : AppCompatActivity() {
 
     private lateinit var prefs: PrefsManager
+    private lateinit var paths: NovaRehabPaths
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
@@ -82,6 +84,7 @@ class VideoCallActivity : AppCompatActivity() {
         setContentView(R.layout.activity_video_call)
 
         prefs = PrefsManager(this)
+        paths = NovaRehabPaths(this)
         apiConfig = ApiConfigManager(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
@@ -407,7 +410,7 @@ class VideoCallActivity : AppCompatActivity() {
             }
 
             addView(ImageView(this@VideoCallActivity).apply {
-                val customFile = File(getExternalFilesDir(null), "icons/${item.id}.png")
+                val customFile = paths.customIconFile(item.id)
                 if (customFile.exists()) {
                     setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
                 } else {
@@ -490,7 +493,7 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     private fun loadContactImage(imageView: ImageView, index: Int) {
-        val file = File(getExternalFilesDir(null), "contacts/contact_${index + 1}.png")
+        val file = paths.contactImageFile(index)
 
         if (file.exists()) {
             imageView.setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))

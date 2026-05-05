@@ -36,12 +36,7 @@ jobs:
         run: |
           ./gradlew --no-daemon clean \
             :app:assembleDebug \
-            :companion:assembleC01Debug \
-            :companion:assembleC02Debug \
-            :companion:assembleC03Debug \
-            :companion:assembleC04Debug \
-            :companion:assembleC05Debug \
-            :companion:assembleC06Debug \
+            :companion:assembleDebug \
             --stacktrace
 
       - name: Pripravi APK output
@@ -50,12 +45,7 @@ jobs:
           mkdir -p output
 
           cp app/build/outputs/apk/debug/app-debug.apk output/app-debug.apk
-          cp companion/build/outputs/apk/c01/debug/companion-01-debug.apk output/companion-01-debug.apk
-          cp companion/build/outputs/apk/c02/debug/companion-02-debug.apk output/companion-02-debug.apk
-          cp companion/build/outputs/apk/c03/debug/companion-03-debug.apk output/companion-03-debug.apk
-          cp companion/build/outputs/apk/c04/debug/companion-04-debug.apk output/companion-04-debug.apk
-          cp companion/build/outputs/apk/c05/debug/companion-05-debug.apk output/companion-05-debug.apk
-          cp companion/build/outputs/apk/c06/debug/companion-06-debug.apk output/companion-06-debug.apk
+          cp companion/build/outputs/apk/debug/companion-debug.apk output/companion-debug.apk
 
       - name: Ustvari app-version.json
         run: |
@@ -64,14 +54,7 @@ jobs:
             "versionCode": 1,
             "versionName": "1.0",
             "apkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-debug.apk",
-            "companionApkUrls": {
-              "c01": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-01-debug.apk",
-              "c02": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-02-debug.apk",
-              "c03": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-03-debug.apk",
-              "c04": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-04-debug.apk",
-              "c05": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-05-debug.apk",
-              "c06": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-06-debug.apk"
-            },
+            "companionApkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-debug.apk",
             "message": "Nova verzija aplikacije NovaRehab je na voljo."
           }
           EOF
@@ -82,22 +65,17 @@ jobs:
           find output -maxdepth 1 -type f -name '*.apk' -print | sort
 
           test -f output/app-debug.apk
-          test -f output/companion-01-debug.apk
-          test -f output/companion-02-debug.apk
-          test -f output/companion-03-debug.apk
-          test -f output/companion-04-debug.apk
-          test -f output/companion-05-debug.apk
-          test -f output/companion-06-debug.apk
+          test -f output/companion-debug.apk
           test -f app-version.json
 
           apk_count=$(find output -maxdepth 1 -type f -name '*.apk' | wc -l | tr -d ' ')
-          if [ "$apk_count" != "7" ]; then
-            echo "NAPAKA: output mora imeti tocno 7 APK datotek, nasel sem $apk_count"
+          if [ "$apk_count" != "2" ]; then
+            echo "NAPAKA: output mora imeti tocno 2 APK datoteki, nasel sem $apk_count"
             find output -maxdepth 1 -type f -print
             exit 1
           fi
 
-      - name: Preveri package name companion APK-jev
+      - name: Preveri package name companion APK-ja
         run: |
           AAPT="$ANDROID_HOME/build-tools/34.0.0/aapt"
           if [ ! -x "$AAPT" ]; then
@@ -122,12 +100,7 @@ jobs:
             fi
           }
 
-          check_package output/companion-01-debug.apk com.novarehab.companion.c01
-          check_package output/companion-02-debug.apk com.novarehab.companion.c02
-          check_package output/companion-03-debug.apk com.novarehab.companion.c03
-          check_package output/companion-04-debug.apk com.novarehab.companion.c04
-          check_package output/companion-05-debug.apk com.novarehab.companion.c05
-          check_package output/companion-06-debug.apk com.novarehab.companion.c06
+          check_package output/companion-debug.apk com.novarehab.companion
 
       - name: Nalozi debug APK artifact
         uses: actions/upload-artifact@v4
@@ -165,6 +138,12 @@ jobs:
           gh release delete-asset novarehab-companion-latest companion-04-debug.apk --yes || true
           gh release delete-asset novarehab-companion-latest companion-05-debug.apk --yes || true
           gh release delete-asset novarehab-companion-latest companion-06-debug.apk --yes || true
+          gh release delete-asset novarehab-companion-latest update-01.json --yes || true
+          gh release delete-asset novarehab-companion-latest update-02.json --yes || true
+          gh release delete-asset novarehab-companion-latest update-03.json --yes || true
+          gh release delete-asset novarehab-companion-latest update-04.json --yes || true
+          gh release delete-asset novarehab-companion-latest update-05.json --yes || true
+          gh release delete-asset novarehab-companion-latest update-06.json --yes || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

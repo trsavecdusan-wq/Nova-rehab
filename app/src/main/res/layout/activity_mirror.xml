@@ -10,15 +10,44 @@
         android:layout_height="match_parent"
         android:scaleX="-1"/>
 
-    <Button
-        android:id="@+id/btnCloseMirror"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="16dp"
-        android:text="ZAPRI OGLEDALO"
-        android:backgroundTint="#e94560"
-        android:textColor="#ffffff"
-        android:textSize="16sp"/>
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <Button
+            android:id="@+id/btnCaptureMirror"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="SLIKAJ"
+            android:backgroundTint="#1b5e20"
+            android:textColor="#ffffff"
+            android:textSize="16sp"/>
+
+        <Button
+            android:id="@+id/btnSwitchCamera"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="PREKLOP"
+            android:backgroundTint="#0f3460"
+            android:textColor="#ffffff"
+            android:textSize="16sp"/>
+
+        <Button
+            android:id="@+id/btnCloseMirror"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:text="ZAPRI"
+            android:backgroundTint="#e94560"
+            android:textColor="#ffffff"
+            android:textSize="16sp"/>
+    </LinearLayout>
 
 </FrameLayout>

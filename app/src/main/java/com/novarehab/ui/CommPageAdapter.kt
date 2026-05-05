@@ -10,7 +10,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import java.io.File
+import com.novarehab.communication.model.CommunicationItem
+import com.novarehab.core.storage.NovaRehabPaths
 
 class CommPageAdapter(
     private val context: Context,
@@ -19,6 +20,7 @@ class CommPageAdapter(
     private val getLang: () -> String,
     private val onItemSelected: (CommunicationItem) -> Unit
 ) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
+    private val paths = NovaRehabPaths(context)
 
     private val safePageSize = if (pageSize in setOf(6, 8, 9, 12, 15, 18)) pageSize else 9
     private val gridColumns = when (safePageSize) {
@@ -94,7 +96,7 @@ class CommPageAdapter(
                     setMargins(8, 8, 8, 4)
                 }
 
-                val customFile = File(context.getExternalFilesDir(null), "icons/${item.id}.png")
+                val customFile = paths.customIconFile(item.id)
                 if (customFile.exists()) {
                     setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
                 } else {

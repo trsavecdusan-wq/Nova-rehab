@@ -5,24 +5,22 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.View
 import android.view.WindowManager
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.novarehab.camera.MirrorCameraManager
 import com.novarehab.databinding.ActivityMirrorBinding
+import com.novarehab.media_messaging.repository.MediaGalleryRepository
 
 class MirrorActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMirrorBinding
     private val handler = Handler(Looper.getMainLooper())
-    private val autoCloseDelay = 60000L
-    private val CAMERA_PERMISSION_REQUEST = 200
+    private val cameraPermissionRequest = 200
+    private lateinit var cameraManager: MirrorCameraManager
+    private lateinit var mediaGalleryRepository: MediaGalleryRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,20 +31,43 @@ class MirrorActivity : AppCompatActivity() {
         binding = ActivityMirrorBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.btnCloseMirror.setOnClickListener { finish() }
+        cameraManager = MirrorCameraManager(this)
+        mediaGalleryRepository = MediaGalleryRepository(this)
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            == PackageManager.PERMISSION_GRANTED) {
+        binding.btnCloseMirror.setOnClickListener { finish() }
+        binding.btnSwitchCamera.setOnClickListener {
+            resetCloseTimer()
+            cameraManager.toggleCamera(this, binding.previewView, ::showCameraError)
+        }
+        binding.btnCaptureMirror.setOnClickListener {
+            resetCloseTimer()
+            cameraManager.capture(
+                executor = ContextCompat.getMainExecutor(this),
+                onSaved = { file ->
+                    mediaGalleryRepository.saveCameraCapture(file)
+                    runOnUiThread {
+                        Toast.makeText(this, "Slika shranjena v galerijo.", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onError = { error ->
+                    runOnUiThread {
+                        Toast.makeText(this, "Shranjevanje slike ni uspelo: ${error.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.CAMERA),
-                CAMERA_PERMISSION_REQUEST
+                cameraPermissionRequest
             )
         }
 
-        handler.postDelayed({ finish() }, autoCloseDelay)
+        resetCloseTimer()
     }
 
     override fun onRequestPermissionsResult(
@@ -55,7 +76,7 @@ class MirrorActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == CAMERA_PERMISSION_REQUEST) {
+        if (requestCode == cameraPermissionRequest) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startCamera()
             } else {
@@ -66,24 +87,17 @@ class MirrorActivity : AppCompatActivity() {
     }
 
     private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            try {
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(binding.previewView.surfaceProvider)
-                }
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    this,
-                    CameraSelector.DEFAULT_FRONT_CAMERA,
-                    preview
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(this, "Napaka pri kameri: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }, ContextCompat.getMainExecutor(this))
+        cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
+    }
+
+    private fun showCameraError(error: Throwable) {
+        Toast.makeText(this, "Napaka pri kameri: ${error.message}", Toast.LENGTH_LONG).show()
+    }
+
+    private fun resetCloseTimer() {
+        handler.removeCallbacksAndMessages(null)
+        val timeout = intent.getLongExtra("mirror_timeout_ms", 60_000L).coerceIn(10_000L, 300_000L)
+        handler.postDelayed({ finish() }, timeout)
     }
 
     override fun onDestroy() {

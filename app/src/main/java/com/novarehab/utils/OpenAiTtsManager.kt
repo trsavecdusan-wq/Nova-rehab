@@ -18,6 +18,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class OpenAiTtsManager(private val context: Context) {
+    private val prefs = PrefsManager(context.applicationContext)
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -43,9 +44,8 @@ class OpenAiTtsManager(private val context: Context) {
         tts = TextToSpeech(context.applicationContext) { status ->
             ttsReady = status == TextToSpeech.SUCCESS
             if (ttsReady) {
-                tts?.setSpeechRate(0.88f)
-                tts?.setPitch(1.0f)
-                setBestLocale("sl")
+                applyLocalSettings()
+                setBestLocale(prefs.getDefaultSpeechLanguage())
             }
             onReady?.invoke()
         }
@@ -65,8 +65,8 @@ class OpenAiTtsManager(private val context: Context) {
             apiKey = apiKey,
             voice = voice,
             apiBaseUrl = apiBaseUrl,
-            speed = 0.92f,
-            volume = 1.0f,
+            speed = prefs.getTtsSpeed(),
+            volume = prefs.getTtsVolume(),
             style = "Speak clearly, warmly, calmly and naturally. Use a gentle rehabilitation assistant voice. Keep the speech easy to understand.",
             onDone = onDone
         )
@@ -178,98 +178,62 @@ class OpenAiTtsManager(private val context: Context) {
                 if (ttsReady) {
                     speakAndroid(text, language, onDone)
                 } else {
-                    Toast.makeText(context, "Slovenski glas ni nameščen.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Lokalni glas ni na voljo.", Toast.LENGTH_LONG).show()
                     onDone()
                 }
             }
             return
         }
 
-        if (!setBestLocale(language)) {
-            Toast.makeText(context, "Slovenski glas ni nameščen.", Toast.LENGTH_LONG).show()
+        if (!setBestLocale(language) && !setBestLocale(prefs.getFallbackSpeechLanguage())) {
+            Toast.makeText(context, "Lokalni glas ni na voljo.", Toast.LENGTH_LONG).show()
         }
 
         val uid = "rehab_${System.currentTimeMillis()}"
 
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) {
-            }
+            override fun onStart(utteranceId: String?) = Unit
 
             override fun onDone(utteranceId: String?) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    onDone()
-                }
+                android.os.Handler(android.os.Looper.getMainLooper()).post(onDone)
             }
 
             @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    onDone()
-                }
+                android.os.Handler(android.os.Looper.getMainLooper()).post(onDone)
             }
         })
 
         tts?.stop()
+        applyLocalSettings()
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
+    }
+
+    private fun applyLocalSettings() {
+        tts?.setSpeechRate(prefs.getTtsSpeed())
+        tts?.setPitch(prefs.getTtsPitch())
     }
 
     private fun setBestLocale(language: String): Boolean {
         val candidates = when (language.lowercase()) {
-            "sl", "si", "slovenian" -> listOf(
-                Locale("sl", "SI"),
-                Locale("hr", "HR"),
-                Locale("sr", "RS")
-            )
-
-            "uk", "ua", "ukrainian" -> listOf(
-                Locale("uk", "UA"),
-                Locale("ru", "RU"),
-                Locale("hr", "HR"),
-                Locale("sl", "SI")
-            )
-
-            "hr" -> listOf(
-                Locale("hr", "HR"),
-                Locale("sr", "RS"),
-                Locale("sl", "SI")
-            )
-
-            "sr" -> listOf(
-                Locale("sr", "RS"),
-                Locale("hr", "HR"),
-                Locale("sl", "SI")
-            )
-
-            "de" -> listOf(
-                Locale.GERMANY,
-                Locale("de", "DE")
-            )
-
-            "en", "english" -> listOf(
-                Locale.US,
-                Locale.UK,
-                Locale.ENGLISH
-            )
-
-            else -> listOf(
-                Locale(language),
-                Locale(language, "")
-            )
+            "sl", "si", "slovenian" -> listOf(Locale("sl", "SI"), Locale("hr", "HR"), Locale("sr", "RS"))
+            "uk", "ua", "ukrainian" -> listOf(Locale("uk", "UA"), Locale("ru", "RU"), Locale("hr", "HR"), Locale("sl", "SI"))
+            "hr" -> listOf(Locale("hr", "HR"), Locale("sr", "RS"), Locale("sl", "SI"))
+            "sr" -> listOf(Locale("sr", "RS"), Locale("hr", "HR"), Locale("sl", "SI"))
+            "de" -> listOf(Locale.GERMANY, Locale("de", "DE"))
+            "en", "english" -> listOf(Locale.US, Locale.UK, Locale.ENGLISH)
+            else -> listOf(Locale(language), Locale(language, ""))
         }
 
         for (locale in candidates) {
             val result = tts?.setLanguage(locale)
-            if (
-                result != TextToSpeech.LANG_MISSING_DATA &&
-                result != TextToSpeech.LANG_NOT_SUPPORTED
-            ) {
+            if (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
                 return true
             }
         }
 
         val fallback = tts?.setLanguage(Locale("sl", "SI"))
-        return fallback != TextToSpeech.LANG_MISSING_DATA &&
-            fallback != TextToSpeech.LANG_NOT_SUPPORTED
+        return fallback != TextToSpeech.LANG_MISSING_DATA && fallback != TextToSpeech.LANG_NOT_SUPPORTED
     }
 
     private fun playFile(file: File, volume: Float, onDone: () -> Unit) {
@@ -308,7 +272,6 @@ class OpenAiTtsManager(private val context: Context) {
             val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val network = connectivityManager.activeNetwork ?: return false
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } catch (_: Exception) {
@@ -327,12 +290,7 @@ class OpenAiTtsManager(private val context: Context) {
     private fun buildEndpoint(baseUrl: String, path: String): String {
         val base = baseUrl.trim().trimEnd('/')
         val cleanPath = path.trim().trimStart('/')
-
-        return if (base.endsWith("/v1")) {
-            "$base/${cleanPath.removePrefix("v1/")}"
-        } else {
-            "$base/$cleanPath"
-        }
+        return if (base.endsWith("/v1")) "$base/${cleanPath.removePrefix("v1/")}" else "$base/$cleanPath"
     }
 
     private fun cacheName(

@@ -18,6 +18,10 @@ data class CommunicationItem(
     val arasaacKey: String = "",
     val symbolKey: String = "",
     val logEventType: String = "iconClicked",
-    val pinned: Boolean = false,
+    val pinnedMain: Boolean = false,
+    val pinnedVideo: Boolean = false,
     val usageRank: Int = 0
-)
+) {
+    val pinned: Boolean
+        get() = pinnedMain
+}

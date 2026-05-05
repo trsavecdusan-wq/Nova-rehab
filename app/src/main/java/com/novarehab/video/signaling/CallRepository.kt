@@ -20,6 +20,13 @@ class CallRepository {
 
     fun get(roomId: String): CallSnapshot? = calls[roomId]
 
+    fun isBusy(roomId: String): Boolean = calls[roomId]?.state in setOf(CallState.RINGING, CallState.ACTIVE)
+
+    fun markMissed(roomId: String) {
+        val current = calls[roomId] ?: return
+        calls[roomId] = current.copy(state = CallState.MISSED, updatedAt = System.currentTimeMillis())
+    }
+
     fun clear(roomId: String) {
         calls.remove(roomId)
     }

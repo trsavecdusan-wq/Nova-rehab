@@ -17,6 +17,7 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.databinding.ActivitySettingsBinding
 import com.novarehab.service.ReportWorker
 import com.novarehab.utils.ApiConfigManager
@@ -36,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: PrefsManager
     private lateinit var apiConfig: ApiConfigManager
+    private lateinit var paths: NovaRehabPaths
 
     private val contactLangSpinners = mutableListOf<Spinner>()
     private val contactImageButtons = mutableListOf<ImageButton>()
@@ -75,6 +77,7 @@ class SettingsActivity : AppCompatActivity() {
 
         prefs = PrefsManager(this)
         apiConfig = ApiConfigManager(this)
+        paths = NovaRehabPaths(this)
 
         addLanguageSettingsPanel()
         addUpdateSettingsPanel()
@@ -473,7 +476,7 @@ class SettingsActivity : AppCompatActivity() {
             contactOutgoingSwitches.add(outgoingSwitch)
 
             val imageButton = ImageButton(this).apply {
-                val file = File(getExternalFilesDir(null), "contacts/contact_${index + 1}.png")
+                val file = paths.contactImageFile(index)
                 if (file.exists()) {
                     setImageBitmap(BitmapFactory.decodeFile(file.absolutePath))
                 } else {
@@ -780,16 +783,16 @@ class SettingsActivity : AppCompatActivity() {
             val uri = data?.data ?: return
 
             try {
-                val dir = File(getExternalFilesDir(null), "contacts")
+                val dir = paths.contactsDir
                 dir.mkdirs()
 
                 contentResolver.openInputStream(uri)?.use { input ->
-                    File(dir, "contact_${pendingImageIndex + 1}.png").outputStream().use { output ->
+                    paths.contactImageFile(pendingImageIndex).outputStream().use { output ->
                         input.copyTo(output)
                     }
                 }
 
-                val bitmap = BitmapFactory.decodeFile(File(dir, "contact_${pendingImageIndex + 1}.png").absolutePath)
+                val bitmap = BitmapFactory.decodeFile(paths.contactImageFile(pendingImageIndex).absolutePath)
                 contactImageButtons.getOrNull(pendingImageIndex)?.setImageBitmap(bitmap)
                 SettingsBackupManager(this).backupNow()
             } catch (_: Exception) {

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.media_messaging.model.MediaMessage
 import java.io.File
 import java.io.FileOutputStream
@@ -13,7 +14,8 @@ import java.io.FileOutputStream
 class MediaGalleryRepository(context: Context) {
     private val appContext = context.applicationContext
     private val gson = Gson()
-    private val rootDir = File(appContext.getExternalFilesDir(null), "NovaRehab/gallery")
+    private val paths = NovaRehabPaths(appContext)
+    private val rootDir = paths.galleryDir
     private val imagesDir = File(rootDir, "images")
     private val thumbsDir = File(rootDir, "thumbnails")
     private val metadataFile = File(rootDir, "media-metadata.json")
@@ -82,6 +84,36 @@ class MediaGalleryRepository(context: Context) {
         File(target.localPath).delete()
         if (target.thumbnailPath.isNotBlank()) File(target.thumbnailPath).delete()
         writeAll(items.filterNot { it.messageId == messageId })
+    }
+
+    fun saveCameraCapture(source: File, senderName: String = "Kamera"): MediaMessage? {
+        if (!source.exists()) return null
+
+        val messageId = "camera_${System.currentTimeMillis()}"
+        val targetFile = File(paths.galleryCameraDir, source.name.ifBlank { "$messageId.jpg" })
+        source.copyTo(targetFile, overwrite = true)
+
+        val thumbFile = File(thumbsDir, "$messageId.jpg")
+        createThumbnail(targetFile.readBytes(), thumbFile)
+
+        val message = MediaMessage(
+            messageId = messageId,
+            senderId = "camera",
+            senderName = senderName,
+            targetContactId = "tablet",
+            fileType = "image",
+            mimeType = "image/jpeg",
+            receivedAt = System.currentTimeMillis(),
+            localPath = targetFile.absolutePath,
+            thumbnailPath = thumbFile.absolutePath,
+            messageText = "Mirror capture",
+            seen = true
+        )
+
+        val updated = (loadAll().filterNot { it.messageId == message.messageId } + message)
+            .sortedByDescending { it.receivedAt }
+        writeAll(updated)
+        return message
     }
 
     private fun writeAll(items: List<MediaMessage>) {

@@ -21,40 +21,40 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
-        android:orientation="vertical"
         android:background="#CC1A1A2E"
+        android:orientation="vertical"
         android:padding="16dp">
 
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center"
             android:text="NovaRehab Companion"
             android:textColor="#E94560"
             android:textSize="26sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginBottom="8dp" />
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Čakam povezavo"
+            android:gravity="center"
+            android:text="Izberi kontakt"
             android:textColor="#FFFFFF"
             android:textSize="26sp"
-            android:textStyle="bold"
-            android:gravity="center" />
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvContactInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
             android:text="Kontakt"
             android:textColor="#B8D8FF"
-            android:textSize="18sp"
-            android:gravity="center"
-            android:layout_marginTop="4dp" />
+            android:textSize="18sp" />
 
     </LinearLayout>
 
@@ -62,52 +62,63 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:orientation="vertical"
         android:background="#CC1A1A2E"
+        android:orientation="vertical"
         android:padding="16dp">
 
         <Button
             android:id="@+id/btnAcceptCall"
             android:layout_width="match_parent"
             android:layout_height="76dp"
-            android:text="SPREJMI KLIC"
-            android:textSize="26sp"
-            android:textStyle="bold"
+            android:layout_marginBottom="14dp"
             android:backgroundTint="#1B8F3A"
+            android:text="SPREJMI KLIC"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="14dp" />
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnRejectCall"
             android:layout_width="match_parent"
             android:layout_height="76dp"
-            android:text="ZAVRNI KLIC"
-            android:textSize="26sp"
-            android:textStyle="bold"
+            android:layout_marginBottom="14dp"
             android:backgroundTint="#B71C1C"
+            android:text="ZAVRNI KLIC"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="14dp" />
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnCallLana"
             android:layout_width="match_parent"
             android:layout_height="76dp"
-            android:text="POKLIČI LANO"
-            android:textSize="26sp"
-            android:textStyle="bold"
+            android:layout_marginBottom="14dp"
             android:backgroundTint="#0F3460"
+            android:text="POKLIČI"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="14dp" />
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnSendImage"
             android:layout_width="match_parent"
             android:layout_height="68dp"
-            android:text="POŠLJI SLIKO"
-            android:textSize="22sp"
-            android:textStyle="bold"
+            android:layout_marginBottom="12dp"
             android:backgroundTint="#305b2e"
-            android:textColor="#FFFFFF" />
+            android:text="POŠLJI SLIKO"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnSelectContact"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:backgroundTint="#333355"
+            android:text="IZBERI KONTAKT"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 

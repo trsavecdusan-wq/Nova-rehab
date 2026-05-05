@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.novarehab.R
+import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.utils.CustomCommIcon
 import com.novarehab.utils.IconTextManager
 import com.novarehab.utils.PrefsManager
@@ -27,6 +28,7 @@ class IconSettingsActivity : AppCompatActivity() {
     private var pendingIconId: String? = null
     private val requestImage = 401
     private lateinit var prefs: PrefsManager
+    private lateinit var paths: NovaRehabPaths
 
     private val allIcons = listOf(
         "pomoc" to R.drawable.comm_pomoc,
@@ -70,6 +72,7 @@ class IconSettingsActivity : AppCompatActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
 
         prefs = PrefsManager(this)
+        paths = NovaRehabPaths(this)
 
         val scroll = ScrollView(this)
         scroll.setBackgroundColor(0xFF1a1a2e.toInt())
@@ -206,7 +209,7 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         img.scaleType = ImageView.ScaleType.FIT_CENTER
 
-        val customFile = File(getExternalFilesDir(null), "icons/$id.png")
+        val customFile = paths.customIconFile(id)
         if (customFile.exists()) {
             img.setImageBitmap(BitmapFactory.decodeFile(customFile.absolutePath))
         } else {
@@ -285,7 +288,7 @@ class IconSettingsActivity : AppCompatActivity() {
             setMargins(dp(4), 0, 0, 0)
         }
         btnReset.setOnClickListener {
-            File(getExternalFilesDir(null), "icons/$id.png").delete()
+            paths.customIconFile(id).delete()
             img.setImageResource(defaultRes)
             SettingsBackupManager(this).backupNow()
             Toast.makeText(this, "Ikona ponastavljena", Toast.LENGTH_SHORT).show()
@@ -313,7 +316,7 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         img.scaleType = ImageView.ScaleType.FIT_CENTER
 
-        val iconFile = File(getExternalFilesDir(null), "icons/$id.png")
+        val iconFile = paths.customIconFile(id)
         if (iconFile.exists()) {
             img.setImageBitmap(BitmapFactory.decodeFile(iconFile.absolutePath))
         } else {
@@ -385,7 +388,7 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         btnReset.setOnClickListener {
             prefs.saveCustomCommIcons(prefs.getCustomCommIcons().filterNot { it.id == id })
-            File(getExternalFilesDir(null), "icons/$id.png").delete()
+            paths.customIconFile(id).delete()
             SettingsBackupManager(this).backupNow()
             recreate()
         }
@@ -402,7 +405,7 @@ class IconSettingsActivity : AppCompatActivity() {
             val id = pendingIconId ?: return
 
             try {
-                val dir = File(getExternalFilesDir(null), "icons")
+                val dir = paths.customIconsDir
                 dir.mkdirs()
 
                 contentResolver.openInputStream(uri)?.use { input ->

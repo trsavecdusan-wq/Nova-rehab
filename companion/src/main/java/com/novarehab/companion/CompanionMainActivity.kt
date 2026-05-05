@@ -2,6 +2,7 @@ package com.novarehab.companion
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -21,12 +22,14 @@ class CompanionMainActivity : Activity() {
     private lateinit var tvContactInfo: TextView
     private lateinit var btnAcceptCall: Button
     private lateinit var btnRejectCall: Button
-    private lateinit var btnCallLana: Button
+    private lateinit var btnCallContact: Button
     private lateinit var btnSendImage: Button
+    private lateinit var btnSelectContact: Button
     private lateinit var localRenderer: SurfaceViewRenderer
     private lateinit var remoteRenderer: SurfaceViewRenderer
+    private lateinit var contactConfigManager: ContactConfigManager
 
-    private var callState: CompanionCallState = CompanionCallState.WAITING
+    private var callState: CompanionCallState = CompanionCallState.IDLE
     private var callManager: CompanionCallManager? = null
     private val mediaSender = CompanionMediaSender(CompanionConfig.signalingBaseUrl)
     private var destroyed = false
@@ -36,15 +39,18 @@ class CompanionMainActivity : Activity() {
 
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
         setContentView(R.layout.activity_companion_main)
+
+        contactConfigManager = ContactConfigManager(this)
+        CompanionConfig.update(contactConfigManager.getCurrent())
 
         tvStatus = findViewById(R.id.tvStatus)
         tvContactInfo = findViewById(R.id.tvContactInfo)
         btnAcceptCall = findViewById(R.id.btnAcceptCall)
         btnRejectCall = findViewById(R.id.btnRejectCall)
-        btnCallLana = findViewById(R.id.btnCallLana)
+        btnCallContact = findViewById(R.id.btnCallLana)
         btnSendImage = findViewById(R.id.btnSendImage)
+        btnSelectContact = findViewById(R.id.btnSelectContact)
         localRenderer = findViewById(R.id.localRenderer)
         remoteRenderer = findViewById(R.id.remoteRenderer)
 
@@ -55,43 +61,68 @@ class CompanionMainActivity : Activity() {
                 return@setOnClickListener
             }
 
-            callState = CompanionCallState.CONNECTED
+            callState = CompanionCallState.ACTIVE
             updateStatus()
             callManager?.acceptCall()
         }
 
         btnRejectCall.setOnClickListener {
-            if (callState == CompanionCallState.CONNECTED) {
+            if (callState == CompanionCallState.ACTIVE) {
                 callManager?.endCall()
+                callState = CompanionCallState.IDLE
             } else {
-                callState = CompanionCallState.ENDED
-                updateStatus()
                 callManager?.rejectCall()
+                callState = CompanionCallState.MISSED
             }
+            updateStatus()
         }
 
-        btnCallLana.setOnClickListener {
-            sendTestCallToTablet()
-        }
-
-        btnSendImage.setOnClickListener {
-            openImagePicker()
-        }
+        btnCallContact.setOnClickListener { sendTestCallToTablet() }
+        btnSendImage.setOnClickListener { openImagePicker() }
+        btnSelectContact.setOnClickListener { showContactSelector(force = false) }
 
         requestVideoPermissions()
         createCallManager()
-        updateStatus()
 
-        if (CompanionConfig.incomingCallsEnabled) {
-            startWaitingForCall()
+        if (!contactConfigManager.isConfigured()) {
+            showContactSelector(force = true)
         } else {
-            tvStatus.text = "Dohodni klici so izklopljeni"
+            startWaitingForCall()
         }
     }
 
+    private fun showContactSelector(force: Boolean) {
+        val contacts = contactConfigManager.availableContacts
+        val labels = contacts.map { it.contactName }.toTypedArray()
+        val selected = contacts.indexOfFirst { it.contactId == contactConfigManager.getCurrent().contactId }.coerceAtLeast(0)
+
+        AlertDialog.Builder(this)
+            .setTitle("Izberi kontakt")
+            .setSingleChoiceItems(labels, selected, null)
+            .setCancelable(!force)
+            .setPositiveButton("Shrani") { dialog, _ ->
+                val position = (dialog as AlertDialog).listView.checkedItemPosition
+                val config = contacts.getOrNull(position) ?: contacts.last()
+                contactConfigManager.save(config)
+                CompanionConfig.update(config)
+                recreateCallManager()
+                startWaitingForCall()
+            }
+            .setNegativeButton(if (force) null else "Prekliči", null)
+            .show()
+    }
+
     private fun startWaitingForCall() {
+        callState = CompanionCallState.IDLE
         createCallManager()
         callManager?.startWaitingForCall()
+        updateStatus()
+    }
+
+    private fun recreateCallManager() {
+        callManager?.endCall()
+        callManager = null
+        createCallManager()
     }
 
     private fun createCallManager() {
@@ -109,19 +140,18 @@ class CompanionMainActivity : Activity() {
                 }
 
                 override fun onIncomingCall() {
-                    callState = CompanionCallState.INCOMING
+                    callState = CompanionCallState.RINGING
                     updateStatus()
                 }
 
                 override fun onCallStarted() {
-                    callState = CompanionCallState.CONNECTED
+                    callState = CompanionCallState.ACTIVE
                     updateStatus()
                 }
 
                 override fun onCallEnded() {
-                    callState = CompanionCallState.WAITING
+                    callState = CompanionCallState.IDLE
                     updateStatus()
-
                     if (!destroyed && CompanionConfig.incomingCallsEnabled) {
                         tvStatus.postDelayed({
                             if (!destroyed) startWaitingForCall()
@@ -130,12 +160,16 @@ class CompanionMainActivity : Activity() {
                 }
 
                 override fun onTabletMessage(text: String) {
-                    val message = "Lana: $text"
+                    val message = "${CompanionConfig.contactName}: $text"
                     tvStatus.text = message
                     Toast.makeText(this@CompanionMainActivity, message, Toast.LENGTH_LONG).show()
                 }
 
                 override fun onError(text: String) {
+                    if (text.contains("zased", ignoreCase = true) || text.contains("busy", ignoreCase = true)) {
+                        callState = CompanionCallState.BUSY
+                        updateStatus()
+                    }
                     tvStatus.text = text
                     Toast.makeText(this@CompanionMainActivity, text, Toast.LENGTH_LONG).show()
                 }
@@ -150,8 +184,9 @@ class CompanionMainActivity : Activity() {
         }
 
         createCallManager()
-        tvStatus.text = "Čakam odgovor Lane"
         callManager?.sendOutgoingTestCall(CompanionConfig.contactName)
+        callState = CompanionCallState.RINGING
+        updateStatus()
     }
 
     private fun openImagePicker() {
@@ -163,39 +198,22 @@ class CompanionMainActivity : Activity() {
     }
 
     private fun updateStatus() {
-        tvContactInfo.text = "Klic Lani"
+        val name = CompanionConfig.contactName
+        tvContactInfo.text = "Kontakt: $name"
+        btnCallContact.text = "POKLIČI $name".uppercase()
 
         tvStatus.text = when (callState) {
-            CompanionCallState.WAITING -> "Čakam povezavo"
-            CompanionCallState.INCOMING -> "Lana kliče"
-            CompanionCallState.CONNECTED -> "Klic vzpostavljen"
-            CompanionCallState.ENDED -> "Klic zavrnjen"
+            CompanionCallState.IDLE -> "Pokliči $name"
+            CompanionCallState.RINGING -> "Čakam odgovor $name"
+            CompanionCallState.ACTIVE -> "$name je sprejel"
+            CompanionCallState.BUSY -> "$name je zaseden"
+            CompanionCallState.MISSED -> "$name je zavrnil"
         }
 
-        btnAcceptCall.visibility = if (callState == CompanionCallState.INCOMING) View.VISIBLE else View.GONE
-        btnRejectCall.visibility = if (
-            callState == CompanionCallState.INCOMING ||
-            callState == CompanionCallState.CONNECTED
-        ) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
-
-        btnRejectCall.text = if (callState == CompanionCallState.CONNECTED) {
-            "PREKINI KLIC"
-        } else {
-            "ZAVRNI KLIC"
-        }
-
-        btnCallLana.visibility = if (
-            callState == CompanionCallState.WAITING &&
-            CompanionConfig.outgoingCallsEnabled
-        ) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
+        btnAcceptCall.visibility = if (callState == CompanionCallState.RINGING) View.VISIBLE else View.GONE
+        btnRejectCall.visibility = if (callState == CompanionCallState.RINGING || callState == CompanionCallState.ACTIVE) View.VISIBLE else View.GONE
+        btnRejectCall.text = if (callState == CompanionCallState.ACTIVE) "PREKINI KLIC" else "ZAVRNI KLIC"
+        btnCallContact.visibility = if (callState == CompanionCallState.IDLE) View.VISIBLE else View.GONE
     }
 
     private fun requestVideoPermissions() {
@@ -227,7 +245,7 @@ class CompanionMainActivity : Activity() {
                         senderName = CompanionConfig.contactName
                     )
                     runOnUiThread {
-                        tvStatus.text = "Slika poslana Lani"
+                        tvStatus.text = "Slika poslana"
                         Toast.makeText(this, "Slika je bila poslana tablici.", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {

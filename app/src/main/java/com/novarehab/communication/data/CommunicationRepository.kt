@@ -120,6 +120,7 @@ object CommunicationRepository {
         return load(context, language)
             .filter { it.enabled }
             .sortedBy { it.priority }
+            .take(12)
     }
 
     fun getChildren(context: Context, language: String, parentId: String): List<CommunicationItem> {
@@ -141,7 +142,10 @@ object CommunicationRepository {
                     ttsText = item.text.ifBlank { item.title },
                     iconRes = R.drawable.ic_contact_default,
                     category = "custom",
-                    icon = "ic_contact_default"
+                    icon = "ic_contact_default",
+                    enabled = item.enabled,
+                    pinnedMain = item.pinnedMain,
+                    pinnedVideo = item.pinnedVideo
                 )
             }
     }
@@ -182,7 +186,8 @@ object CommunicationRepository {
             arasaacKey = json.optString("arasaacKey"),
             symbolKey = json.optString("symbolKey"),
             logEventType = json.optString("logEventType", "iconClicked"),
-            pinned = json.optBoolean("pinned", false),
+            pinnedMain = json.optBoolean("pinnedMain", json.optBoolean("pinned", false)),
+            pinnedVideo = json.optBoolean("pinnedVideo", false),
             usageRank = json.optInt("usageRank", 0)
         )
     }

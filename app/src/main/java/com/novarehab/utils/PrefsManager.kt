@@ -1,6 +1,7 @@
 package com.novarehab.utils
 
 import android.content.Context
+import com.novarehab.communication.data.PersonalIconBankManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -20,7 +21,11 @@ data class CustomCommIcon(
     val id: String,
     val title: String,
     val text: String,
-    val language: String = "sl"
+    val language: String = "sl",
+    val imagePath: String = "",
+    val enabled: Boolean = true,
+    val pinnedMain: Boolean = false,
+    val pinnedVideo: Boolean = false
 )
 
 class PrefsManager(context: Context) {
@@ -28,6 +33,7 @@ class PrefsManager(context: Context) {
     private val prefs = context.getSharedPreferences("nova_rehab_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
     private val STATIONS_VERSION = 10
+    private val personalIconBankManager = PersonalIconBankManager(context.applicationContext)
 
     fun getPin(): String = prefs.getString("pin", "1234") ?: "1234"
     fun savePin(pin: String) = prefs.edit().putString("pin", pin).apply()
@@ -135,18 +141,43 @@ class PrefsManager(context: Context) {
     fun saveTtsVolume(volume: Float) =
         prefs.edit().putFloat("tts_volume", volume.coerceIn(0.7f, 1.0f)).apply()
 
+    fun getTtsPitch(): Float =
+        prefs.getFloat("tts_pitch", 1.0f).coerceIn(0.5f, 2.0f)
+
+    fun saveTtsPitch(pitch: Float) =
+        prefs.edit().putFloat("tts_pitch", pitch.coerceIn(0.5f, 2.0f)).apply()
+
+    fun getFallbackSpeechLanguage(): String =
+        prefs.getString("fallback_speech_language", "sl") ?: "sl"
+
+    fun saveFallbackSpeechLanguage(lang: String) =
+        prefs.edit().putString("fallback_speech_language", lang.ifBlank { "sl" }).apply()
+
     fun getCustomCommIcons(): List<CustomCommIcon> {
-        val json = prefs.getString("custom_comm_icons", null) ?: return emptyList()
-        return try {
-            val type = object : TypeToken<List<CustomCommIcon>>() {}.type
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
+        val fromFile = personalIconBankManager.load()
+        if (fromFile.isNotEmpty()) return fromFile
+
+        val json = prefs.getString("custom_comm_icons", null)
+        val legacy = if (json != null) {
+            try {
+                val type = object : TypeToken<List<CustomCommIcon>>() {}.type
+                gson.fromJson<List<CustomCommIcon>>(json, type).orEmpty()
+            } catch (e: Exception) {
+                emptyList()
+            }
+        } else {
             emptyList()
         }
+
+        if (legacy.isNotEmpty()) {
+            personalIconBankManager.save(legacy)
+        }
+        return legacy
     }
 
     fun saveCustomCommIcons(items: List<CustomCommIcon>) {
         prefs.edit().putString("custom_comm_icons", gson.toJson(items)).apply()
+        personalIconBankManager.save(items)
     }
 
     fun getGmailUser(): String = prefs.getString("gmail_user", "") ?: ""
