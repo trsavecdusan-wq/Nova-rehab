@@ -42,6 +42,8 @@ class MirrorCameraManager(private val context: Context) {
         start(owner, previewView, currentSelector, onError)
     }
 
+    fun isUsingBackCamera(): Boolean = currentSelector == CameraSelector.DEFAULT_BACK_CAMERA
+
     fun capture(
         executor: Executor,
         onSaved: (File) -> Unit,

@@ -3,12 +3,17 @@ package com.novarehab.ui
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -32,12 +37,14 @@ class SettingsActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_API_FILE = 501
+        private const val PREF_SETTINGS_SCROLL_Y = "settings_scroll_y"
     }
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: PrefsManager
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var paths: NovaRehabPaths
+    private val uiStatePrefs by lazy { getSharedPreferences("nova_ui_state", MODE_PRIVATE) }
 
     private val contactLangSpinners = mutableListOf<Spinner>()
     private val contactImageButtons = mutableListOf<ImageButton>()
@@ -88,6 +95,8 @@ class SettingsActivity : AppCompatActivity() {
         addUpdateSettingsPanel()
         addCompanionSharePanel()
         loadSettings()
+        styleSettingsUi()
+        restoreSettingsScrollPosition()
         setupButtons()
     }
 
@@ -138,13 +147,44 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun newLangSpinner(): Spinner {
         return Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                langOptions()
-            ).also {
-                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            adapter = themedSpinnerAdapter(*langOptions())
+            styleSpinner(this)
+        }
+    }
+
+    private fun themedSpinnerAdapter(vararg items: String): ArrayAdapter<String> {
+        return object : ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_spinner_item,
+            items
+        ) {
+            init {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                return super.getView(position, convertView, parent).also { styleSpinnerText(it, false) }
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                return super.getDropDownView(position, convertView, parent).also { styleSpinnerText(it, true) }
+            }
+        }
+    }
+
+    private fun styleSpinnerText(view: View, dropdown: Boolean) {
+        val textView = view as? TextView ?: return
+        textView.setTextColor(0xFFFFFFFF.toInt())
+        if (dropdown) {
+            textView.setBackgroundColor(0xFF16213E.toInt())
+            textView.setPadding(dp(12), dp(12), dp(12), dp(12))
+        }
+    }
+
+    private fun styleSpinner(spinner: Spinner) {
+        spinner.setPopupBackgroundDrawable(ColorDrawable(0xFF16213E.toInt()))
+        spinner.post {
+            (spinner.selectedView as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
         }
     }
 
@@ -222,13 +262,8 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         spinnerCommIconsPerPage = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                arrayOf("6 ikon", "8 ikon", "9 ikon", "12 ikon", "15 ikon", "18 ikon")
-            ).also {
-                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
+            adapter = themedSpinnerAdapter("6 ikon", "8 ikon", "9 ikon", "12 ikon", "15 ikon", "18 ikon")
+            styleSpinner(this)
         }
         panel.addView(spinnerCommIconsPerPage)
 
@@ -244,7 +279,9 @@ class SettingsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         })
 
-        switchAutoSortIcons = Switch(this)
+        switchAutoSortIcons = Switch(this).apply {
+            setTextColor(0xFFFFFFFF.toInt())
+        }
         autoSortRow.addView(switchAutoSortIcons)
         panel.addView(autoSortRow)
 
@@ -255,13 +292,8 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         spinnerCommSubmenuTimeout = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                arrayOf("8 sekund", "12 sekund", "15 sekund", "20 sekund", "30 sekund", "60 sekund")
-            ).also {
-                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
+            adapter = themedSpinnerAdapter("8 sekund", "12 sekund", "15 sekund", "20 sekund", "30 sekund", "60 sekund")
+            styleSpinner(this)
         }
         panel.addView(spinnerCommSubmenuTimeout)
 
@@ -301,7 +333,9 @@ class SettingsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         })
 
-        switchAutoLanguage = Switch(this)
+        switchAutoLanguage = Switch(this).apply {
+            setTextColor(0xFFFFFFFF.toInt())
+        }
         autoRow.addView(switchAutoLanguage)
         panel.addView(autoRow)
 
@@ -337,11 +371,8 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 12f
         })
         spinnerSpeechRate = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                speechRateOptions()
-            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            adapter = themedSpinnerAdapter(*speechRateOptions())
+            styleSpinner(this)
         }
         panel.addView(spinnerSpeechRate)
 
@@ -351,11 +382,8 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 12f
         })
         spinnerSpeechPitch = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                speechPitchOptions()
-            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            adapter = themedSpinnerAdapter(*speechPitchOptions())
+            styleSpinner(this)
         }
         panel.addView(spinnerSpeechPitch)
 
@@ -365,11 +393,8 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 12f
         })
         spinnerSpeechVolume = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@SettingsActivity,
-                android.R.layout.simple_spinner_item,
-                speechVolumeOptions()
-            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            adapter = themedSpinnerAdapter(*speechVolumeOptions())
+            styleSpinner(this)
         }
         panel.addView(spinnerSpeechVolume)
 
@@ -448,9 +473,9 @@ class SettingsActivity : AppCompatActivity() {
         updateApiStatus()
 
         val voices = arrayOf("marin", "cedar", "nova", "shimmer", "alloy", "echo", "fable", "onyx")
-        val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
-        voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        val voiceAdapter = themedSpinnerAdapter(*voices)
         binding.spinnerTtsVoice.adapter = voiceAdapter
+        styleSpinner(binding.spinnerTtsVoice)
         binding.spinnerTtsVoice.setSelection(voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
 
         binding.etGmailUser.setText(prefs.getGmailUser())
@@ -573,13 +598,8 @@ class SettingsActivity : AppCompatActivity() {
 
             val spinner = Spinner(this).apply {
                 val options = arrayOf("🇸🇮 Slovenščina", "🇺🇦 Ukrajinščina")
-                adapter = ArrayAdapter(
-                    this@SettingsActivity,
-                    android.R.layout.simple_spinner_item,
-                    options
-                ).also {
-                    it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                }
+                adapter = themedSpinnerAdapter(*options)
+                styleSpinner(this)
 
                 val language = contact?.language ?: defaultLanguages[index]
                 setSelection(if (language == "uk") 1 else 0)
@@ -735,7 +755,7 @@ class SettingsActivity : AppCompatActivity() {
         val contacts = companionContacts()
         val names = contacts.map { it.displayName }.toTypedArray()
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Izberi sogovornika")
             .setItems(names) { _, which ->
                 val contact = contacts.getOrNull(which)
@@ -747,7 +767,10 @@ class SettingsActivity : AppCompatActivity() {
                 shareCompanionApp(contact)
             }
             .setNegativeButton("Prekliči", null)
-            .show()
+            .create()
+
+        dialog.show()
+        styleAlertDialog(dialog)
     }
 
     private fun shareCompanionApp(contact: CompanionShareContact) {
@@ -800,6 +823,55 @@ class SettingsActivity : AppCompatActivity() {
         Log.d("NovaRehabApi", message)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         updateApiStatus()
+    }
+
+    private fun styleSettingsUi() {
+        styleViewTree(binding.root)
+    }
+
+    private fun styleViewTree(view: View) {
+        when (view) {
+            is EditText -> styleEditText(view)
+            is Spinner -> styleSpinner(view)
+            is Switch -> view.setTextColor(0xFFFFFFFF.toInt())
+            is TextView -> if (view.currentTextColor == Color.BLACK) {
+                view.setTextColor(0xFFFFFFFF.toInt())
+            }
+        }
+
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                styleViewTree(view.getChildAt(index))
+            }
+        }
+    }
+
+    private fun styleEditText(editText: EditText) {
+        editText.setTextColor(0xFFFFFFFF.toInt())
+        editText.setHintTextColor(0xFFB8D8FF.toInt())
+        editText.setLinkTextColor(0xFFFFFFFF.toInt())
+    }
+
+    private fun styleAlertDialog(dialog: AlertDialog) {
+        dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
+        dialog.listView?.apply {
+            setBackgroundColor(0xFF1A1A2E.toInt())
+            divider = ColorDrawable(0xFF333355.toInt())
+            dividerHeight = 1
+        }
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(0xFFFFFFFF.toInt())
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xFFFFFFFF.toInt())
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(0xFFFFFFFF.toInt())
+    }
+
+    private fun restoreSettingsScrollPosition() {
+        binding.root.post {
+            binding.root.scrollTo(0, uiStatePrefs.getInt(PREF_SETTINGS_SCROLL_Y, 0))
+        }
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     private fun saveSpeechSettings() {
@@ -1064,6 +1136,11 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         prefs.saveContacts(contacts)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        uiStatePrefs.edit().putInt(PREF_SETTINGS_SCROLL_Y, binding.root.scrollY).apply()
     }
 
     private data class CompanionShareContact(

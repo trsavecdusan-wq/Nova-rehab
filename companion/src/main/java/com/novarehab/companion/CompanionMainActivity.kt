@@ -21,6 +21,7 @@ import org.webrtc.SurfaceViewRenderer
 class CompanionMainActivity : Activity() {
 
     private lateinit var tvStatus: TextView
+    private lateinit var tvConnectionState: TextView
     private lateinit var tvContactInfo: TextView
     private lateinit var btnAcceptCall: Button
     private lateinit var btnRejectCall: Button
@@ -48,6 +49,7 @@ class CompanionMainActivity : Activity() {
         contactConfigManager = ContactConfigManager(this)
 
         tvStatus = findViewById(R.id.tvStatus)
+        tvConnectionState = findViewById(R.id.tvConnectionState)
         tvContactInfo = findViewById(R.id.tvContactInfo)
         btnAcceptCall = findViewById(R.id.btnAcceptCall)
         btnRejectCall = findViewById(R.id.btnRejectCall)
@@ -172,6 +174,7 @@ class CompanionMainActivity : Activity() {
             listener = object : CompanionCallManager.Listener {
                 override fun onStatus(text: String) {
                     tvStatus.text = text
+                    updateConnectionStateFromMessage(text)
                 }
 
                 override fun onIncomingCall() {
@@ -200,6 +203,7 @@ class CompanionMainActivity : Activity() {
                 override fun onTabletMessage(text: String) {
                     val message = "${CompanionConfig.contactName}: $text"
                     tvStatus.text = message
+                    setConnectionState("Povezava deluje", true)
                     Toast.makeText(this@CompanionMainActivity, message, Toast.LENGTH_LONG).show()
                 }
 
@@ -210,6 +214,10 @@ class CompanionMainActivity : Activity() {
                         updateStatus()
                     }
                     tvStatus.text = text
+                    setConnectionState(
+                        if (text.contains("zased", ignoreCase = true) || text.contains("busy", ignoreCase = true)) "Zasedeno" else "Povezava ne deluje",
+                        text.contains("zased", ignoreCase = true) || text.contains("busy", ignoreCase = true)
+                    )
                     Toast.makeText(this@CompanionMainActivity, text, Toast.LENGTH_LONG).show()
                 }
             }
@@ -277,10 +285,42 @@ class CompanionMainActivity : Activity() {
             CompanionCallState.MISSED -> CompanionContactText.rejectedStatus(name)
         }
 
+        when (callState) {
+            CompanionCallState.IDLE -> setConnectionState("Povezava deluje", true)
+            CompanionCallState.RINGING -> setConnectionState(if (outgoingDialing) "Klic poslan" else "Čakam odgovor", true)
+            CompanionCallState.ACTIVE -> setConnectionState("Sprejeto", true)
+            CompanionCallState.BUSY -> setConnectionState("Zasedeno", false)
+            CompanionCallState.MISSED -> setConnectionState("Zavrnjeno", false)
+        }
+
         btnAcceptCall.visibility = if (callState == CompanionCallState.RINGING) View.VISIBLE else View.GONE
         btnRejectCall.visibility = if (callState == CompanionCallState.RINGING || callState == CompanionCallState.ACTIVE) View.VISIBLE else View.GONE
         btnRejectCall.text = if (callState == CompanionCallState.ACTIVE) "PREKINI KLIC" else "ZAVRNI KLIC"
         btnCallContact.visibility = if (callState == CompanionCallState.IDLE) View.VISIBLE else View.GONE
+    }
+
+    private fun updateConnectionStateFromMessage(text: String) {
+        val normalized = text.lowercase()
+        when {
+            normalized.contains("povezava ni uspela") || normalized.contains("prekinjena") ->
+                setConnectionState("Povezava ne deluje", false)
+            normalized.contains("klic poslan") ->
+                setConnectionState("Klic poslan", true)
+            normalized.contains("čakam") ->
+                setConnectionState("Čakam odgovor", true)
+            normalized.contains("sprejela") || normalized.contains("vzpostavljen") || normalized.contains("povezujem") ->
+                setConnectionState("Sprejeto", true)
+            normalized.contains("zavr") ->
+                setConnectionState("Zavrnjeno", false)
+            normalized.contains("zased") || normalized.contains("busy") ->
+                setConnectionState("Zasedeno", false)
+            else -> setConnectionState("Povezava deluje", true)
+        }
+    }
+
+    private fun setConnectionState(text: String, healthy: Boolean) {
+        tvConnectionState.text = text
+        tvConnectionState.setTextColor(if (healthy) 0xFFB8D8FF.toInt() else 0xFFFFC27A.toInt())
     }
 
     private fun requestVideoPermissions() {

@@ -3,6 +3,7 @@ package com.novarehab.ui
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
@@ -589,7 +590,7 @@ class IconSettingsActivity : AppCompatActivity() {
         }
 
         val labels = files.map { it.nameWithoutExtension }.toTypedArray()
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Izberi sliko iz arhiva")
             .setItems(labels) { _, which ->
                 val source = files.getOrNull(which) ?: return@setItems
@@ -598,7 +599,12 @@ class IconSettingsActivity : AppCompatActivity() {
                 recreate()
             }
             .setNegativeButton("Prekliči", null)
-            .show()
+            .create()
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
+        dialog.listView?.setBackgroundColor(0xFF1A1A2E.toInt())
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xFFFFFFFF.toInt())
     }
 
     private fun launchCameraForIcon(iconId: String) {

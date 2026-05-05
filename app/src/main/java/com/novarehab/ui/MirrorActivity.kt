@@ -24,6 +24,7 @@ class MirrorActivity : AppCompatActivity() {
     private lateinit var cameraManager: MirrorCameraManager
     private lateinit var mediaGalleryRepository: MediaGalleryRepository
     private lateinit var statsManager: StatsManager
+    private var backCameraResetRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +44,7 @@ class MirrorActivity : AppCompatActivity() {
         binding.btnSwitchCamera.setOnClickListener {
             resetCloseTimer()
             cameraManager.toggleCamera(this, binding.previewView, ::showCameraError)
+            scheduleFrontCameraReturnIfNeeded()
         }
         binding.btnCaptureMirror.setOnClickListener {
             resetCloseTimer()
@@ -52,6 +54,7 @@ class MirrorActivity : AppCompatActivity() {
                     mediaGalleryRepository.saveCameraCapture(file)
                     runOnUiThread {
                         cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
+                        cancelBackCameraReset()
                         Toast.makeText(this, "Slika shranjena v galerijo.", Toast.LENGTH_SHORT).show()
                     }
                 },
@@ -102,6 +105,7 @@ class MirrorActivity : AppCompatActivity() {
 
     private fun startCamera() {
         cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
+        cancelBackCameraReset()
     }
 
     private fun showCameraError(error: Throwable) {
@@ -112,10 +116,31 @@ class MirrorActivity : AppCompatActivity() {
         handler.removeCallbacksAndMessages(null)
         val timeout = intent.getLongExtra("mirror_timeout_ms", 60_000L).coerceIn(10_000L, 300_000L)
         handler.postDelayed({ finish() }, timeout)
+        backCameraResetRunnable?.let { runnable ->
+            val backTimeout = intent.getLongExtra("mirror_back_camera_return_ms", 20_000L).coerceIn(5_000L, 120_000L)
+            handler.postDelayed(runnable, backTimeout)
+        }
+    }
+
+    private fun scheduleFrontCameraReturnIfNeeded() {
+        cancelBackCameraReset()
+        if (!cameraManager.isUsingBackCamera()) return
+
+        backCameraResetRunnable = Runnable {
+            cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
+            cancelBackCameraReset()
+        }
+        resetCloseTimer()
+    }
+
+    private fun cancelBackCameraReset() {
+        backCameraResetRunnable?.let { handler.removeCallbacks(it) }
+        backCameraResetRunnable = null
     }
 
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
+        backCameraResetRunnable = null
     }
 }

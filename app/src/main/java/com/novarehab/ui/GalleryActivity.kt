@@ -1,9 +1,11 @@
 package com.novarehab.ui
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.novarehab.databinding.ActivityGalleryBinding
@@ -34,6 +36,11 @@ class GalleryActivity : AppCompatActivity() {
 
         loadImage()
         setupButtons()
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                returnToMain()
+            }
+        })
     }
 
     private fun loadImage() {
@@ -82,6 +89,15 @@ class GalleryActivity : AppCompatActivity() {
             loadImage()
         }
 
-        binding.btnClose.setOnClickListener { finish() }
+        binding.btnClose.setOnClickListener { returnToMain() }
+    }
+
+    private fun returnToMain() {
+        startActivity(
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+        )
+        finish()
     }
 }

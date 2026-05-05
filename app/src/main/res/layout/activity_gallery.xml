@@ -48,8 +48,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
+        android:background="#AA000000"
         android:orientation="horizontal"
-        android:padding="8dp">
+        android:paddingStart="12dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="20dp">
 
         <Button android:id="@+id/btnPrev" android:layout_width="0dp"
             android:layout_height="50dp" android:layout_weight="1"
@@ -59,7 +63,8 @@
         <Button android:id="@+id/btnClose" android:layout_width="wrap_content"
             android:layout_height="50dp" android:text="ZAPRI"
             android:backgroundTint="#e94560" android:textColor="#ffffff"
-            android:layout_marginEnd="8dp"/>
+            android:layout_marginEnd="8dp"
+            android:minWidth="104dp"/>
 
         <Button android:id="@+id/btnDelete" android:layout_width="wrap_content"
             android:layout_height="50dp" android:text="IZBRIŠI"
