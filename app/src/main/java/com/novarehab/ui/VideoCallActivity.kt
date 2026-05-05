@@ -22,7 +22,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.novarehab.R
-import com.novarehab.communication.data.CommunicationRepository
 import com.novarehab.communication.model.CommunicationItem
 import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.utils.ApiConfigManager
@@ -30,6 +29,7 @@ import com.novarehab.utils.IconTextManager
 import com.novarehab.utils.OpenAiTranslateManager
 import com.novarehab.utils.OpenAiTtsManager
 import com.novarehab.utils.PrefsManager
+import com.novarehab.video.communication.VideoCommunicationManager
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -43,6 +43,7 @@ class VideoCallActivity : AppCompatActivity() {
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
+    private lateinit var videoCommunicationManager: VideoCommunicationManager
     private var videoCallManager: VideoCallManager? = null
     private val httpClient = OkHttpClient()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
@@ -88,6 +89,7 @@ class VideoCallActivity : AppCompatActivity() {
         apiConfig = ApiConfigManager(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
+        videoCommunicationManager = VideoCommunicationManager(this)
 
         contactGridScreen = findViewById(R.id.contactGridScreen)
         confirmScreen = findViewById(R.id.confirmScreen)
@@ -287,8 +289,10 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     private fun renderCallCommunication(contact: VideoContact) {
-        val allItems = CommunicationRepository.load(this, contact.language) +
-            CommunicationRepository.customItems(prefs.getCustomCommIcons())
+        val allItems = videoCommunicationManager.buildOverlayItems(
+            language = contact.language,
+            customIcons = prefs.getCustomCommIcons()
+        )
 
         pagerCallCommunication.adapter = CommPageAdapter(
             context = this,
@@ -302,6 +306,7 @@ class VideoCallActivity : AppCompatActivity() {
     }
 
     private fun handleCallCommunicationItem(item: CommunicationItem, contact: VideoContact) {
+        videoCommunicationManager.logSelection(item, contact.language)
         val iconTextManager = IconTextManager(this)
         val savedText = iconTextManager.getText(item.id).ifBlank { item.ttsText }
         val submenuEnabled = prefs.isCommSubmenuEnabled(item.id, false)
