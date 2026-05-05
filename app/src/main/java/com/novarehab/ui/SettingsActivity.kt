@@ -47,6 +47,10 @@ class SettingsActivity : AppCompatActivity() {
     private var pendingImageIndex = -1
 
     private lateinit var spinnerDefaultSpeechLang: Spinner
+    private lateinit var spinnerFallbackSpeechLang: Spinner
+    private lateinit var spinnerSpeechRate: Spinner
+    private lateinit var spinnerSpeechPitch: Spinner
+    private lateinit var spinnerSpeechVolume: Spinner
     private lateinit var spinnerPatientLang1: Spinner
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
@@ -80,6 +84,7 @@ class SettingsActivity : AppCompatActivity() {
         paths = NovaRehabPaths(this)
 
         addLanguageSettingsPanel()
+        addSpeechSettingsPanel()
         addUpdateSettingsPanel()
         addCompanionSharePanel()
         loadSettings()
@@ -141,6 +146,58 @@ class SettingsActivity : AppCompatActivity() {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
         }
+    }
+
+    private fun speechRateOptions() = arrayOf("0.80x", "0.88x", "0.96x", "1.00x", "1.06x")
+
+    private fun speechPitchOptions() = arrayOf("0.8x", "0.9x", "1.0x", "1.1x", "1.2x")
+
+    private fun speechVolumeOptions() = arrayOf("70 %", "80 %", "90 %", "100 %")
+
+    private fun speechRateValue(position: Int): Float = when (position) {
+        0 -> 0.80f
+        2 -> 0.96f
+        3 -> 1.00f
+        4 -> 1.06f
+        else -> 0.88f
+    }
+
+    private fun speechRateIndex(value: Float): Int = when {
+        value <= 0.81f -> 0
+        value <= 0.89f -> 1
+        value <= 0.97f -> 2
+        value <= 1.01f -> 3
+        else -> 4
+    }
+
+    private fun speechPitchValue(position: Int): Float = when (position) {
+        0 -> 0.8f
+        1 -> 0.9f
+        3 -> 1.1f
+        4 -> 1.2f
+        else -> 1.0f
+    }
+
+    private fun speechPitchIndex(value: Float): Int = when {
+        value <= 0.85f -> 0
+        value <= 0.95f -> 1
+        value <= 1.05f -> 2
+        value <= 1.15f -> 3
+        else -> 4
+    }
+
+    private fun speechVolumeValue(position: Int): Float = when (position) {
+        0 -> 0.7f
+        1 -> 0.8f
+        2 -> 0.9f
+        else -> 1.0f
+    }
+
+    private fun speechVolumeIndex(value: Float): Int = when {
+        value <= 0.75f -> 0
+        value <= 0.85f -> 1
+        value <= 0.95f -> 2
+        else -> 3
     }
 
     private fun addLanguageSettingsPanel() {
@@ -251,6 +308,75 @@ class SettingsActivity : AppCompatActivity() {
         rootLayout.addView(panel, 5)
     }
 
+    private fun addSpeechSettingsPanel() {
+        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 16)
+        }
+
+        panel.addView(TextView(this).apply {
+            text = "Napredne nastavitve govora"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+
+        panel.addView(TextView(this).apply {
+            text = "Rezervni jezik lokalnega govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerFallbackSpeechLang = newLangSpinner()
+        panel.addView(spinnerFallbackSpeechLang)
+
+        panel.addView(TextView(this).apply {
+            text = "Hitrost govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechRate = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                speechRateOptions()
+            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        panel.addView(spinnerSpeechRate)
+
+        panel.addView(TextView(this).apply {
+            text = "Visina glasu:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechPitch = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                speechPitchOptions()
+            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        panel.addView(spinnerSpeechPitch)
+
+        panel.addView(TextView(this).apply {
+            text = "Glasnost govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechVolume = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                speechVolumeOptions()
+            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        panel.addView(spinnerSpeechVolume)
+
+        val insertIndex = 6.coerceAtMost(rootLayout.childCount)
+        rootLayout.addView(panel, insertIndex)
+    }
+
     private fun addUpdateSettingsPanel() {
         val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
 
@@ -321,7 +447,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etOpenAiKey.setText(apiConfig.getApiToken())
         updateApiStatus()
 
-        val voices = arrayOf("nova", "shimmer", "alloy", "echo", "fable", "onyx")
+        val voices = arrayOf("marin", "cedar", "nova", "shimmer", "alloy", "echo", "fable", "onyx")
         val voiceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, voices)
         voiceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerTtsVoice.adapter = voiceAdapter
@@ -354,6 +480,10 @@ class SettingsActivity : AppCompatActivity() {
         spinnerCommSubmenuTimeout.setSelection(timeoutIndex(prefs.getCommSubmenuTimeoutSeconds()))
 
         spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
+        spinnerFallbackSpeechLang.setSelection(langIndex(prefs.getFallbackSpeechLanguage()))
+        spinnerSpeechRate.setSelection(speechRateIndex(prefs.getTtsSpeed()))
+        spinnerSpeechPitch.setSelection(speechPitchIndex(prefs.getTtsPitch()))
+        spinnerSpeechVolume.setSelection(speechVolumeIndex(prefs.getTtsVolume()))
         spinnerPatientLang1.setSelection(langIndex(prefs.getPatientLanguage1()))
         spinnerPatientLang2.setSelection(langIndex(prefs.getPatientLanguage2()))
         switchAutoLanguage.isChecked = prefs.isAutoLanguageEnabled()
@@ -531,10 +661,13 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.btnTestLocalTts.setOnClickListener {
-            saveApiFields()
+            saveSpeechSettings()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
-            tts.speakAndroid("Zdravo, to je test lokalnega govora.", "sl") {
+            tts.speakAndroid(
+                "Zdravo, to je test lokalnega govora.",
+                langCode(spinnerDefaultSpeechLang.selectedItemPosition)
+            ) {
                 tts.destroy()
             }
             Toast.makeText(this, "Test lokalnega govora.", Toast.LENGTH_SHORT).show()
@@ -542,6 +675,7 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.btnTestApiTts.setOnClickListener {
             saveApiFields()
+            saveSpeechSettings()
             val key = apiConfig.getApiToken()
             val baseUrl = apiConfig.getApiBaseUrl()
 
@@ -553,7 +687,13 @@ class SettingsActivity : AppCompatActivity() {
             val voice = binding.spinnerTtsVoice.selectedItem.toString()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
-            tts.speak("Zdravo, to je test API govora aplikacije Nova Rehab.", "sl", key, voice, baseUrl) {
+            tts.speak(
+                "Zdravo, to je test API govora aplikacije Nova Rehab.",
+                langCode(spinnerDefaultSpeechLang.selectedItemPosition),
+                key,
+                voice,
+                baseUrl
+            ) {
                 tts.destroy()
             }
         }
@@ -643,9 +783,7 @@ class SettingsActivity : AppCompatActivity() {
         val allowedIds = companionContacts().map { it.contactId }.toSet()
         if (contactId !in allowedIds) return null
 
-        val baseUrl = "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/"
-        val contactNumber = contactId.removePrefix("c").padStart(2, '0')
-        return baseUrl + "companion-$contactNumber-debug.apk"
+        return "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-debug.apk"
     }
 
     private fun saveApiFields() {
@@ -662,6 +800,15 @@ class SettingsActivity : AppCompatActivity() {
         Log.d("NovaRehabApi", message)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         updateApiStatus()
+    }
+
+    private fun saveSpeechSettings() {
+        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
+        prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
+        prefs.saveFallbackSpeechLanguage(langCode(spinnerFallbackSpeechLang.selectedItemPosition))
+        prefs.saveTtsSpeed(speechRateValue(spinnerSpeechRate.selectedItemPosition))
+        prefs.saveTtsPitch(speechPitchValue(spinnerSpeechPitch.selectedItemPosition))
+        prefs.saveTtsVolume(speechVolumeValue(spinnerSpeechVolume.selectedItemPosition))
     }
 
     private fun updateApiStatus(forced: String? = null) {
@@ -805,7 +952,7 @@ class SettingsActivity : AppCompatActivity() {
         saveContactSettings()
 
         saveApiFields()
-        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
+        saveSpeechSettings()
 
         prefs.saveGmailUser(binding.etGmailUser.text.toString().trim())
         prefs.saveGmailAppPassword(binding.etGmailPass.text.toString().trim())
@@ -832,7 +979,6 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveAutoSortCommunicationIconsEnabled(switchAutoSortIcons.isChecked)
         prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition))
 
-        prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
         prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
         prefs.savePatientLanguage2(langCode(spinnerPatientLang2.selectedItemPosition))
         prefs.saveAutoLanguageEnabled(switchAutoLanguage.isChecked)

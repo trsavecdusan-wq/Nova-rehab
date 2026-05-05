@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.widget.Toast
@@ -190,6 +191,9 @@ class OpenAiTtsManager(private val context: Context) {
         }
 
         val uid = "rehab_${System.currentTimeMillis()}"
+        val params = Bundle().apply {
+            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, prefs.getTtsVolume())
+        }
 
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) = Unit
@@ -206,7 +210,7 @@ class OpenAiTtsManager(private val context: Context) {
 
         tts?.stop()
         applyLocalSettings()
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, uid)
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, uid)
     }
 
     private fun applyLocalSettings() {
