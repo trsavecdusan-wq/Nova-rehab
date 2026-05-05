@@ -54,7 +54,8 @@
             android:gravity="center"
             android:text="Kontakt"
             android:textColor="#B8D8FF"
-            android:textSize="18sp" />
+            android:textSize="18sp"
+            android:maxLines="2" />
 
     </LinearLayout>
 
@@ -115,7 +116,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:backgroundTint="#333355"
-            android:text="IZBERI KONTAKT"
+            android:text="NASTAVITVE KONTAKTA"
             android:textColor="#FFFFFF"
             android:textSize="18sp"
             android:textStyle="bold" />

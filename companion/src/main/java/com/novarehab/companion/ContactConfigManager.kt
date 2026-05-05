@@ -23,8 +23,29 @@ class ContactConfigManager(context: Context) {
 
     fun getCurrent(): CompanionContactConfig {
         val savedId = prefs.getString(KEY_CONTACT_ID, null)
-        return availableContacts.firstOrNull { it.contactId == savedId }
-            ?: availableContacts.last()
+        val savedName = prefs.getString(KEY_CONTACT_NAME, null).orEmpty()
+        val savedRoomId = prefs.getString(KEY_ROOM_ID, null).orEmpty()
+        val savedLanguage = prefs.getString(KEY_LANGUAGE, null).orEmpty()
+
+        val predefined = availableContacts.firstOrNull { it.contactId == savedId }
+        if (predefined != null) {
+            return predefined.copy(
+                contactName = savedName.ifBlank { predefined.contactName },
+                roomId = savedRoomId.ifBlank { predefined.roomId },
+                preferredLanguage = savedLanguage.ifBlank { predefined.preferredLanguage }
+            )
+        }
+
+        if (savedId != null) {
+            return CompanionContactConfig(
+                contactId = savedId,
+                contactName = savedName.ifBlank { savedId.uppercase() },
+                roomId = savedRoomId.ifBlank { "novarehab_$savedId" },
+                preferredLanguage = savedLanguage.ifBlank { "sl" }
+            )
+        }
+
+        return availableContacts.last()
     }
 
     fun isConfigured(): Boolean = prefs.contains(KEY_CONTACT_ID)
