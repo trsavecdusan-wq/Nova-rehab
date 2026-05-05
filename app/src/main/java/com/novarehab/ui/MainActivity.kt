@@ -31,7 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.novarehab.communication.data.CommunicationRepository
+import com.novarehab.communication.data.CommunicationCatalog
 import com.novarehab.communication.model.CommunicationItem
 import com.novarehab.core.config.ApiConfigImportManager
 import com.novarehab.core.storage.NovaRehabPaths
@@ -55,11 +55,8 @@ import com.novarehab.utils.SettingsBackupManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
 import com.novarehab.utils.UpdateManager
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
+import com.novarehab.video.signaling.IncomingCallMonitor
+import com.novarehab.video.signaling.IncomingCallRequest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -78,10 +75,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var stats: StatsManager
     private lateinit var learningProfile: LearningProfileManager
+    private lateinit var communicationCatalog: CommunicationCatalog
     private lateinit var mediaGalleryRepository: MediaGalleryRepository
     private lateinit var ttsManager: OpenAiTtsManager
     private lateinit var translateManager: OpenAiTranslateManager
     private lateinit var paths: NovaRehabPaths
+    private lateinit var incomingCallMonitor: IncomingCallMonitor
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -97,9 +96,7 @@ class MainActivity : AppCompatActivity() {
     private val languageReturnHandler = Handler(Looper.getMainLooper())
     private val incomingCallHandler = Handler(Looper.getMainLooper())
     private val mediaInboxHandler = Handler(Looper.getMainLooper())
-    private val httpClient = OkHttpClient()
     private val mediaDownloadWorker = MediaDownloadWorker()
-    private val jsonType = "application/json; charset=utf-8".toMediaType()
 
     private var kioskRunnable: Runnable? = null
     private var clockRunnable: Runnable? = null
@@ -127,9 +124,11 @@ class MainActivity : AppCompatActivity() {
 
         stats = StatsManager(this)
         learningProfile = LearningProfileManager(this)
+        communicationCatalog = CommunicationCatalog(this, prefs, learningProfile)
         mediaGalleryRepository = MediaGalleryRepository(this)
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
+        incomingCallMonitor = IncomingCallMonitor(prefs, signalingBaseUrl = SIGNALING_BASE_URL)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
 
         handleUpdateIntent(intent)
@@ -386,21 +385,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCommItems(): List<CommunicationItem> {
         val language = activeLang.ifBlank { prefs.getDefaultSpeechLanguage().ifBlank { "sl" } }
-        val items = CommunicationRepository.load(this, language) +
-            CommunicationRepository.customItems(prefs.getCustomCommIcons())
-
-        return sortCommunicationItems(items)
-    }
-
-    private fun sortCommunicationItems(items: List<CommunicationItem>): List<CommunicationItem> {
-        if (!prefs.isAutoSortCommunicationIconsEnabled()) return items
-
-        val urgentIds = setOf("pomoc", "kopalnica", "bolecina", "slabo")
-        return items.sortedWith(
-            compareByDescending<CommunicationItem> { it.id in urgentIds || it.pinned }
-                .thenByDescending { learningProfile.usageCount(it.id) }
-                .thenBy { it.priority }
-        )
+        return communicationCatalog.load(language)
     }
 
     private fun setupCommPager() {
@@ -859,55 +844,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkCompanionIncomingRequests() {
         Thread {
-            val request = findIncomingCallRequest()
+            val request = incomingCallMonitor.findIncomingCall(activeIncomingRoomId)
             if (request != null) {
                 incomingCallHandler.post {
                     showIncomingCallDialog(request)
                 }
             }
         }.start()
-    }
-
-    private fun findIncomingCallRequest(): IncomingCallRequest? {
-        val ids = listOf("c01", "c02", "c03", "c04", "c05", "c06")
-        val contacts = prefs.getContacts()
-
-        ids.forEachIndexed { index, id ->
-            if (!prefs.isContactIncomingCallEnabled(index)) return@forEachIndexed
-
-            val roomId = "novarehab_$id"
-            if (activeIncomingRoomId == roomId) return@forEachIndexed
-
-            val json = getOutgoingRequest(roomId) ?: return@forEachIndexed
-            if (json.optString("status") != "calling") return@forEachIndexed
-
-            val name = json.optString("contactName")
-                .ifBlank { contacts.getOrNull(index)?.name }
-                .orEmpty()
-                .ifBlank { id.uppercase() }
-
-            return IncomingCallRequest(roomId, name)
-        }
-
-        return null
-    }
-
-    private fun getOutgoingRequest(roomId: String): JSONObject? {
-        return try {
-            val request = Request.Builder()
-                .url(roomUrl(roomId, "outgoingRequest"))
-                .get()
-                .build()
-
-            httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return null
-
-                val raw = response.body?.string().orEmpty()
-                if (raw.isBlank() || raw == "null") null else JSONObject(raw)
-            }
-        } catch (_: Exception) {
-            null
-        }
     }
 
     private fun showIncomingCallDialog(request: IncomingCallRequest) {
@@ -919,45 +862,26 @@ class MainActivity : AppCompatActivity() {
             .setTitle("${request.contactName} kliče")
             .setMessage("TESTNI KLIC\nSogovornik želi poklicati Lano.")
             .setPositiveButton("SPREJMI") { _, _ ->
-                sendOutgoingRequestStatus(request.roomId, "accepted")
+                sendIncomingCallStatus(request.roomId, "accepted")
                 Toast.makeText(this, "Testni klic sprejet.", Toast.LENGTH_LONG).show()
                 activeIncomingRoomId = null
             }
             .setNegativeButton("ZAVRNI") { _, _ ->
-                sendOutgoingRequestStatus(request.roomId, "rejected")
+                sendIncomingCallStatus(request.roomId, "rejected")
                 Toast.makeText(this, "Klic zavrnjen.", Toast.LENGTH_SHORT).show()
                 activeIncomingRoomId = null
             }
             .setOnCancelListener {
-                sendOutgoingRequestStatus(request.roomId, "rejected")
+                sendIncomingCallStatus(request.roomId, "rejected")
                 activeIncomingRoomId = null
             }
             .show()
     }
 
-    private fun sendOutgoingRequestStatus(roomId: String, status: String) {
+    private fun sendIncomingCallStatus(roomId: String, status: String) {
         Thread {
-            try {
-                val body = JSONObject()
-                    .put("status", status)
-                    .put("updatedAt", System.currentTimeMillis())
-                    .toString()
-                    .toRequestBody(jsonType)
-
-                val request = Request.Builder()
-                    .url(roomUrl(roomId, "outgoingRequest"))
-                    .patch(body)
-                    .build()
-
-                httpClient.newCall(request).execute().use {
-                }
-            } catch (_: Exception) {
-            }
+            incomingCallMonitor.sendStatus(roomId, status)
         }.start()
-    }
-
-    private fun roomUrl(roomId: String, child: String): String {
-        return "${SIGNALING_BASE_URL.trimEnd('/')}/rooms/$roomId/$child.json"
     }
 
     private fun setupBottomActionButtons() {
@@ -1197,10 +1121,5 @@ class MainActivity : AppCompatActivity() {
         val code: String,
         val flag: String,
         val fullName: String
-    )
-
-    private data class IncomingCallRequest(
-        val roomId: String,
-        val contactName: String
     )
 }
