@@ -65,7 +65,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        private const val MAX_SUBMENU_ITEMS = 18
+        private const val MAX_SUBMENU_ITEMS = 6
         private const val SIGNALING_BASE_URL =
             "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
     }
@@ -385,14 +385,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCommItems(): List<CommunicationItem> {
         val language = activeLang.ifBlank { prefs.getDefaultSpeechLanguage().ifBlank { "sl" } }
-        return communicationCatalog.load(language)
+        return communicationCatalog.loadMain(language)
     }
 
     private fun setupCommPager() {
         val adapter = CommPageAdapter(
             context = this,
             items = getCommItems(),
-            pageSize = prefs.getCommIconsPerPage(),
+            pageSize = prefs.getCommIconsPerPage().coerceIn(9, 12),
             getLang = { activeLang },
             onItemSelected = { item -> handleCommunicationItem(item) }
         )

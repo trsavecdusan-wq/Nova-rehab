@@ -8,6 +8,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object CommunicationRepository {
+    private const val MAX_MAIN_ITEMS = 12
+    private const val MAX_SUBMENU_ITEMS = 6
 
     fun load(context: Context, language: String): List<CommunicationItem> {
         val normalizedLanguage = normalizeLanguage(language)
@@ -117,14 +119,11 @@ object CommunicationRepository {
     )
 
     fun getMainItems(context: Context, language: String): List<CommunicationItem> {
-        return load(context, language)
-            .filter { it.enabled }
-            .sortedBy { it.priority }
-            .take(12)
+        return normalizeMainItems(load(context, language))
     }
 
     fun getChildren(context: Context, language: String, parentId: String): List<CommunicationItem> {
-        return searchById(context, language, parentId)?.children.orEmpty().take(6)
+        return normalizeChildren(searchById(context, language, parentId)?.children.orEmpty())
     }
 
     fun searchById(context: Context, language: String, id: String): CommunicationItem? {
@@ -132,7 +131,8 @@ object CommunicationRepository {
     }
 
     fun customItems(items: List<CustomCommIcon>): List<CommunicationItem> {
-        return items
+        return normalizeMainItems(
+            items
             .filter { it.text.isNotBlank() || it.title.isNotBlank() }
             .map { item ->
                 CommunicationItem(
@@ -148,16 +148,15 @@ object CommunicationRepository {
                     pinnedVideo = item.pinnedVideo
                 )
             }
+        )
     }
 
     private fun parseItems(context: Context, raw: String): List<CommunicationItem> {
         val root = JSONObject(raw)
         val array = root.optJSONArray("items") ?: JSONArray()
-        return (0 until array.length())
+        val parsedItems = (0 until array.length())
             .mapNotNull { index -> array.optJSONObject(index)?.let { parseItem(context, it) } }
-            .filter { it.enabled }
-            .sortedBy { it.priority }
-            .ifEmpty { loadFallback() }
+        return normalizeMainItems(parsedItems).ifEmpty { loadFallback() }
     }
 
     private fun parseItem(context: Context, json: JSONObject): CommunicationItem {
@@ -165,8 +164,7 @@ object CommunicationRepository {
         val childrenArray = json.optJSONArray("children") ?: JSONArray()
         val children = (0 until childrenArray.length())
             .mapNotNull { index -> childrenArray.optJSONObject(index)?.let { parseItem(context, it) } }
-            .filter { it.enabled }
-            .sortedBy { it.priority }
+            .let { normalizeChildren(it) }
 
         return CommunicationItem(
             id = json.optString("id"),
@@ -187,9 +185,24 @@ object CommunicationRepository {
             symbolKey = json.optString("symbolKey"),
             logEventType = json.optString("logEventType", "iconClicked"),
             pinnedMain = json.optBoolean("pinnedMain", json.optBoolean("pinned", false)),
-            pinnedVideo = json.optBoolean("pinnedVideo", false),
+            pinnedVideo = json.optBoolean("pinnedVideo", json.optBoolean("pinned", false)),
             usageRank = json.optInt("usageRank", 0)
         )
+    }
+
+    private fun normalizeMainItems(items: List<CommunicationItem>): List<CommunicationItem> {
+        return items
+            .filter { it.enabled && it.id.isNotBlank() && it.label.isNotBlank() && it.ttsText.isNotBlank() }
+            .map { item -> item.copy(children = normalizeChildren(item.children)) }
+            .sortedBy { it.priority }
+            .take(MAX_MAIN_ITEMS)
+    }
+
+    private fun normalizeChildren(items: List<CommunicationItem>): List<CommunicationItem> {
+        return items
+            .filter { it.enabled && it.id.isNotBlank() && it.label.isNotBlank() && it.ttsText.isNotBlank() }
+            .sortedBy { it.priority }
+            .take(MAX_SUBMENU_ITEMS)
     }
 
     private fun flatten(items: List<CommunicationItem>): List<CommunicationItem> {
