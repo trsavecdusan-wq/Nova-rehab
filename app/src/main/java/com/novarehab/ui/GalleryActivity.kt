@@ -8,11 +8,14 @@ import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.novarehab.databinding.ActivityGalleryBinding
 import com.novarehab.media_messaging.repository.MediaGalleryRepository
+import com.novarehab.utils.StatEvent
+import com.novarehab.utils.StatsManager
 
 class GalleryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGalleryBinding
     private lateinit var repository: MediaGalleryRepository
+    private lateinit var statsManager: StatsManager
     private var currentIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,6 +28,8 @@ class GalleryActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         repository = MediaGalleryRepository(this)
+        statsManager = StatsManager(this)
+        statsManager.log(StatEvent.GALLERY_OPEN)
         repository.markAllSeen()
 
         loadImage()

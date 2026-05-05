@@ -64,12 +64,63 @@ class MediaGalleryRepository(context: Context) {
     }
 
     fun loadAll(): List<MediaMessage> {
-        if (!metadataFile.exists()) return emptyList()
-        return runCatching {
-            val type = object : TypeToken<List<MediaMessage>>() {}.type
-            gson.fromJson<List<MediaMessage>>(metadataFile.readText(Charsets.UTF_8), type).orEmpty()
-        }.getOrElse { emptyList() }
+        val storedItems = if (!metadataFile.exists()) {
+            emptyList()
+        } else {
+            runCatching {
+                val type = object : TypeToken<List<MediaMessage>>() {}.type
+                gson.fromJson<List<MediaMessage>>(metadataFile.readText(Charsets.UTF_8), type).orEmpty()
+            }.getOrElse { emptyList() }
+        }
+
+        val scannedItems = scanGalleryFiles()
+        if (storedItems.isEmpty()) return scannedItems
+        if (scannedItems.isEmpty()) return storedItems
+
+        return (storedItems + scannedItems)
+            .distinctBy { it.localPath }
+            .sortedByDescending { it.receivedAt }
     }
+
+    private fun scanGalleryFiles(): List<MediaMessage> {
+        val candidates = sequenceOf(
+            rootDir,
+            imagesDir,
+            paths.galleryCameraDir
+        ).flatMap { directory ->
+            directory.listFiles()
+                .orEmpty()
+                .asSequence()
+                .filter { file -> file.isFile && file.extension.lowercase() in supportedExtensions }
+        }
+
+        return candidates.map { file ->
+            MediaMessage(
+                messageId = "file_${file.nameWithoutExtension}",
+                senderId = "gallery",
+                senderName = if (file.parentFile?.name == "camera") "Kamera" else "Galerija",
+                targetContactId = "tablet",
+                fileType = "image",
+                mimeType = guessMimeType(file.extension),
+                receivedAt = file.lastModified(),
+                localPath = file.absolutePath,
+                thumbnailPath = "",
+                messageText = "",
+                seen = true
+            )
+        }.toList()
+    }
+
+    private fun guessMimeType(extension: String): String {
+        return when (extension.lowercase()) {
+            "png" -> "image/png"
+            "webp" -> "image/webp"
+            else -> "image/jpeg"
+        }
+    }
+
+    private val supportedExtensions: Set<String>
+        get() = setOf("jpg", "jpeg", "png", "webp")
 
     fun unseenCount(): Int = loadAll().count { !it.seen }
 
