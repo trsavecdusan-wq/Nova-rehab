@@ -1,2 +1,6 @@
 _push_copy/
 _push_commit/
+.gradle-local/
+.android-home/
+.gradle/
+build/
