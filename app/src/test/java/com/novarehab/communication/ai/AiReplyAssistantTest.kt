@@ -7,18 +7,45 @@ import org.junit.Test
 
 class AiReplyAssistantTest {
     @Test
-    fun fallbackSuggestionsStayShortAndConfirmedByUser() {
+    fun fallbackSuggestionsStayShortAndIncludeFatigueVariant() {
         val item = CommunicationItem(
             id = "voda",
             label = "VODA",
-            ttsText = "Želim vodo.",
+            ttsText = "Zelim vodo.",
             iconRes = 0
         )
 
-        val suggestions = AiReplyAssistant.suggestReplies(item, PatientState(possibleFatigue = true), language = "sl")
+        val suggestions = AiReplyAssistant.suggestReplies(
+            selectedItem = item,
+            patientState = PatientState(possibleFatigue = true),
+            language = "sl"
+        )
 
         assertTrue(suggestions.size <= 3)
-        assertEquals("Želim vodo.", suggestions.first())
+        assertEquals("Zelim vodo.", suggestions.first())
         assertTrue(suggestions.any { it.contains("Utrujena") })
+    }
+
+    @Test
+    fun suggestionsNeverExceedThreeItems() {
+        val item = CommunicationItem(
+            id = "pomoc",
+            label = "POMOC",
+            ttsText = "Prosim pomagajte mi.",
+            iconRes = 0
+        )
+
+        val suggestions = AiReplyAssistant.suggestReplies(
+            selectedItem = item,
+            patientState = PatientState(
+                possibleFatigue = true,
+                possibleFrustration = true,
+                activeLanguage = "sl"
+            ),
+            recentStats = RecentStats(recentItemIds = listOf("pocakaj")),
+            language = "sl"
+        )
+
+        assertTrue(suggestions.size <= 3)
     }
 }
