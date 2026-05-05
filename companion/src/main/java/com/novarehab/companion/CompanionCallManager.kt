@@ -8,6 +8,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.novarehab.video.model.CallState
+import com.novarehab.video.signaling.CallSnapshot
+import com.novarehab.video.signaling.RemoteCallStateStore
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -56,6 +59,7 @@ class CompanionCallManager(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val httpClient = OkHttpClient()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
+    private val remoteCallStateStore = RemoteCallStateStore(signalingBaseUrl, httpClient)
 
     private var eglBase: EglBase? = null
     private var peerConnectionFactory: PeerConnectionFactory? = null
@@ -701,6 +705,19 @@ class CompanionCallManager(
 
         override fun onSetFailure(error: String) {
         }
+    }
+
+    private fun updateCallState(state: CallState, errorMessage: String = "") {
+        remoteCallStateStore.write(
+            CallSnapshot(
+                roomId = roomId,
+                contactId = CompanionConfig.contactId,
+                contactName = CompanionConfig.contactName,
+                state = state,
+                updatedAt = System.currentTimeMillis(),
+                errorMessage = errorMessage
+            )
+        )
     }
 
     private data class TabletMessage(

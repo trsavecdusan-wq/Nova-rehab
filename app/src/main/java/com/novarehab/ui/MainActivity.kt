@@ -57,6 +57,7 @@ import com.novarehab.utils.StatsManager
 import com.novarehab.utils.UpdateManager
 import com.novarehab.video.signaling.IncomingCallMonitor
 import com.novarehab.video.signaling.IncomingCallRequest
+import com.novarehab.video.signaling.RemoteCallStateStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var translateManager: OpenAiTranslateManager
     private lateinit var paths: NovaRehabPaths
     private lateinit var incomingCallMonitor: IncomingCallMonitor
+    private lateinit var remoteCallStateStore: RemoteCallStateStore
 
     private var tts: TextToSpeech? = null
     private var ttsReady = false
@@ -129,6 +131,7 @@ class MainActivity : AppCompatActivity() {
         ttsManager = OpenAiTtsManager(this)
         translateManager = OpenAiTranslateManager(this)
         incomingCallMonitor = IncomingCallMonitor(prefs, signalingBaseUrl = SIGNALING_BASE_URL)
+        remoteCallStateStore = RemoteCallStateStore(SIGNALING_BASE_URL)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
 
         handleUpdateIntent(intent)
@@ -855,6 +858,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun showIncomingCallDialog(request: IncomingCallRequest) {
         if (activeIncomingRoomId == request.roomId || isFinishing) return
+
+        val remoteState = remoteCallStateStore.read(request.roomId)
+        if (remoteState?.state?.name in setOf("ACTIVE", "RINGING")) {
+            sendIncomingCallStatus(request.roomId, "busy")
+            Toast.makeText(this, "${request.contactName} je trenutno zaseden.", Toast.LENGTH_SHORT).show()
+            activeIncomingRoomId = null
+            return
+        }
 
         activeIncomingRoomId = request.roomId
 

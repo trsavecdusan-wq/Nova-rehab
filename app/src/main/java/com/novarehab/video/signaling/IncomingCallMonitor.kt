@@ -1,6 +1,7 @@
 package com.novarehab.video.signaling
 
 import com.novarehab.utils.PrefsManager
+import com.novarehab.video.model.CallState
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -17,6 +18,8 @@ class IncomingCallMonitor(
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val signalingBaseUrl: String = DEFAULT_SIGNALING_BASE_URL
 ) {
+    private val remoteStateStore = RemoteCallStateStore(signalingBaseUrl, httpClient)
+
     fun findIncomingCall(activeIncomingRoomId: String?): IncomingCallRequest? {
         val ids = listOf("c01", "c02", "c03", "c04", "c05", "c06")
         val contacts = prefsManager.getContacts()
@@ -26,6 +29,11 @@ class IncomingCallMonitor(
 
             val roomId = "novarehab_$id"
             if (activeIncomingRoomId == roomId) return@forEachIndexed
+
+            val callState = remoteStateStore.read(roomId)
+            if (callState?.state == CallState.ACTIVE || callState?.state == CallState.RINGING) {
+                return@forEachIndexed
+            }
 
             val json = getOutgoingRequest(roomId) ?: return@forEachIndexed
             if (json.optString("status") != "calling") return@forEachIndexed
@@ -42,6 +50,25 @@ class IncomingCallMonitor(
     }
 
     fun sendStatus(roomId: String, status: String) {
+        val state = when (status.lowercase()) {
+            "accepted" -> CallState.ACTIVE
+            "rejected" -> CallState.MISSED
+            "busy" -> CallState.BUSY
+            "ringing" -> CallState.RINGING
+            else -> CallState.IDLE
+        }
+
+        val current = remoteStateStore.read(roomId)
+        remoteStateStore.write(
+            CallSnapshot(
+                roomId = roomId,
+                contactId = current?.contactId.orEmpty(),
+                contactName = current?.contactName.orEmpty(),
+                state = state,
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+
         runCatching {
             val body = JSONObject()
                 .put("status", status)
