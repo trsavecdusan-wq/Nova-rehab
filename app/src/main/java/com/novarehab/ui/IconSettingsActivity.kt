@@ -1,7 +1,9 @@
 package com.novarehab.ui
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
@@ -15,6 +17,7 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.novarehab.R
 import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.utils.CustomCommIcon
@@ -27,8 +30,11 @@ class IconSettingsActivity : AppCompatActivity() {
 
     private var pendingIconId: String? = null
     private val requestImage = 401
+    private val requestCamera = 402
     private lateinit var prefs: PrefsManager
     private lateinit var paths: NovaRehabPaths
+    private var pendingCameraUri: Uri? = null
+    private var pendingCameraTargetId: String? = null
 
     private val allIcons = listOf(
         "pomoc" to R.drawable.comm_pomoc,
@@ -113,6 +119,8 @@ class IconSettingsActivity : AppCompatActivity() {
         note.setTextColor(0xFFAAAAAA.toInt())
         note.setPadding(0, 0, 0, dp(12))
         container.addView(note)
+        container.addView(createBackupControls())
+        addSeparator(container)
 
         container.addView(createTimeoutRow())
         addSeparator(container)
@@ -134,6 +142,57 @@ class IconSettingsActivity : AppCompatActivity() {
         for (i in 1..18) {
             container.addView(createCustomIconRow(i))
             addSeparator(container)
+        }
+    }
+
+    private fun createBackupControls(): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, 0, 0, dp(10)) }
+
+            addView(Button(this@IconSettingsActivity).apply {
+                text = "BACKUP NOW"
+                textSize = 13f
+                setBackgroundColor(0xFF1b5e20.toInt())
+                setTextColor(0xFFFFFFFF.toInt())
+                layoutParams = LinearLayout.LayoutParams(0, dp(48), 1f).apply {
+                    setMargins(0, 0, dp(8), 0)
+                }
+                setOnClickListener {
+                    val iconBackupOk = prefs.getCustomCommIcons().also { prefs.saveCustomCommIcons(it) }
+                    val settingsBackupOk = SettingsBackupManager(this@IconSettingsActivity).backupNow()
+                    Toast.makeText(
+                        this@IconSettingsActivity,
+                        if (settingsBackupOk || iconBackupOk.isNotEmpty()) "Varnostna kopija je shranjena."
+                        else "Varnostna kopija ni uspela.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            })
+
+            addView(Button(this@IconSettingsActivity).apply {
+                text = "RESTORE BACKUP"
+                textSize = 13f
+                setBackgroundColor(0xFF333355.toInt())
+                setTextColor(0xFFFFFFFF.toInt())
+                layoutParams = LinearLayout.LayoutParams(0, dp(48), 1f)
+                setOnClickListener {
+                    val restoredIcons =
+                        com.novarehab.communication.data.PersonalIconBankManager(this@IconSettingsActivity).restoreBackup()
+                    val restoredSettings = SettingsBackupManager(this@IconSettingsActivity).restoreIfAvailable()
+                    Toast.makeText(
+                        this@IconSettingsActivity,
+                        if (restoredIcons || restoredSettings) "Obnovitev je uspela."
+                        else "Ni najdene varnostne kopije.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    recreate()
+                }
+            })
         }
     }
 
@@ -351,9 +410,71 @@ class IconSettingsActivity : AppCompatActivity() {
         etSpeech.setBackgroundColor(0xFF16213e.toInt())
         etSpeech.setPadding(dp(8), dp(4), dp(8), dp(4))
 
+        val langSpinner = android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(
+                this@IconSettingsActivity,
+                android.R.layout.simple_spinner_item,
+                arrayOf("SL", "UK")
+            ).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            setSelection(if ((saved?.language ?: "sl") == "uk") 1 else 0)
+        }
+
+        val enabledSwitch = Switch(this).apply {
+            text = "VKLJUČENA"
+            textSize = 11f
+            setTextColor(0xFFB8D8FF.toInt())
+            isChecked = saved?.enabled ?: true
+        }
+
+        val pinnedMainSwitch = Switch(this).apply {
+            text = "PIN GLAVNI"
+            textSize = 11f
+            setTextColor(0xFFB8D8FF.toInt())
+            isChecked = saved?.pinnedMain ?: false
+        }
+
+        val pinnedVideoSwitch = Switch(this).apply {
+            text = "PIN VIDEO"
+            textSize = 11f
+            setTextColor(0xFFB8D8FF.toInt())
+            isChecked = saved?.pinnedVideo ?: false
+        }
+
+        val switchRow = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(langSpinner)
+            addView(enabledSwitch)
+            addView(pinnedMainSwitch)
+            addView(pinnedVideoSwitch)
+        }
+
         texts.addView(etTitle)
         texts.addView(etSpeech)
+        texts.addView(switchRow)
         row.addView(texts)
+
+        val sideButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(dp(8), 0, 0, 0) }
+        }
+
+        sideButtons.addView(actionButton("GAL") {
+            pendingIconId = id
+            startActivityForResult(Intent(Intent.ACTION_PICK).apply { type = "image/*" }, requestImage)
+        })
+
+        sideButtons.addView(actionButton("ARH") {
+            showArchivePicker(id)
+        })
+
+        sideButtons.addView(actionButton("FOTO") {
+            launchCameraForIcon(id)
+        })
 
         val btnSave = Button(this)
         btnSave.text = "OK"
@@ -367,16 +488,29 @@ class IconSettingsActivity : AppCompatActivity() {
             val list = prefs.getCustomCommIcons().filterNot { it.id == id }.toMutableList()
             val titleText = etTitle.text.toString().trim()
             val speechText = etSpeech.text.toString().trim()
+            val language = if (langSpinner.selectedItemPosition == 1) "uk" else "sl"
+            val imagePath = paths.customIconFile(id).takeIf { it.exists() }?.absolutePath.orEmpty()
 
             if (titleText.isNotEmpty() || speechText.isNotEmpty()) {
-                list.add(CustomCommIcon(id, titleText, speechText, "sl"))
+                list.add(
+                    CustomCommIcon(
+                        id = id,
+                        title = titleText,
+                        text = speechText,
+                        language = language,
+                        imagePath = imagePath,
+                        enabled = enabledSwitch.isChecked,
+                        pinnedMain = pinnedMainSwitch.isChecked,
+                        pinnedVideo = pinnedVideoSwitch.isChecked
+                    )
+                )
             }
 
             prefs.saveCustomCommIcons(list.sortedBy { it.id })
             SettingsBackupManager(this).backupNow()
             Toast.makeText(this, "Shranjeno", Toast.LENGTH_SHORT).show()
         }
-        row.addView(btnSave)
+        sideButtons.addView(btnSave)
 
         val btnReset = Button(this)
         btnReset.text = "<-"
@@ -392,7 +526,8 @@ class IconSettingsActivity : AppCompatActivity() {
             SettingsBackupManager(this).backupNow()
             recreate()
         }
-        row.addView(btnReset)
+        sideButtons.addView(btnReset)
+        row.addView(sideButtons)
 
         return row
     }
@@ -405,22 +540,99 @@ class IconSettingsActivity : AppCompatActivity() {
             val id = pendingIconId ?: return
 
             try {
-                val dir = paths.customIconsDir
-                dir.mkdirs()
-
-                contentResolver.openInputStream(uri)?.use { input ->
-                    File(dir, "$id.png").outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-
+                saveIconFromUri(id, uri)
                 SettingsBackupManager(this).backupNow()
                 Toast.makeText(this, "Slika zamenjana", Toast.LENGTH_SHORT).show()
                 recreate()
             } catch (_: Exception) {
                 Toast.makeText(this, "Napaka pri shranjevanju slike", Toast.LENGTH_SHORT).show()
             }
+            return
         }
+
+        if (requestCode == requestCamera && resultCode == RESULT_OK) {
+            val id = pendingCameraTargetId ?: return
+            val uri = pendingCameraUri ?: return
+            try {
+                saveIconFromUri(id, uri)
+                SettingsBackupManager(this).backupNow()
+                Toast.makeText(this, "Fotografija je shranjena.", Toast.LENGTH_SHORT).show()
+                recreate()
+            } catch (_: Exception) {
+                Toast.makeText(this, "Napaka pri shranjevanju slike", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun actionButton(label: String, onClick: () -> Unit): Button {
+        return Button(this).apply {
+            text = label
+            textSize = 11f
+            setBackgroundColor(0xFF0F3460.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(42)).apply {
+                setMargins(0, 0, 0, dp(4))
+            }
+            setOnClickListener { onClick() }
+        }
+    }
+
+    private fun showArchivePicker(iconId: String) {
+        val files = paths.iconArchiveDir.listFiles()
+            ?.filter { it.isFile }
+            ?.sortedByDescending { it.lastModified() }
+            .orEmpty()
+
+        if (files.isEmpty()) {
+            Toast.makeText(this, "Arhiv ikon je prazen.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val labels = files.map { it.nameWithoutExtension }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Izberi sliko iz arhiva")
+            .setItems(labels) { _, which ->
+                val source = files.getOrNull(which) ?: return@setItems
+                source.copyTo(paths.customIconFile(iconId), overwrite = true)
+                SettingsBackupManager(this).backupNow()
+                recreate()
+            }
+            .setNegativeButton("Prekliči", null)
+            .show()
+    }
+
+    private fun launchCameraForIcon(iconId: String) {
+        val imageFile = paths.archivedIconFile("camera_${iconId}_${System.currentTimeMillis()}")
+        imageFile.parentFile?.mkdirs()
+        pendingCameraTargetId = iconId
+        pendingCameraUri = FileProvider.getUriForFile(
+            this,
+            "$packageName.provider",
+            imageFile
+        )
+
+        startActivityForResult(
+            Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(android.provider.MediaStore.EXTRA_OUTPUT, pendingCameraUri)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            },
+            requestCamera
+        )
+    }
+
+    private fun saveIconFromUri(iconId: String, uri: Uri) {
+        val target = paths.customIconFile(iconId)
+        target.parentFile?.mkdirs()
+
+        contentResolver.openInputStream(uri)?.use { input ->
+            target.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        val archiveTarget = paths.archivedIconFile("${iconId}_${System.currentTimeMillis()}")
+        archiveTarget.parentFile?.mkdirs()
+        target.copyTo(archiveTarget, overwrite = true)
     }
 
     private fun dp(value: Int): Int {

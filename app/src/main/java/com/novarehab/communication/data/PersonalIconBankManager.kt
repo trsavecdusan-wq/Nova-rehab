@@ -7,6 +7,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class PersonalIconBankManager(context: Context) {
+    private val appContext = context.applicationContext
     private val paths = NovaRehabPaths(context)
 
     fun load(): List<CustomCommIcon> {
@@ -30,7 +31,9 @@ class PersonalIconBankManager(context: Context) {
                             title = item.optString("title").trim(),
                             text = item.optString("text").trim(),
                             language = item.optString("language", "sl").trim().ifBlank { "sl" },
-                            imagePath = item.optString("imagePath").trim(),
+                            imagePath = item.optString("imagePath")
+                                .trim()
+                                .ifBlank { resolveDefaultImagePath(id) },
                             enabled = item.optBoolean("enabled", true),
                             pinnedMain = item.optBoolean("pinnedMain", false),
                             pinnedVideo = item.optBoolean("pinnedVideo", false)
@@ -56,7 +59,7 @@ class PersonalIconBankManager(context: Context) {
                     .put("title", item.title)
                     .put("text", item.text)
                     .put("language", item.language)
-                    .put("imagePath", item.imagePath)
+                    .put("imagePath", item.imagePath.ifBlank { resolveDefaultImagePath(item.id) })
                     .put("enabled", item.enabled)
                     .put("pinnedMain", item.pinnedMain)
                     .put("pinnedVideo", item.pinnedVideo)
@@ -98,5 +101,10 @@ class PersonalIconBankManager(context: Context) {
 
         paths.communicationCustomBackupFile.parentFile?.mkdirs()
         paths.communicationCustomFile.copyTo(paths.communicationCustomBackupFile, overwrite = true)
+    }
+
+    private fun resolveDefaultImagePath(iconId: String): String {
+        val file = paths.customIconFile(iconId)
+        return if (file.exists()) file.absolutePath else ""
     }
 }

@@ -283,7 +283,9 @@ class SettingsBackupManager(private val context: Context) {
             .put("commSubmenuTimeoutSeconds", prefs.getCommSubmenuTimeoutSeconds())
             .put("ttsVoice", prefs.getTtsVoice())
             .put("ttsSpeed", prefs.getTtsSpeed().toDouble())
+            .put("ttsPitch", prefs.getTtsPitch().toDouble())
             .put("ttsVolume", prefs.getTtsVolume().toDouble())
+            .put("fallbackSpeechLanguage", prefs.getFallbackSpeechLanguage())
             .put("navigationEnabled", prefs.isNavigationEnabled())
             .put("homeAddress", prefs.getHomeAddress())
             .put("kioskReturnMinutes", prefs.getKioskReturnMinutes())
@@ -321,6 +323,10 @@ class SettingsBackupManager(private val context: Context) {
                     .put("title", it.title)
                     .put("text", it.text)
                     .put("language", it.language)
+                    .put("imagePath", it.imagePath)
+                    .put("enabled", it.enabled)
+                    .put("pinnedMain", it.pinnedMain)
+                    .put("pinnedVideo", it.pinnedVideo)
             }))
     }
 
@@ -337,7 +343,11 @@ class SettingsBackupManager(private val context: Context) {
         prefs.saveCommSubmenuTimeoutSeconds(json.optLong("commSubmenuTimeoutSeconds", prefs.getCommSubmenuTimeoutSeconds()))
         prefs.saveTtsVoice(json.optString("ttsVoice", prefs.getTtsVoice()))
         prefs.saveTtsSpeed(json.optDouble("ttsSpeed", prefs.getTtsSpeed().toDouble()).toFloat())
+        prefs.saveTtsPitch(json.optDouble("ttsPitch", prefs.getTtsPitch().toDouble()).toFloat())
         prefs.saveTtsVolume(json.optDouble("ttsVolume", prefs.getTtsVolume().toDouble()).toFloat())
+        prefs.saveFallbackSpeechLanguage(
+            json.optString("fallbackSpeechLanguage", prefs.getFallbackSpeechLanguage())
+        )
         prefs.saveNavigationEnabled(json.optBoolean("navigationEnabled", prefs.isNavigationEnabled()))
         prefs.saveHomeAddress(json.optString("homeAddress", prefs.getHomeAddress()))
         prefs.saveKioskReturnMinutes(json.optLong("kioskReturnMinutes", prefs.getKioskReturnMinutes()))
@@ -392,7 +402,11 @@ class SettingsBackupManager(private val context: Context) {
                     id = item.optString("id"),
                     title = item.optString("title"),
                     text = item.optString("text"),
-                    language = item.optString("language", "sl")
+                    language = item.optString("language", "sl"),
+                    imagePath = item.optString("imagePath"),
+                    enabled = item.optBoolean("enabled", true),
+                    pinnedMain = item.optBoolean("pinnedMain", false),
+                    pinnedVideo = item.optBoolean("pinnedVideo", false)
                 )
             }.filter { it.id.isNotBlank() }
 
