@@ -2,7 +2,7 @@ package com.novarehab.utils
 
 import android.content.Context
 import android.media.MediaPlayer
-import org.json.JSONArray
+import com.novarehab.core.storage.NovaRehabPaths
 import org.json.JSONObject
 import java.io.File
 
@@ -15,8 +15,9 @@ data class MusicTrack(
 
 class MusicManager(private val context: Context) {
 
-    private val musicDir = File(context.getExternalFilesDir(null), "music").also { it.mkdirs() }
-    private val historyFile = File(context.getExternalFilesDir(null), "music_history.json")
+    private val paths = NovaRehabPaths(context.applicationContext)
+    private val musicDir = paths.musicDir.also { it.mkdirs() }
+    private val historyFile = File(paths.rootDir, "music_history.json")
     private var mediaPlayer: MediaPlayer? = null
     private var currentIndex = 0
     private var playlist = mutableListOf<MusicTrack>()
@@ -24,11 +25,16 @@ class MusicManager(private val context: Context) {
     private var onTrackChange: ((MusicTrack) -> Unit)? = null
     private var onPlayStateChange: ((Boolean) -> Unit)? = null
 
-    // Glasba iz USB se kopira sem
-    val musicPath: File get() = musicDir
+    val musicPath: File
+        get() = musicDir
 
-    fun setOnTrackChange(listener: (MusicTrack) -> Unit) { onTrackChange = listener }
-    fun setOnPlayStateChange(listener: (Boolean) -> Unit) { onPlayStateChange = listener }
+    fun setOnTrackChange(listener: (MusicTrack) -> Unit) {
+        onTrackChange = listener
+    }
+
+    fun setOnPlayStateChange(listener: (Boolean) -> Unit) {
+        onPlayStateChange = listener
+    }
 
     fun loadPlaylist() {
         val history = loadHistory()
@@ -36,7 +42,7 @@ class MusicManager(private val context: Context) {
 
         val files = musicDir.listFiles()
             ?.filter { it.extension.lowercase() in audioExtensions }
-            ?.sortedBy { it.name }
+            ?.sortedBy { it.name.lowercase() }
             ?: emptyList()
 
         playlist = files.map { file ->
@@ -49,14 +55,13 @@ class MusicManager(private val context: Context) {
             )
         }.toMutableList()
 
-        // Sortiraj: najprej manj predvajane
         playlist.sortBy { it.playCount }
+        if (currentIndex >= playlist.size) currentIndex = 0
     }
 
     fun play() {
-        if (playlist.isEmpty()) { loadPlaylist() }
+        if (playlist.isEmpty()) loadPlaylist()
         if (playlist.isEmpty()) return
-
         playTrack(currentIndex)
     }
 
@@ -73,11 +78,13 @@ class MusicManager(private val context: Context) {
     }
 
     fun next() {
+        if (playlist.isEmpty()) return
         currentIndex = (currentIndex + 1) % playlist.size
         playTrack(currentIndex)
     }
 
     fun previous() {
+        if (playlist.isEmpty()) return
         currentIndex = if (currentIndex > 0) currentIndex - 1 else playlist.size - 1
         playTrack(currentIndex)
     }
@@ -91,7 +98,9 @@ class MusicManager(private val context: Context) {
     }
 
     fun isPlaying() = isPlaying
+
     fun currentTrack(): MusicTrack? = playlist.getOrNull(currentIndex)
+
     fun trackCount() = playlist.size
 
     private fun playTrack(index: Int) {
@@ -108,41 +117,23 @@ class MusicManager(private val context: Context) {
             onTrackChange?.invoke(track)
             onPlayStateChange?.invoke(true)
             updateHistory(track)
-        } catch (e: Exception) {
-            next() // Preskoči poškodovano datoteko
+        } catch (_: Exception) {
+            if (playlist.size > 1) next() else stop()
         }
     }
 
-    // Kopiraj datoteke z USB ključa
     fun copyFromUsb(usbPath: File, onProgress: (Int, Int) -> Unit, onDone: (Int) -> Unit) {
         Thread {
-            val audioExtensions = setOf("mp3", "aac", "ogg", "flac", "m4a", "wav")
-            val files = usbPath.walkTopDown()
-                .filter { it.isFile && it.extension.lowercase() in audioExtensions }
-                .toList()
-
-            var copied = 0
-            files.forEachIndexed { index, file ->
-                val dest = File(musicDir, file.name)
-                if (!dest.exists() || dest.lastModified() < file.lastModified()) {
-                    file.copyTo(dest, overwrite = true)
-                    copied++
-                }
+            val importer = UsbMusicImportManager(context)
+            val result = importer.importFromUsb(usbPath) { progress ->
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    onProgress(index + 1, files.size)
+                    onProgress(progress.current, progress.total)
                 }
-            }
-
-            // Preveri ali je USB novejši → ponastavi zgodovino
-            val usbLastModified = files.maxOfOrNull { it.lastModified() } ?: 0L
-            val historyLastReset = historyFile.lastModified()
-            if (usbLastModified > historyLastReset) {
-                clearHistory()
             }
 
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 loadPlaylist()
-                onDone(copied)
+                onDone(result.copied)
             }
         }.start()
     }
@@ -157,7 +148,8 @@ class MusicManager(private val context: Context) {
                 val key = keys.next()
                 result[key] = json.getJSONObject(key)
             }
-        } catch (e: Exception) {}
+        } catch (_: Exception) {
+        }
         return result
     }
 
@@ -172,12 +164,11 @@ class MusicManager(private val context: Context) {
             val json = JSONObject()
             history.forEach { (k, v) -> json.put(k, v) }
             historyFile.writeText(json.toString())
-        } catch (e: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
-    private fun clearHistory() {
-        try { historyFile.delete() } catch (e: Exception) {}
+    fun destroy() {
+        stop()
     }
-
-    fun destroy() { stop() }
 }

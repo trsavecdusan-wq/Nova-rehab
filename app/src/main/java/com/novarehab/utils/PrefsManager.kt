@@ -271,6 +271,30 @@ class PrefsManager(context: Context) {
     fun saveContactOutgoingCallEnabled(index: Int, enabled: Boolean) =
         prefs.edit().putBoolean("contact_${index}_outgoing_calls_enabled", enabled).apply()
 
+    fun isUsbMusicImportEnabled(): Boolean =
+        prefs.getBoolean("usb_music_import_enabled", true)
+
+    fun saveUsbMusicImportEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("usb_music_import_enabled", enabled).apply()
+
+    fun isUsbMusicAutoImportEnabled(): Boolean =
+        prefs.getBoolean("usb_music_auto_import_enabled", false)
+
+    fun saveUsbMusicAutoImportEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("usb_music_auto_import_enabled", enabled).apply()
+
+    fun getUsbMusicImportTarget(): String =
+        prefs.getString("usb_music_import_target", "auto") ?: "auto"
+
+    fun saveUsbMusicImportTarget(target: String) =
+        prefs.edit().putString("usb_music_import_target", target.ifBlank { "auto" }).apply()
+
+    fun getUsbMusicOverwriteDifferent(): Boolean =
+        prefs.getBoolean("usb_music_overwrite_different", false)
+
+    fun saveUsbMusicOverwriteDifferent(enabled: Boolean) =
+        prefs.edit().putBoolean("usb_music_overwrite_different", enabled).apply()
+
     private fun defaultContacts(): List<Contact> = listOf(
         Contact("Mama", "", "", "sl"),
         Contact("Ata", "", "", "sl"),

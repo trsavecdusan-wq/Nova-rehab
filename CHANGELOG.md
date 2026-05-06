@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-06 - v1.0.3 (versionCode 3)
+
+Changed modules:
+- `music`
+- `core/storage`
+- `settings`
+- `release`
+
+Fixed bugs:
+- Added safer USB music import into local `NovaRehab/music` storage.
+- Added duplicate-safe music copy rules and clearer import progress.
+- Refreshed local music playlist after import from USB.
+- Bumped release version metadata for the next test build.
+
+Known issues:
+- Final green build confirmation still depends on GitHub Actions after push.
+- USB access still depends on the device exposing the USB stick as readable storage.
+
 ## 2026-05-06 - v1.0.2 (versionCode 2)
 
 Changed modules:

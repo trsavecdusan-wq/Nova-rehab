@@ -1,26 +1,35 @@
 package com.novarehab.ui
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.novarehab.utils.MusicImportProgress
+import com.novarehab.utils.MusicImportResult
 import com.novarehab.utils.MusicManager
+import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
-import java.io.File
+import com.novarehab.utils.UsbMusicImportManager
 
 class MusicActivity : AppCompatActivity() {
 
     private lateinit var musicManager: MusicManager
+    private lateinit var prefs: PrefsManager
+    private lateinit var usbImporter: UsbMusicImportManager
     private lateinit var stats: StatsManager
     private lateinit var tvTrackTitle: TextView
     private lateinit var tvTrackInfo: TextView
+    private lateinit var tvCount: TextView
     private lateinit var btnPlayPause: Button
+    private var importInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +38,8 @@ class MusicActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         musicManager = MusicManager(this)
+        prefs = PrefsManager(this)
+        usbImporter = UsbMusicImportManager(this)
         stats = StatsManager(this)
 
         buildUI()
@@ -45,7 +56,7 @@ class MusicActivity : AppCompatActivity() {
             runOnUiThread {
                 btnPlayPause.text = if (playing) "PAVZA" else "PREDVAJAJ"
                 btnPlayPause.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                    if (playing) 0xFFb71c1c.toInt() else 0xFF1b5e20.toInt()
+                    if (playing) 0xFFB71C1C.toInt() else 0xFF1B5E20.toInt()
                 )
 
                 if (!playing) {
@@ -61,7 +72,7 @@ class MusicActivity : AppCompatActivity() {
     private fun buildUI() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF1a1a2e.toInt())
+            setBackgroundColor(0xFF1A1A2E.toInt())
             gravity = Gravity.CENTER
             setPadding(dp(24), dp(24), dp(24), dp(24))
         }
@@ -78,7 +89,7 @@ class MusicActivity : AppCompatActivity() {
         val tvTitle = TextView(this).apply {
             text = "GLASBA"
             textSize = 20f
-            setTextColor(0xFFe94560.toInt())
+            setTextColor(0xFFE94560.toInt())
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
@@ -127,7 +138,7 @@ class MusicActivity : AppCompatActivity() {
         tvTrackInfo = TextView(this).apply {
             text = ""
             textSize = 14f
-            setTextColor(0xFFaaaaaa.toInt())
+            setTextColor(0xFFAAAAAA.toInt())
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -152,7 +163,7 @@ class MusicActivity : AppCompatActivity() {
         val btnPrev = Button(this).apply {
             text = "<<"
             textSize = 24f
-            setBackgroundColor(0xFF0f3460.toInt())
+            setBackgroundColor(0xFF0F3460.toInt())
             setTextColor(0xFFFFFFFF.toInt())
             layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
                 setMargins(dp(8), 0, dp(8), 0)
@@ -163,7 +174,7 @@ class MusicActivity : AppCompatActivity() {
         btnPlayPause = Button(this).apply {
             text = "PREDVAJAJ"
             textSize = 16f
-            setBackgroundColor(0xFF1b5e20.toInt())
+            setBackgroundColor(0xFF1B5E20.toInt())
             setTextColor(0xFFFFFFFF.toInt())
             layoutParams = LinearLayout.LayoutParams(0, dp(72), 1f).apply {
                 setMargins(dp(8), 0, dp(8), 0)
@@ -182,7 +193,7 @@ class MusicActivity : AppCompatActivity() {
         val btnNext = Button(this).apply {
             text = ">>"
             textSize = 24f
-            setBackgroundColor(0xFF0f3460.toInt())
+            setBackgroundColor(0xFF0F3460.toInt())
             setTextColor(0xFFFFFFFF.toInt())
             layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
                 setMargins(dp(8), 0, dp(8), 0)
@@ -195,7 +206,7 @@ class MusicActivity : AppCompatActivity() {
         controls.addView(btnNext)
         root.addView(controls)
 
-        val tvCount = TextView(this).apply {
+        tvCount = TextView(this).apply {
             id = android.R.id.text1
             text = "Skupaj ${musicManager.trackCount()} pesmi"
             textSize = 13f
@@ -209,10 +220,10 @@ class MusicActivity : AppCompatActivity() {
         root.addView(tvCount)
 
         val btnUsb = Button(this).apply {
-            text = "Kopiraj z USB kljuca"
-            textSize = 14f
-            setBackgroundColor(0xFF16213e.toInt())
-            setTextColor(0xFFaaaaaa.toInt())
+            text = "UVOZI GLASBO Z USB"
+            textSize = 16f
+            setBackgroundColor(0xFF16213E.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -240,48 +251,117 @@ class MusicActivity : AppCompatActivity() {
             }
             tvTrackInfo.text = "Skupaj ${musicManager.trackCount()} pesmi"
         }
+
+        tvCount.text = "Skupaj ${musicManager.trackCount()} pesmi"
     }
 
     private fun scanAndCopyUsb() {
-        val possiblePaths = listOf(
-            File("/storage/usb"),
-            File("/storage/usb0"),
-            File("/mnt/usb"),
-            File("/mnt/media_rw")
-        )
+        if (importInProgress) return
 
-        val usbPath = possiblePaths.firstOrNull {
-            it.exists() && it.listFiles()?.isNotEmpty() == true
-        }
-
-        if (usbPath == null) {
-            Toast.makeText(this, "USB kljuc ni najden. Prikljuci USB kljuc.", Toast.LENGTH_LONG).show()
+        if (!prefs.isUsbMusicImportEnabled()) {
+            Toast.makeText(this, "USB uvoz glasbe je izklopljen.", Toast.LENGTH_LONG).show()
             return
         }
 
-        val progressDialog = android.app.AlertDialog.Builder(this)
-            .setTitle("Kopiranje glasbe")
-            .setMessage("Kopiram z USB kljuca...")
+        val usbPath = usbImporter.findReadableUsbRoots().firstOrNull()
+        if (usbPath == null) {
+            Toast.makeText(this, "USB ključek ni najden. Priključite USB ključek.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            isIndeterminate = false
+            max = 100
+        }
+        val tvTitle = TextView(this).apply {
+            text = "Kopiram glasbo"
+            textSize = 24f
+            setTextColor(0xFFFFFFFF.toInt())
+            gravity = Gravity.CENTER
+        }
+        val tvFile = TextView(this).apply {
+            text = ""
+            textSize = 16f
+            setTextColor(0xFFCCCCCC.toInt())
+            gravity = Gravity.CENTER
+        }
+        val tvCountProgress = TextView(this).apply {
+            text = "0 / 0"
+            textSize = 18f
+            setTextColor(0xFFFFFFFF.toInt())
+            gravity = Gravity.CENTER
+        }
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(24), dp(24), dp(24))
+            addView(tvTitle)
+            addView(tvFile)
+            addView(tvCountProgress)
+            addView(progressBar)
+        }
+
+        val progressDialog = AlertDialog.Builder(this)
+            .setView(content)
             .setCancelable(false)
             .create()
 
+        importInProgress = true
         progressDialog.show()
 
-        musicManager.copyFromUsb(
-            usbPath,
-            onProgress = { current, total ->
-                progressDialog.setMessage("Kopiram $current / $total...")
-            },
-            onDone = { copied ->
-                progressDialog.dismiss()
-                Toast.makeText(
-                    this,
-                    "Kopirano $copied novih pesmi. Skupaj ${musicManager.trackCount()}.",
-                    Toast.LENGTH_LONG
-                ).show()
-                updateTrackInfo()
+        Thread {
+            val result = usbImporter.importFromUsb(usbPath) { progress ->
+                runOnUiThread {
+                    renderImportProgress(progress, progressBar, tvFile, tvCountProgress)
+                }
             }
-        )
+
+            runOnUiThread {
+                importInProgress = false
+                progressDialog.dismiss()
+                musicManager.loadPlaylist()
+                updateTrackInfo()
+                showImportResult(result)
+            }
+        }.start()
+    }
+
+    private fun renderImportProgress(
+        progress: MusicImportProgress,
+        progressBar: ProgressBar,
+        tvFile: TextView,
+        tvCountProgress: TextView
+    ) {
+        tvFile.text = progress.fileName
+        tvCountProgress.text = "${progress.current} / ${progress.total}"
+        progressBar.progress = if (progress.total == 0) 0 else (progress.current * 100 / progress.total)
+    }
+
+    private fun showImportResult(result: MusicImportResult) {
+        if (result.message != null && result.copied == 0) {
+            Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Uvoz glasbe je končan.")
+            .setMessage(
+                buildString {
+                    appendLine("Kopirano: ${result.copied}")
+                    appendLine("Preskočeno: ${result.skipped}")
+                    if (result.duplicates > 0) appendLine("Dvojniki: ${result.duplicates}")
+                    if (!result.message.isNullOrBlank()) append(result.message)
+                }.trim()
+            )
+            .setPositiveButton("PREDVAJAJ GLASBO") { _, _ ->
+                if (musicManager.trackCount() > 0) {
+                    musicManager.play()
+                } else {
+                    Toast.makeText(this, "Ni glasbe za predvajanje.", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton("ZAPRI", null)
+            .show()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

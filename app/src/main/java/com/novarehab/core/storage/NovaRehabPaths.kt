@@ -46,6 +46,10 @@ class NovaRehabPaths(context: Context) {
         File(rootDir, "contacts").also { it.mkdirs() }
     }
 
+    val musicDir: File by lazy {
+        File(rootDir, "music").also { it.mkdirs() }
+    }
+
     val updatesDir: File by lazy {
         File(rootDir, "updates").also { it.mkdirs() }
     }
@@ -56,6 +60,17 @@ class NovaRehabPaths(context: Context) {
 
     val backupDir: File by lazy {
         File(configDir, "backup").also { it.mkdirs() }
+    }
+
+    val removableRootDir: File? by lazy {
+        appContext.getExternalFilesDirs(null)
+            .drop(1)
+            .firstOrNull()
+            ?.let { File(it, "NovaRehab").also { dir -> dir.mkdirs() } }
+    }
+
+    val removableMusicDir: File? by lazy {
+        removableRootDir?.let { File(it, "music").also { dir -> dir.mkdirs() } }
     }
 
     val communicationCustomFile: File by lazy {
