@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-05-06 - v1.0.5 (versionCode 5)
+
+Changed modules:
+- `settings`
+- `backup/export-import`
+- `learning`
+- `release`
+
+Fixed / added:
+- connected manual settings export/import actions in SettingsActivity
+- added ZIP share/export flow and partial import preview flow
+- added rollback-safe import with automatic backup before restore
+- aligned app-private backup path with NovaRehabPaths
+- bumped release version metadata for the export/import stabilization update
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- some older settings labels in SettingsActivity still contain legacy encoded text and can be cleaned separately
+
+## 2026-05-06 - v1.0.4 (versionCode 4)
+
+Changed modules:
+- `settings`
+- `backup/export-import`
+- `learning`
+- `release`
+
+Fixed / added:
+- added manual ZIP export of NovaRehab personalized profile and settings
+- added safe ZIP import with preview and partial restore options
+- added statistics JSON export
+- added rollback backup before import
+- updated release version metadata for this stabilization update
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- some older settings labels in SettingsActivity still contain legacy encoded text and can be cleaned separately
 ## 2026-05-06 - v1.0.3 (versionCode 3)
 
 Changed modules:

@@ -51,8 +51,8 @@ jobs:
         run: |
           cat > app-version.json <<'EOF'
           {
-            "versionCode": 3,
-            "versionName": "1.0.3",
+            "versionCode": 5,
+            "versionName": "1.0.5",
             "apkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-debug.apk",
             "companionApkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-debug.apk",
             "message": "Nova verzija aplikacije NovaRehab je na voljo."

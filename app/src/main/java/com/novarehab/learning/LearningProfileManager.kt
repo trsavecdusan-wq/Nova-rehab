@@ -64,6 +64,26 @@ class LearningProfileManager(context: Context) {
             .put("frequentSequences", JSONArray())
     }
 
+    fun importJson(json: JSONObject) {
+        clear()
+
+        fun restoreIntMap(keyPrefix: String, source: JSONObject) {
+            source.keys().forEach { key ->
+                prefs.edit().putInt("${keyPrefix}_$key", source.optInt(key, 0)).apply()
+            }
+        }
+
+        fun restoreLongMap(keyPrefix: String, source: JSONObject) {
+            source.keys().forEach { key ->
+                prefs.edit().putLong("${keyPrefix}_$key", source.optLong(key, 0L)).apply()
+            }
+        }
+
+        restoreIntMap("icon_count", json.optJSONObject("iconUsageCount") ?: JSONObject())
+        restoreLongMap("icon_last", json.optJSONObject("lastUsedAt") ?: JSONObject())
+        restoreIntMap("ai_confirmed", json.optJSONObject("confirmedAiSuggestions") ?: JSONObject())
+        restoreIntMap("ai_rejected", json.optJSONObject("rejectedAiSuggestions") ?: JSONObject())
+    }
     fun clear() {
         prefs.edit().clear().apply()
     }

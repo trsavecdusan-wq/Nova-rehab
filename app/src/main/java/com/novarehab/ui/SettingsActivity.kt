@@ -2,9 +2,11 @@ package com.novarehab.ui
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.ActivityNotFoundException
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import androidx.core.content.FileProvider
 import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -27,6 +29,8 @@ import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.databinding.ActivitySettingsBinding
 import com.novarehab.service.ReportWorker
 import com.novarehab.utils.ApiConfigManager
+import com.novarehab.utils.ConfigExportImportManager
+import com.novarehab.utils.ConfigImportMode
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.RadioStation
@@ -38,6 +42,9 @@ class SettingsActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_API_FILE = 501
+        private const val REQUEST_EXPORT_CONFIG_FILE = 502
+        private const val REQUEST_IMPORT_CONFIG_FILE = 503
+        private const val REQUEST_EXPORT_STATS_FILE = 504
         private const val PREF_SETTINGS_SCROLL_Y = "settings_scroll_y"
     }
 
@@ -45,6 +52,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var prefs: PrefsManager
     private lateinit var apiConfig: ApiConfigManager
     private lateinit var paths: NovaRehabPaths
+    private lateinit var backupManager: SettingsBackupManager
+    private lateinit var configTransferManager: ConfigExportImportManager
     private val uiStatePrefs by lazy { getSharedPreferences("nova_ui_state", MODE_PRIVATE) }
 
     private val contactLangSpinners = mutableListOf<Spinner>()
@@ -68,6 +77,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnCheckUpdateNow: Button
     private lateinit var btnRestorePreviousVersion: Button
     private lateinit var btnShareCompanionApp: Button
+    private lateinit var btnExportSettings: Button
+    private lateinit var btnImportSettings: Button
+    private lateinit var btnExportStats: Button
+    private lateinit var btnCreateBackup: Button
+    private lateinit var btnRestoreBackupNow: Button
+    private lateinit var tvConfigTransferInfo: TextView
 
     private fun companionContacts(): List<CompanionShareContact> {
         val contacts = prefs.getContacts()
@@ -90,11 +105,14 @@ class SettingsActivity : AppCompatActivity() {
         prefs = PrefsManager(this)
         apiConfig = ApiConfigManager(this)
         paths = NovaRehabPaths(this)
+        backupManager = SettingsBackupManager(this)
+        configTransferManager = ConfigExportImportManager(this)
 
         addLanguageSettingsPanel()
         addSpeechSettingsPanel()
         addUpdateSettingsPanel()
         addCompanionSharePanel()
+        addConfigTransferPanel()
         loadSettings()
         styleSettingsUi()
         restoreSettingsScrollPosition()
@@ -481,6 +499,65 @@ class SettingsActivity : AppCompatActivity() {
         rootLayout.addView(panel, insertIndex)
     }
 
+    private fun addConfigTransferPanel() {
+        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 8, 0, 16)
+        }
+
+        panel.addView(TextView(this).apply {
+            text = "Izvoz in uvoz profila"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+
+        tvConfigTransferInfo = TextView(this).apply {
+            setTextColor(0xFFCCCCCC.toInt())
+            textSize = 12f
+        }
+        panel.addView(tvConfigTransferInfo)
+
+        btnExportSettings = Button(this).apply {
+            text = "IZVOZI NASTAVITVE"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF1B5E20.toInt())
+        }
+        panel.addView(btnExportSettings)
+
+        btnImportSettings = Button(this).apply {
+            text = "UVOZI NASTAVITVE"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF0F3460.toInt())
+        }
+        panel.addView(btnImportSettings)
+
+        btnExportStats = Button(this).apply {
+            text = "IZVOZI STATISTIKO"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF4A1942.toInt())
+        }
+        panel.addView(btnExportStats)
+
+        btnCreateBackup = Button(this).apply {
+            text = "USTVARI BACKUP"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF333355.toInt())
+        }
+        panel.addView(btnCreateBackup)
+
+        btnRestoreBackupNow = Button(this).apply {
+            text = "OBNOVI BACKUP"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF6A2B2B.toInt())
+        }
+        panel.addView(btnRestoreBackupNow)
+
+        val insertIndex = (rootLayout.childCount - 1).coerceAtLeast(0)
+        rootLayout.addView(panel, insertIndex)
+    }
     private fun loadSettings() {
         loadRadioSettings()
         loadContactSettings()
@@ -534,6 +611,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etServerPort.setText(prefs.getServerPort())
         binding.etNewPin.setText("")
         binding.etKioskMinutes.setText(prefs.getKioskReturnMinutes().toString())
+        refreshConfigTransferInfo()
     }
 
     private fun loadRadioSettings() {
@@ -691,6 +769,41 @@ class SettingsActivity : AppCompatActivity() {
 
         btnShareCompanionApp.setOnClickListener {
             showCompanionSharePicker()
+        }
+
+        btnExportSettings.setOnClickListener {
+            showExportSettingsOptions()
+        }
+
+        btnImportSettings.setOnClickListener {
+            openConfigImportPicker()
+        }
+
+        btnExportStats.setOnClickListener {
+            openStatisticsExportPicker()
+        }
+
+        btnCreateBackup.setOnClickListener {
+            val ok = backupManager.backupNow()
+            refreshConfigTransferInfo()
+            Toast.makeText(
+                this,
+                if (ok) "Backup je ustvarjen." else "Backup ni uspel.",
+                if (ok) Toast.LENGTH_SHORT else Toast.LENGTH_LONG
+            ).show()
+        }
+
+        btnRestoreBackupNow.setOnClickListener {
+            val ok = backupManager.restoreIfAvailable()
+            if (ok) {
+                loadSettings()
+                refreshConfigTransferInfo()
+            }
+            Toast.makeText(
+                this,
+                if (ok) "Backup je obnovljen." else "Backup ni na voljo.",
+                if (ok) Toast.LENGTH_SHORT else Toast.LENGTH_LONG
+            ).show()
         }
 
         binding.btnChooseApiFile.setOnClickListener {
@@ -915,6 +1028,131 @@ class SettingsActivity : AppCompatActivity() {
         return (value * resources.displayMetrics.density).toInt()
     }
 
+    private fun refreshConfigTransferInfo() {
+        val exportAt = prefs.getLastConfigExportAt()
+        val exportSize = prefs.getLastConfigExportSize()
+        val backupAt = paths.settingsBackupFile.takeIf { it.exists() }?.lastModified() ?: 0L
+        val importAt = prefs.getLastConfigImportAt()
+        tvConfigTransferInfo.text = buildString {
+            appendLine("Zadnji izvoz: ${formatDate(exportAt)}")
+            appendLine("Velikost izvoza: ${formatSize(exportSize)}")
+            appendLine("Zadnji backup: ${formatDate(backupAt)}")
+            append("Zadnji uvoz: ${formatDate(importAt)}")
+        }
+    }
+
+    private fun showExportSettingsOptions() {
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Izvozi nastavitve")
+            .setItems(arrayOf("Shrani ZIP", "Deli ZIP")) { _, which ->
+                if (which == 0) openConfigExportPicker() else shareConfigZip()
+            }
+            .setNegativeButton("Prekliči", null)
+            .create()
+        dialog.show()
+        styleAlertDialog(dialog)
+    }
+
+    private fun openConfigExportPicker() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/zip"
+            putExtra(Intent.EXTRA_TITLE, configTransferManager.defaultExportName())
+        }
+        startActivityForResult(intent, REQUEST_EXPORT_CONFIG_FILE)
+    }
+
+    private fun openStatisticsExportPicker() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+            putExtra(Intent.EXTRA_TITLE, configTransferManager.defaultStatisticsName())
+        }
+        startActivityForResult(intent, REQUEST_EXPORT_STATS_FILE)
+    }
+
+    private fun openConfigImportPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/zip"
+        }
+        startActivityForResult(intent, REQUEST_IMPORT_CONFIG_FILE)
+    }
+
+    private fun shareConfigZip() {
+        runCatching {
+            val file = configTransferManager.createShareZip()
+            val uri = configTransferManager.shareUriFor(file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/zip"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, "NovaRehab export")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "Deli NovaRehab export"))
+            refreshConfigTransferInfo()
+        }.onFailure {
+            Toast.makeText(this, it.localizedMessage ?: "Izvoz ni uspel.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun showImportPreview(uri: Uri) {
+        runCatching {
+            val preview = configTransferManager.inspectImportBundle(uri)
+            val summary = buildString {
+                appendLine("Število datotek: ${preview.entryCount}")
+                appendLine("Ikone: ${if (preview.hasIcons) "DA" else "NE"}")
+                appendLine("Kontakti: ${if (preview.hasContacts) "DA" else "NE"}")
+                appendLine("Statistika: ${if (preview.hasStatistics) "DA" else "NE"}")
+                append("Nastavitve: ${if (preview.hasSettings) "DA" else "NE"}")
+            }
+            val items = arrayOf("Polni uvoz", "Samo ikone", "Samo kontakti", "Samo statistika")
+            val dialog = AlertDialog.Builder(this)
+                .setTitle("Uvoz nastavitev")
+                .setMessage(summary)
+                .setItems(items) { _, which ->
+                    val mode = when (which) {
+                        1 -> ConfigImportMode.ICONS
+                        2 -> ConfigImportMode.CONTACTS
+                        3 -> ConfigImportMode.STATISTICS
+                        else -> ConfigImportMode.FULL
+                    }
+                    performImport(uri, mode)
+                }
+                .setNegativeButton("Prekliči", null)
+                .create()
+            dialog.show()
+            styleAlertDialog(dialog)
+        }.onFailure {
+            Toast.makeText(this, it.localizedMessage ?: "Uvozne datoteke ni bilo mogoče pregledati.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun performImport(uri: Uri, mode: ConfigImportMode) {
+        configTransferManager.importFromUri(uri, mode)
+            .onSuccess {
+                refreshConfigTransferInfo()
+                loadSettings()
+                Toast.makeText(this, "Uvoz je uspel.", Toast.LENGTH_LONG).show()
+            }
+            .onFailure {
+                refreshConfigTransferInfo()
+                Toast.makeText(this, it.localizedMessage ?: "Uvoz ni uspel.", Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun formatDate(timestamp: Long): String {
+        if (timestamp <= 0L) return "ni podatka"
+        return java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault())
+            .format(java.util.Date(timestamp))
+    }
+
+    private fun formatSize(size: Long): String {
+        if (size <= 0L) return "ni podatka"
+        val kb = size / 1024.0
+        return if (kb < 1024) String.format(java.util.Locale.US, "%.1f KB", kb)
+        else String.format(java.util.Locale.US, "%.2f MB", kb / 1024.0)
+    }
     private fun saveSpeechSettings() {
         prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
         prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
@@ -1036,6 +1274,45 @@ class SettingsActivity : AppCompatActivity() {
         if (requestCode == REQUEST_API_FILE && resultCode == RESULT_OK) {
             val uri = data?.data ?: return
             importApiFile(uri)
+            return
+        }
+
+        if (requestCode == REQUEST_EXPORT_CONFIG_FILE && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            configTransferManager.exportToUri(uri)
+                .onSuccess {
+                    refreshConfigTransferInfo()
+                    Toast.makeText(
+                        this,
+                        "Izvoz nastavitev je končan (${formatSize(it)}).",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                .onFailure {
+                    Toast.makeText(this, it.localizedMessage ?: "Izvoz ni uspel.", Toast.LENGTH_LONG).show()
+                }
+            return
+        }
+
+        if (requestCode == REQUEST_EXPORT_STATS_FILE && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            configTransferManager.exportStatisticsToUri(uri)
+                .onSuccess {
+                    Toast.makeText(
+                        this,
+                        "Izvoz statistike je končan (${formatSize(it)}).",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                .onFailure {
+                    Toast.makeText(this, it.localizedMessage ?: "Izvoz statistike ni uspel.", Toast.LENGTH_LONG).show()
+                }
+            return
+        }
+
+        if (requestCode == REQUEST_IMPORT_CONFIG_FILE && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            showImportPreview(uri)
             return
         }
 

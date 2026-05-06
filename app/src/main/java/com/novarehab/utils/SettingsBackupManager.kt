@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import com.novarehab.core.storage.NovaRehabPaths
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -23,6 +24,7 @@ class SettingsBackupManager(private val context: Context) {
     private val prefs = PrefsManager(context)
     private val apiConfig = ApiConfigManager(context)
     private val iconTextManager = IconTextManager(context)
+    private val paths = NovaRehabPaths(context.applicationContext)
 
     private val standardIconIds = listOf(
         "pomoc",
@@ -88,7 +90,7 @@ class SettingsBackupManager(private val context: Context) {
             backupMediaFolder("icons")
             backupMediaFolder("contacts")
 
-            val appFile = File(context.getExternalFilesDir(null), "backup/novarehab-settings.json")
+            val appFile = paths.settingsBackupFile
             appFile.parentFile?.mkdirs()
             appFile.writeText(text, Charsets.UTF_8)
 
@@ -98,8 +100,16 @@ class SettingsBackupManager(private val context: Context) {
         }
     }
 
+    fun exportSettingsJson(): JSONObject = exportJson()
+
+    fun restoreJson(json: JSONObject) {
+        restore(json)
+    }
+
+    fun paths(): NovaRehabPaths = paths
+
     private fun readAppPrivateFile(): String? {
-        val file = File(context.getExternalFilesDir(null), "backup/novarehab-settings.json")
+        val file = paths.settingsBackupFile
         return if (file.exists()) {
             runCatching { file.readText(Charsets.UTF_8) }.getOrNull()
         } else {

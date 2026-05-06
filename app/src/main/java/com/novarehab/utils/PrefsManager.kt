@@ -295,6 +295,23 @@ class PrefsManager(context: Context) {
     fun saveUsbMusicOverwriteDifferent(enabled: Boolean) =
         prefs.edit().putBoolean("usb_music_overwrite_different", enabled).apply()
 
+    fun getLastConfigExportAt(): Long =
+        prefs.getLong("config_export_last_at", 0L)
+
+    fun saveLastConfigExportAt(timestamp: Long) =
+        prefs.edit().putLong("config_export_last_at", timestamp).apply()
+
+    fun getLastConfigExportSize(): Long =
+        prefs.getLong("config_export_last_size", 0L)
+
+    fun saveLastConfigExportSize(size: Long) =
+        prefs.edit().putLong("config_export_last_size", size).apply()
+
+    fun getLastConfigImportAt(): Long =
+        prefs.getLong("config_import_last_at", 0L)
+
+    fun saveLastConfigImportAt(timestamp: Long) =
+        prefs.edit().putLong("config_import_last_at", timestamp).apply()
     private fun defaultContacts(): List<Contact> = listOf(
         Contact("Mama", "", "", "sl"),
         Contact("Ata", "", "", "sl"),
