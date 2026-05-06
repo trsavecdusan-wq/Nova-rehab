@@ -1,4 +1,4 @@
-package com.novarehab.ui
+﻿package com.novarehab.ui
 
 import android.app.AlertDialog
 import android.content.Intent
@@ -102,12 +102,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun langOptions() = arrayOf(
-        "🇸🇮 Slovenščina",
-        "🇺🇦 Ukrajinščina",
-        "🇬🇧 Angleščina",
-        "🇩🇪 Nemščina",
-        "🇭🇷 Hrvaščina",
-        "🇷🇸 Srbščina"
+        "Slovenščina",
+        "Ukrajinščina",
+        "Angleščina",
+        "Nemščina",
+        "Hrvaščina",
+        "Srbščina"
     )
 
     private fun langCode(position: Int): String = when (position) {
@@ -614,7 +614,7 @@ class SettingsActivity : AppCompatActivity() {
             phoneFields[index].setText(contact?.phone.orEmpty())
 
             val spinner = Spinner(this).apply {
-                val options = arrayOf("🇸🇮 Slovenščina", "🇺🇦 Ukrajinščina")
+                val options = arrayOf("Slovenščina", "Ukrajinščina")
                 adapter = themedSpinnerAdapter(*options)
                 styleSpinner(this)
 
@@ -843,7 +843,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun styleSettingsUi() {
-        styleViewTree(binding.root)
+        applyDarkSettingsStyle(binding.root)
+    }
+
+    private fun applyDarkSettingsStyle(view: View) {
+        styleViewTree(view)
     }
 
     private fun styleViewTree(view: View) {
@@ -1158,7 +1162,7 @@ class SettingsActivity : AppCompatActivity() {
         )
 
         val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
-        val emojis = listOf("👩", "👨", "👧", "🧑", "👨‍⚕️", "🧑‍💼")
+        val emojis = listOf("🙂", "🙂", "🙂", "🙂", "🙂", "🙂")
         val contacts = mutableListOf<Contact>()
 
         nameFields.forEachIndexed { index, field ->
@@ -1169,7 +1173,7 @@ class SettingsActivity : AppCompatActivity() {
             prefs.saveContactIncomingCallEnabled(index, contactIncomingSwitches.getOrNull(index)?.isChecked ?: true)
             prefs.saveContactOutgoingCallEnabled(index, contactOutgoingSwitches.getOrNull(index)?.isChecked ?: true)
 
-            contacts.add(Contact(name, phone, emojis.getOrElse(index) { "👤" }, lang))
+            contacts.add(Contact(name, phone, emojis.getOrElse(index) { "🙂" }, lang))
         }
 
         prefs.saveContacts(contacts)
@@ -1190,3 +1194,4 @@ class SettingsActivity : AppCompatActivity() {
         val token: String
     )
 }
+

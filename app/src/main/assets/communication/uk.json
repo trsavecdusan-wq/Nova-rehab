@@ -1,11 +1,11 @@
-{
+﻿{
   "language": "uk",
   "version": 1,
   "items": [
     {
       "id": "piti",
-      "label": "ПИТИ",
-      "shortLabel": "ПИТИ",
+      "label": "СПРАГА",
+      "shortLabel": "СПРАГА",
       "ttsText": "Я хочу пити.",
       "questionText": "Що ти хочеш пити?",
       "category": "basic",
@@ -13,124 +13,35 @@
       "priority": 10,
       "enabled": true,
       "symbolKey": "drink",
-      "children": [
-        {
-          "id": "voda",
-          "label": "ВОДА",
-          "shortLabel": "ВОДА",
-          "ttsText": "Я хочу води.",
-          "category": "drink",
-          "icon": "comm_piti",
-          "priority": 1,
-          "enabled": true
-        },
-        {
-          "id": "caj",
-          "label": "ЧАЙ",
-          "shortLabel": "ЧАЙ",
-          "ttsText": "Я хочу чай.",
-          "category": "drink",
-          "icon": "comm_piti",
-          "priority": 2,
-          "enabled": true
-        },
-        {
-          "id": "sok",
-          "label": "СІК",
-          "shortLabel": "СІК",
-          "ttsText": "Я хочу сік.",
-          "category": "drink",
-          "icon": "comm_piti",
-          "priority": 3,
-          "enabled": true
-        }
-      ]
+      "children": ["voda", "caj", "sok"]
     },
     {
       "id": "jesti",
-      "label": "ЇСТИ",
-      "shortLabel": "ЇСТИ",
+      "label": "ГОЛОДНА",
+      "shortLabel": "ГОЛОДНА",
       "ttsText": "Я голодна.",
       "questionText": "Що ти хочеш їсти?",
       "category": "basic",
       "icon": "comm_jesti",
       "priority": 20,
       "enabled": true,
-      "children": [
-        {
-          "id": "zajtrk",
-          "label": "СНІДАНОК",
-          "shortLabel": "СНІДАНОК",
-          "ttsText": "Я хочу сніданок.",
-          "category": "food",
-          "icon": "comm_jesti",
-          "priority": 1,
-          "enabled": true
-        },
-        {
-          "id": "kosilo",
-          "label": "ОБІД",
-          "shortLabel": "ОБІД",
-          "ttsText": "Я хочу обід.",
-          "category": "food",
-          "icon": "comm_jesti",
-          "priority": 2,
-          "enabled": true
-        },
-        {
-          "id": "prigrizek",
-          "label": "ПЕРЕКУС",
-          "shortLabel": "ПЕРЕКУС",
-          "ttsText": "Я хочу перекус.",
-          "category": "food",
-          "icon": "comm_jesti",
-          "priority": 3,
-          "enabled": true
-        }
-      ]
+      "symbolKey": "food",
+      "children": ["zajtrk", "kosilo", "prigrizek"]
     },
     {
       "id": "slabo",
-      "label": "ПОГАНО",
-      "shortLabel": "ПОГАНО",
+      "label": "ЗЛЕ",
+      "shortLabel": "ЗЛЕ",
       "ttsText": "Я погано почуваюся.",
       "questionText": "Що тебе турбує?",
       "category": "feeling",
       "icon": "comm_slabo",
       "priority": 30,
       "enabled": true,
-      "children": [
-        {
-          "id": "bolecina",
-          "label": "БІЛЬ",
-          "shortLabel": "БІЛЬ",
-          "ttsText": "У мене біль.",
-          "category": "feeling",
-          "icon": "comm_bolecina",
-          "priority": 1,
-          "enabled": true
-        },
-        {
-          "id": "slabost",
-          "label": "НУДОТА",
-          "shortLabel": "НУДОТА",
-          "ttsText": "Мене нудить.",
-          "category": "feeling",
-          "icon": "comm_slabo",
-          "priority": 2,
-          "enabled": true
-        },
-        {
-          "id": "tesnoba",
-          "label": "ТРИВОГА",
-          "shortLabel": "ТРИВОГА",
-          "ttsText": "Я відчуваю тривогу.",
-          "category": "feeling",
-          "icon": "comm_tesnoba",
-          "priority": 3,
-          "enabled": true
-        }
-      ]
+      "pinnedMain": true,
+      "pinnedVideo": true,
+      "symbolKey": "not_well",
+      "children": ["bolecina", "slabost", "tesnoba"]
     },
     {
       "id": "pomoc",
@@ -142,38 +53,115 @@
       "icon": "comm_pomoc",
       "priority": 40,
       "enabled": true,
-      "children": [
-        {
-          "id": "pomoc_pridi",
-          "label": "ПРИЙДИ",
-          "shortLabel": "ПРИЙДИ",
-          "ttsText": "Будь ласка, прийди до мене.",
-          "category": "help",
-          "icon": "comm_pridi_sem",
-          "priority": 1,
-          "enabled": true
-        },
-        {
-          "id": "pomoc_dvigni",
-          "label": "ПІДНІМИ",
-          "shortLabel": "ПІДНІМИ",
-          "ttsText": "Будь ласка, підніми мене.",
-          "category": "help",
-          "icon": "comm_pomoc",
-          "priority": 2,
-          "enabled": true
-        },
-        {
-          "id": "pomoc_polozaj",
-          "label": "ПОЛОЖЕННЯ",
-          "shortLabel": "ПОЛОЖЕННЯ",
-          "ttsText": "Будь ласка, поправ моє положення.",
-          "category": "help",
-          "icon": "comm_postelja",
-          "priority": 3,
-          "enabled": true
-        }
-      ]
-    }
+      "pinnedMain": true,
+      "pinnedVideo": true,
+      "symbolKey": "help",
+      "children": ["pomoc_pridi", "pomoc_dvigni", "pomoc_polozaj"]
+    },
+    {
+      "id": "kopalnica",
+      "label": "ТУАЛЕТ",
+      "shortLabel": "ТУАЛЕТ",
+      "ttsText": "Мені потрібно в туалет.",
+      "category": "basic",
+      "icon": "comm_kopalnica",
+      "priority": 50,
+      "enabled": true,
+      "pinnedMain": true,
+      "symbolKey": "toilet"
+    },
+    {
+      "id": "dobro",
+      "label": "ДОБРЕ",
+      "shortLabel": "ДОБРЕ",
+      "ttsText": "Я почуваюся добре.",
+      "category": "feeling",
+      "icon": "comm_dobro",
+      "priority": 60,
+      "enabled": true,
+      "symbolKey": "good"
+    },
+    {
+      "id": "utrujena",
+      "label": "ВТОМИЛАСЯ",
+      "shortLabel": "ВТОМИЛАСЯ",
+      "ttsText": "Я втомилася і хочу відпочити.",
+      "category": "feeling",
+      "icon": "comm_utrujena",
+      "priority": 70,
+      "enabled": true,
+      "symbolKey": "tired"
+    },
+    {
+      "id": "mraz",
+      "label": "ХОЛОДНО",
+      "shortLabel": "ХОЛОДНО",
+      "ttsText": "Мені холодно.",
+      "category": "comfort",
+      "icon": "comm_mraz",
+      "priority": 80,
+      "enabled": true,
+      "symbolKey": "cold"
+    },
+    {
+      "id": "vroce",
+      "label": "ЖАРКО",
+      "shortLabel": "ЖАРКО",
+      "ttsText": "Мені жарко.",
+      "category": "comfort",
+      "icon": "comm_vroce",
+      "priority": 90,
+      "enabled": true,
+      "symbolKey": "hot"
+    },
+    {
+      "id": "hvala",
+      "label": "ДЯКУЮ",
+      "shortLabel": "ДЯКУЮ",
+      "ttsText": "Дякую.",
+      "category": "social",
+      "icon": "comm_hvala",
+      "priority": 100,
+      "enabled": true,
+      "symbolKey": "thanks"
+    },
+    {
+      "id": "pridi_sem",
+      "label": "ПРИЙДИ",
+      "shortLabel": "ПРИЙДИ",
+      "ttsText": "Будь ласка, прийди до мене.",
+      "category": "help",
+      "icon": "comm_pridi_sem",
+      "priority": 110,
+      "enabled": true,
+      "symbolKey": "come"
+    },
+    {
+      "id": "pocakaj",
+      "label": "ПОЧЕКАЙ",
+      "shortLabel": "ПОЧЕКАЙ",
+      "ttsText": "Почекай, будь ласка.",
+      "category": "social",
+      "icon": "comm_pocakaj",
+      "priority": 120,
+      "enabled": true,
+      "symbolKey": "wait"
+    },
+
+    { "id": "voda", "label": "ВОДА", "shortLabel": "ВОДА", "ttsText": "Я хочу воду.", "category": "drink", "icon": "comm_piti", "priority": 1, "enabled": true, "symbolKey": "water" },
+    { "id": "caj", "label": "ЧАЙ", "shortLabel": "ЧАЙ", "ttsText": "Я хочу чай.", "category": "drink", "icon": "comm_piti", "priority": 2, "enabled": true, "symbolKey": "tea" },
+    { "id": "sok", "label": "СІК", "shortLabel": "СІК", "ttsText": "Я хочу сік.", "category": "drink", "icon": "comm_piti", "priority": 3, "enabled": true, "symbolKey": "juice" },
+
+    { "id": "zajtrk", "label": "СНІДАНОК", "shortLabel": "СНІДАНОК", "ttsText": "Я хочу сніданок.", "category": "food", "icon": "comm_jesti", "priority": 1, "enabled": true, "symbolKey": "breakfast" },
+    { "id": "kosilo", "label": "ОБІД", "shortLabel": "ОБІД", "ttsText": "Я хочу обід.", "category": "food", "icon": "comm_jesti", "priority": 2, "enabled": true, "symbolKey": "lunch" },
+    { "id": "prigrizek", "label": "ПЕРЕКУС", "shortLabel": "ПЕРЕКУС", "ttsText": "Я хочу перекус.", "category": "food", "icon": "comm_jesti", "priority": 3, "enabled": true, "symbolKey": "snack" },
+
+    { "id": "bolecina", "label": "БІЛЬ", "shortLabel": "БІЛЬ", "ttsText": "У мене біль.", "category": "feeling", "icon": "comm_bolecina", "priority": 1, "enabled": true, "symbolKey": "pain" },
+    { "id": "slabost", "label": "НУДОТА", "shortLabel": "НУДОТА", "ttsText": "Мене нудить.", "category": "feeling", "icon": "comm_slabo", "priority": 2, "enabled": true, "symbolKey": "nausea" },
+    { "id": "tesnoba", "label": "ТРИВОГА", "shortLabel": "ТРИВОГА", "ttsText": "Я відчуваю тривогу.", "category": "feeling", "icon": "comm_tesnoba", "priority": 3, "enabled": true, "symbolKey": "anxiety" },
+
+    { "id": "pomoc_pridi", "label": "ПРИЙДИ", "shortLabel": "ПРИЙДИ", "ttsText": "Будь ласка, прийди до мене.", "category": "help", "icon": "comm_pridi_sem", "priority": 1, "enabled": true, "symbolKey": "come" },
+    { "id": "pomoc_dvigni", "label": "ПІДНІМИ МЕНЕ", "shortLabel": "ПІДНІМИ", "ttsText": "Будь ласка, підніми мене.", "category": "help", "icon": "comm_pomoc", "priority": 2, "enabled": true, "symbolKey": "lift" },
+    { "id": "pomoc_polozaj", "label": "ПОПРАВ ПОЛОЖЕННЯ", "shortLabel": "ПОЛОЖЕННЯ", "ttsText": "Будь ласка, поправ моє положення.", "category": "help", "icon": "comm_postelja", "priority": 3, "enabled": true, "symbolKey": "position" }
   ]
 }

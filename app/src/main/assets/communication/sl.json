@@ -1,4 +1,4 @@
-{
+﻿{
   "language": "sl",
   "version": 1,
   "items": [
@@ -11,51 +11,9 @@
       "category": "basic",
       "icon": "comm_piti",
       "priority": 10,
-      "emotionalTags": ["need"],
-      "aiPromptHint": "pijača",
-      "requiresConfirmation": false,
       "enabled": true,
-      "arasaacKey": "drink",
       "symbolKey": "drink",
-      "logEventType": "drink",
-      "children": [
-        {
-          "id": "voda",
-          "label": "VODA",
-          "shortLabel": "VODA",
-          "ttsText": "Želim vodo.",
-          "category": "drink",
-          "icon": "comm_piti",
-          "priority": 1,
-          "enabled": true,
-          "symbolKey": "water",
-          "logEventType": "drink_water"
-        },
-        {
-          "id": "caj",
-          "label": "ČAJ",
-          "shortLabel": "ČAJ",
-          "ttsText": "Želim čaj.",
-          "category": "drink",
-          "icon": "comm_piti",
-          "priority": 2,
-          "enabled": true,
-          "symbolKey": "tea",
-          "logEventType": "drink_tea"
-        },
-        {
-          "id": "sok",
-          "label": "SOK",
-          "shortLabel": "SOK",
-          "ttsText": "Želim sok.",
-          "category": "drink",
-          "icon": "comm_piti",
-          "priority": 3,
-          "enabled": true,
-          "symbolKey": "juice",
-          "logEventType": "drink_juice"
-        }
-      ]
+      "children": ["voda", "caj", "sok"]
     },
     {
       "id": "jesti",
@@ -66,46 +24,9 @@
       "category": "basic",
       "icon": "comm_jesti",
       "priority": 20,
-      "emotionalTags": ["need"],
-      "aiPromptHint": "hrana",
       "enabled": true,
       "symbolKey": "food",
-      "logEventType": "food",
-      "children": [
-        {
-          "id": "zajtrk",
-          "label": "ZAJTRK",
-          "shortLabel": "ZAJTRK",
-          "ttsText": "Želim zajtrk.",
-          "category": "food",
-          "icon": "comm_jesti",
-          "priority": 1,
-          "enabled": true,
-          "symbolKey": "breakfast"
-        },
-        {
-          "id": "kosilo",
-          "label": "KOSILO",
-          "shortLabel": "KOSILO",
-          "ttsText": "Želim kosilo.",
-          "category": "food",
-          "icon": "comm_jesti",
-          "priority": 2,
-          "enabled": true,
-          "symbolKey": "lunch"
-        },
-        {
-          "id": "prigrizek",
-          "label": "PRIGRIZEK",
-          "shortLabel": "PRIGRIZEK",
-          "ttsText": "Želim prigrizek.",
-          "category": "food",
-          "icon": "comm_jesti",
-          "priority": 3,
-          "enabled": true,
-          "symbolKey": "snack"
-        }
-      ]
+      "children": ["zajtrk", "kosilo", "prigrizek"]
     },
     {
       "id": "slabo",
@@ -116,47 +37,11 @@
       "category": "feeling",
       "icon": "comm_slabo",
       "priority": 30,
-      "pinned": true,
-      "emotionalTags": ["discomfort"],
-      "aiPromptHint": "počutje",
       "enabled": true,
+      "pinnedMain": true,
+      "pinnedVideo": true,
       "symbolKey": "not_well",
-      "logEventType": "feeling_bad",
-      "children": [
-        {
-          "id": "bolecina",
-          "label": "BOLEČINA",
-          "shortLabel": "BOLEČINA",
-          "ttsText": "Imam bolečino.",
-          "category": "feeling",
-          "icon": "comm_bolecina",
-          "priority": 1,
-          "enabled": true,
-          "symbolKey": "pain"
-        },
-        {
-          "id": "slabost",
-          "label": "SLABOST",
-          "shortLabel": "SLABOST",
-          "ttsText": "Slabo mi je.",
-          "category": "feeling",
-          "icon": "comm_slabo",
-          "priority": 2,
-          "enabled": true,
-          "symbolKey": "nausea"
-        },
-        {
-          "id": "tesnoba",
-          "label": "TESNOBA",
-          "shortLabel": "TESNOBA",
-          "ttsText": "Čutim tesnobo.",
-          "category": "feeling",
-          "icon": "comm_tesnoba",
-          "priority": 3,
-          "enabled": true,
-          "symbolKey": "anxiety"
-        }
-      ]
+      "children": ["bolecina", "slabost", "tesnoba"]
     },
     {
       "id": "pomoc",
@@ -167,47 +52,11 @@
       "category": "help",
       "icon": "comm_pomoc",
       "priority": 40,
-      "pinned": true,
-      "emotionalTags": ["help"],
-      "aiPromptHint": "pomoč",
       "enabled": true,
+      "pinnedMain": true,
+      "pinnedVideo": true,
       "symbolKey": "help",
-      "logEventType": "help",
-      "children": [
-        {
-          "id": "pomoc_pridi",
-          "label": "PRIDI",
-          "shortLabel": "PRIDI",
-          "ttsText": "Prosim pridi k meni.",
-          "category": "help",
-          "icon": "comm_pridi_sem",
-          "priority": 1,
-          "enabled": true,
-          "symbolKey": "come"
-        },
-        {
-          "id": "pomoc_dvigni",
-          "label": "DVIGNI ME",
-          "shortLabel": "DVIGNI",
-          "ttsText": "Prosim dvigni me.",
-          "category": "help",
-          "icon": "comm_pomoc",
-          "priority": 2,
-          "enabled": true,
-          "symbolKey": "lift"
-        },
-        {
-          "id": "pomoc_polozaj",
-          "label": "POPRAVI POLOŽAJ",
-          "shortLabel": "POLOŽAJ",
-          "ttsText": "Prosim popravi moj položaj.",
-          "category": "help",
-          "icon": "comm_postelja",
-          "priority": 3,
-          "enabled": true,
-          "symbolKey": "position"
-        }
-      ]
+      "children": ["pomoc_pridi", "pomoc_dvigni", "pomoc_polozaj"]
     },
     {
       "id": "kopalnica",
@@ -217,10 +66,9 @@
       "category": "basic",
       "icon": "comm_kopalnica",
       "priority": 50,
-      "pinned": true,
       "enabled": true,
-      "symbolKey": "toilet",
-      "logEventType": "toilet"
+      "pinnedMain": true,
+      "symbolKey": "toilet"
     },
     {
       "id": "dobro",
@@ -241,7 +89,6 @@
       "category": "feeling",
       "icon": "comm_utrujena",
       "priority": 70,
-      "emotionalTags": ["possibleFatigue"],
       "enabled": true,
       "symbolKey": "tired"
     },
@@ -299,6 +146,22 @@
       "priority": 120,
       "enabled": true,
       "symbolKey": "wait"
-    }
+    },
+
+    { "id": "voda", "label": "VODA", "shortLabel": "VODA", "ttsText": "Želim vodo.", "category": "drink", "icon": "comm_piti", "priority": 1, "enabled": true, "symbolKey": "water" },
+    { "id": "caj", "label": "ČAJ", "shortLabel": "ČAJ", "ttsText": "Želim čaj.", "category": "drink", "icon": "comm_piti", "priority": 2, "enabled": true, "symbolKey": "tea" },
+    { "id": "sok", "label": "SOK", "shortLabel": "SOK", "ttsText": "Želim sok.", "category": "drink", "icon": "comm_piti", "priority": 3, "enabled": true, "symbolKey": "juice" },
+
+    { "id": "zajtrk", "label": "ZAJTRK", "shortLabel": "ZAJTRK", "ttsText": "Želim zajtrk.", "category": "food", "icon": "comm_jesti", "priority": 1, "enabled": true, "symbolKey": "breakfast" },
+    { "id": "kosilo", "label": "KOSILO", "shortLabel": "KOSILO", "ttsText": "Želim kosilo.", "category": "food", "icon": "comm_jesti", "priority": 2, "enabled": true, "symbolKey": "lunch" },
+    { "id": "prigrizek", "label": "PRIGRIZEK", "shortLabel": "PRIGRIZEK", "ttsText": "Želim prigrizek.", "category": "food", "icon": "comm_jesti", "priority": 3, "enabled": true, "symbolKey": "snack" },
+
+    { "id": "bolecina", "label": "BOLEČINA", "shortLabel": "BOLEČINA", "ttsText": "Imam bolečino.", "category": "feeling", "icon": "comm_bolecina", "priority": 1, "enabled": true, "symbolKey": "pain" },
+    { "id": "slabost", "label": "SLABOST", "shortLabel": "SLABOST", "ttsText": "Slabo mi je.", "category": "feeling", "icon": "comm_slabo", "priority": 2, "enabled": true, "symbolKey": "nausea" },
+    { "id": "tesnoba", "label": "TESNOBA", "shortLabel": "TESNOBA", "ttsText": "Čutim tesnobo.", "category": "feeling", "icon": "comm_tesnoba", "priority": 3, "enabled": true, "symbolKey": "anxiety" },
+
+    { "id": "pomoc_pridi", "label": "PRIDI", "shortLabel": "PRIDI", "ttsText": "Prosim pridi k meni.", "category": "help", "icon": "comm_pridi_sem", "priority": 1, "enabled": true, "symbolKey": "come" },
+    { "id": "pomoc_dvigni", "label": "DVIGNI ME", "shortLabel": "DVIGNI", "ttsText": "Prosim dvigni me.", "category": "help", "icon": "comm_pomoc", "priority": 2, "enabled": true, "symbolKey": "lift" },
+    { "id": "pomoc_polozaj", "label": "POPRAVI POLOŽAJ", "shortLabel": "POLOŽAJ", "ttsText": "Prosim popravi moj položaj.", "category": "help", "icon": "comm_postelja", "priority": 3, "enabled": true, "symbolKey": "position" }
   ]
 }

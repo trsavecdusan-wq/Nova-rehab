@@ -1,4 +1,4 @@
-package com.novarehab.ui
+﻿package com.novarehab.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -55,10 +55,19 @@ class MirrorActivity : AppCompatActivity() {
                     runOnUiThread {
                         runCatching {
                             mediaGalleryRepository.saveCameraCapture(file)
-                        }.onSuccess {
-                            cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
-                            cancelBackCameraReset()
-                            Toast.makeText(this, "Slika shranjena v galerijo", Toast.LENGTH_SHORT).show()
+                        }.onSuccess { saved ->
+                            if (java.io.File(saved.localPath).exists()) {
+                                cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
+                                cancelBackCameraReset()
+                                file.delete()
+                                Toast.makeText(this, "Slika shranjena v galerijo", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(
+                                    this,
+                                    "Shranjevanje slike ni uspelo: ciljna datoteka ni bila najdena.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }.onFailure { error ->
                             Toast.makeText(
                                 this,
@@ -66,7 +75,6 @@ class MirrorActivity : AppCompatActivity() {
                                 Toast.LENGTH_LONG
                             ).show()
                         }
-                        file.delete()
                     }
                 },
                 onError = { error ->
@@ -181,3 +189,4 @@ class MirrorActivity : AppCompatActivity() {
         backCameraResetRunnable = null
     }
 }
+

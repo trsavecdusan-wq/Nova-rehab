@@ -120,7 +120,7 @@ class IconSettingsActivity : AppCompatActivity() {
         container.addView(header)
 
         val note = TextView(this)
-        note.text = "VpiĹˇi besedilo za govor. Podmeni vklopiĹˇ posebej pri vsaki glavni ikoni."
+        note.text = "Vpiši besedilo za govor. Podmeni vklopiš posebej pri vsaki glavni ikoni."
         note.textSize = 13f
         note.setTextColor(0xFFAAAAAA.toInt())
         note.setPadding(0, 0, 0, dp(12))
@@ -149,8 +149,26 @@ class IconSettingsActivity : AppCompatActivity() {
             container.addView(createCustomIconRow(i))
             addSeparator(container)
         }
+
+        applyDarkSettingsStyle(scroll)
     }
 
+        private fun applyDarkSettingsStyle(view: View) {
+        when (view) {
+            is EditText -> styleEditText(view)
+            is Spinner -> styleSpinner(view)
+            is Switch -> view.setTextColor(0xFFFFFFFF.toInt())
+            is TextView -> if (view !is Button && view !is EditText && view !is Switch) {
+                view.setTextColor(0xFFFFFFFF.toInt())
+            }
+        }
+
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                applyDarkSettingsStyle(view.getChildAt(index))
+            }
+        }
+    }
     private fun createBackupControls(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -212,7 +230,7 @@ class IconSettingsActivity : AppCompatActivity() {
         ).apply { setMargins(0, dp(8), 0, dp(10)) }
 
         val label = TextView(this)
-        label.text = "ÄŚas izhoda iz podmenija (sekunde)"
+        label.text = "Čas izhoda iz podmenija (sekunde)"
         label.textSize = 13f
         label.setTextColor(0xFFFFFFFF.toInt())
         label.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -242,7 +260,7 @@ class IconSettingsActivity : AppCompatActivity() {
             prefs.saveCommSubmenuTimeoutSeconds(seconds)
             etTimeout.setText(prefs.getCommSubmenuTimeoutSeconds().toString())
             SettingsBackupManager(this).backupNow()
-            Toast.makeText(this, "ÄŚas shranjen", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Čas shranjen", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnSave)
 
@@ -864,7 +882,7 @@ class IconSettingsActivity : AppCompatActivity() {
                 SettingsBackupManager(this).backupNow()
                 recreate()
             }
-            .setNegativeButton("PrekliÄŤi", null)
+            .setNegativeButton("Prekliči", null)
             .create()
 
         dialog.show()
@@ -975,6 +993,8 @@ class IconSettingsActivity : AppCompatActivity() {
         dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(0xFFFFFFFF.toInt())
     }
 }
+
+
 
 
 

@@ -9,8 +9,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.novarehab.databinding.ActivityGalleryBinding
-import com.novarehab.media_messaging.repository.MediaGalleryRepository
 import com.novarehab.media_messaging.model.MediaMessage
+import com.novarehab.media_messaging.repository.MediaGalleryRepository
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
 import java.io.File
@@ -64,7 +64,9 @@ class GalleryActivity : AppCompatActivity() {
         binding.tvNoImages.visibility = View.GONE
         binding.btnDelete.visibility = View.VISIBLE
         binding.tvImageCount.text = "${currentIndex + 1} / ${items.size}"
-        binding.tvImageMeta.text = "Od: ${item.senderName}\n${android.text.format.DateFormat.format("dd.MM.yyyy HH:mm", item.receivedAt)}"
+        binding.tvImageMeta.text =
+            "Od: ${item.senderName}\n${android.text.format.DateFormat.format("dd.MM.yyyy HH:mm", item.receivedAt)}"
+
         val imageFile = File(item.localPath)
         if (!imageFile.exists()) {
             binding.ivGallery.setImageDrawable(null)
