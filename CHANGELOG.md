@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-05-06 - v1.0.7 (versionCode 7)
+
+Changed modules:
+- `settings`
+- `communication/ui`
+- `speech`
+- `release`
+
+Fixed / added:
+- added optional hardware volume button control modes for communication
+- kept normal Android behavior as default
+- added repeat, stop, speech-volume and page-navigation volume button modes
+- kept volume buttons untouched unless explicit admin setting is enabled
+- bumped release version metadata for the hardware control update
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- some older settings labels in SettingsActivity still contain legacy encoded text and can be cleaned separately
+
 ## 2026-05-06 - v1.0.6 (versionCode 6)
 
 Changed modules:

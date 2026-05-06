@@ -418,6 +418,18 @@ class PrefsManager(context: Context) {
         return ((getSpeechCacheHitCount() * 100.0) / requests).toInt().coerceIn(0, 100)
     }
 
+    fun isHardwareVolumeControlEnabled(): Boolean =
+        prefs.getBoolean("hardware_volume_control_enabled", false)
+
+    fun saveHardwareVolumeControlEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("hardware_volume_control_enabled", enabled).apply()
+
+    fun getHardwareVolumeButtonMode(): String =
+        prefs.getString("hardware_volume_button_mode", "normal_android") ?: "normal_android"
+
+    fun saveHardwareVolumeButtonMode(mode: String) =
+        prefs.edit().putString("hardware_volume_button_mode", mode.ifBlank { "normal_android" }).apply()
+
     fun recordSpeechDiagnostic(delayMs: Long, source: String, cacheHit: Boolean, success: Boolean) {
         val oldCount = getSpeechRequestCount()
         val newCount = oldCount + 1

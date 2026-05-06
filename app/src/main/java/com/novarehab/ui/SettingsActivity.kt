@@ -77,7 +77,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
     private lateinit var spinnerCommSubmenuTimeout: Spinner
+    private lateinit var spinnerHardwareVolumeMode: Spinner
     private lateinit var switchAutoLanguage: Switch
+    private lateinit var switchHardwareVolumeControl: Switch
     private lateinit var switchAutoSortIcons: Switch
     private lateinit var switchOpenAiTtsEnabled: Switch
     private lateinit var switchLocalFallbackEnabled: Switch
@@ -270,6 +272,30 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun speechResponseFormatOptions() = arrayOf("mp3", "wav")
 
+    private fun hardwareVolumeModeOptions() = arrayOf(
+        "NORMAL ANDROID",
+        "SPEECH VOLUME CONTROL",
+        "REPEAT LAST PHRASE",
+        "STOP CURRENT SPEECH",
+        "NEXT/PREVIOUS ICON PAGE"
+    )
+
+    private fun hardwareVolumeModeValue(position: Int): String = when (position) {
+        1 -> "speech_volume_control"
+        2 -> "repeat_last_phrase"
+        3 -> "stop_current_speech"
+        4 -> "next_previous_icon_page"
+        else -> "normal_android"
+    }
+
+    private fun hardwareVolumeModeIndex(value: String): Int = when (value) {
+        "speech_volume_control" -> 1
+        "repeat_last_phrase" -> 2
+        "stop_current_speech" -> 3
+        "next_previous_icon_page" -> 4
+        else -> 0
+    }
+
     private fun speechProviderValue(position: Int): String = when (position) {
         1 -> "openai_tts"
         2 -> "local_android_tts"
@@ -425,6 +451,23 @@ class SettingsActivity : AppCompatActivity() {
             styleSpinner(this)
         }
         panel.addView(spinnerCommSubmenuTimeout)
+
+        switchHardwareVolumeControl = Switch(this).apply {
+            text = "Use hardware volume buttons for communication control"
+            setTextColor(0xFFFFFFFF.toInt())
+        }
+        panel.addView(switchHardwareVolumeControl)
+
+        panel.addView(TextView(this).apply {
+            text = "Na?in tipk za glasnost:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerHardwareVolumeMode = Spinner(this).apply {
+            adapter = themedSpinnerAdapter(*hardwareVolumeModeOptions())
+            styleSpinner(this)
+        }
+        panel.addView(spinnerHardwareVolumeMode)
 
         panel.addView(TextView(this).apply {
             text = "Privzeti jezik izgovora:"
@@ -853,6 +896,8 @@ class SettingsActivity : AppCompatActivity() {
         )
         switchAutoSortIcons.isChecked = prefs.isAutoSortCommunicationIconsEnabled()
         spinnerCommSubmenuTimeout.setSelection(timeoutIndex(prefs.getCommSubmenuTimeoutSeconds()))
+        switchHardwareVolumeControl.isChecked = prefs.isHardwareVolumeControlEnabled()
+        spinnerHardwareVolumeMode.setSelection(hardwareVolumeModeIndex(prefs.getHardwareVolumeButtonMode()))
 
         spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
         spinnerFallbackSpeechLang.setSelection(langIndex(prefs.getFallbackSpeechLanguage()))
@@ -1689,6 +1734,8 @@ class SettingsActivity : AppCompatActivity() {
         )
         prefs.saveAutoSortCommunicationIconsEnabled(switchAutoSortIcons.isChecked)
         prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition))
+        prefs.saveHardwareVolumeControlEnabled(switchHardwareVolumeControl.isChecked)
+        prefs.saveHardwareVolumeButtonMode(hardwareVolumeModeValue(spinnerHardwareVolumeMode.selectedItemPosition))
 
         prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
         prefs.savePatientLanguage2(langCode(spinnerPatientLang2.selectedItemPosition))

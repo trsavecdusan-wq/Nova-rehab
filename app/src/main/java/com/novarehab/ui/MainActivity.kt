@@ -106,6 +106,8 @@ class MainActivity : AppCompatActivity() {
     private var incomingCallRunnable: Runnable? = null
     private var mediaInboxRunnable: Runnable? = null
     private var activeIncomingRoomId: String? = null
+    private var lastSpokenPhrase: String = ""
+    private var lastSpokenSourceLang: String = "sl"
 
     private lateinit var speedGestureDetector: GestureDetector
 
@@ -622,6 +624,8 @@ class MainActivity : AppCompatActivity() {
 
         fun speakFinal(finalText: String) {
             Toast.makeText(this, finalText, Toast.LENGTH_SHORT).show()
+            lastSpokenPhrase = finalText
+            lastSpokenSourceLang = targetLang
 
             ttsManager.speak(finalText, targetLang, apiToken, voice, apiBaseUrl) {
                 if (radioPlaying) {
@@ -647,6 +651,50 @@ class MainActivity : AppCompatActivity() {
         } else {
             speakFinal(text)
         }
+    }
+
+    private fun handleHardwareVolumeButton(keyCode: Int): Boolean {
+        if (!prefs.isHardwareVolumeControlEnabled()) return false
+
+        return when (prefs.getHardwareVolumeButtonMode()) {
+            "speech_volume_control" -> {
+                val delta = if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP) 0.1f else -0.1f
+                val newVolume = (prefs.getTtsVolume() + delta).coerceIn(0.2f, 1.0f)
+                prefs.saveTtsVolume(newVolume)
+                Toast.makeText(this, "Glasnost govora: ${ (newVolume * 100).toInt() } %", Toast.LENGTH_SHORT).show()
+                true
+            }
+            "repeat_last_phrase" -> {
+                if (lastSpokenPhrase.isBlank()) {
+                    Toast.makeText(this, "Ni zadnje fraze za ponovitev.", Toast.LENGTH_SHORT).show()
+                } else {
+                    speakComm(lastSpokenPhrase, lastSpokenSourceLang, logEvent = false)
+                }
+                true
+            }
+            "stop_current_speech" -> {
+                ttsManager.stop()
+                Toast.makeText(this, "Govor ustavljen.", Toast.LENGTH_SHORT).show()
+                true
+            }
+            "next_previous_icon_page" -> {
+                val adapter = binding.viewPagerComm.adapter ?: return false
+                val count = adapter.itemCount
+                if (count <= 1) return true
+                val delta = if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP) 1 else -1
+                val next = (binding.viewPagerComm.currentItem + delta).coerceIn(0, count - 1)
+                binding.viewPagerComm.currentItem = next
+                true
+            }
+            else -> false
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        if ((keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP || keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN) && handleHardwareVolumeButton(keyCode)) {
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     private fun setupGuestLanguageButton() {
