@@ -109,7 +109,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun companionContacts(): List<CompanionShareContact> {
         val contacts = prefs.getContacts()
         val contactIds = listOf("c01", "c02", "c03", "c04", "c05", "c06")
-        val fallbackNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
+        val fallbackNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
         val fallbackLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
         val patientName = prefs.getPatientName().ifBlank { "Lana" }
 
@@ -143,17 +143,19 @@ class SettingsActivity : AppCompatActivity() {
         addConfigTransferPanel()
         loadSettings()
         styleSettingsUi()
+        replaceSpinnersWithFullscreenPickers(binding.root)
+        installSectionNavigation()
         restoreSettingsScrollPosition()
         setupButtons()
     }
 
     private fun langOptions() = arrayOf(
-        "SlovenĹˇÄŤina",
-        "UkrajinĹˇÄŤina",
-        "AngleĹˇÄŤina",
-        "NemĹˇÄŤina",
-        "HrvaĹˇÄŤina",
-        "SrbĹˇÄŤina"
+        "Slovenscina",
+        "Ukrajinscina",
+        "Anglescina",
+        "Nemscina",
+        "Hrvascina",
+        "Srbscina"
     )
 
     private fun langCode(position: Int): String = when (position) {
@@ -253,34 +255,34 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun speechVolumeOptions() = arrayOf("70 %", "80 %", "90 %", "100 %")
 
-    private fun speechProviderOptions() = arrayOf("Hybrid auto", "OpenAI TTS", "Local Android TTS")
+    private fun speechProviderOptions() = arrayOf("Samodejno", "OpenAI govor", "Lokalni Android govor")
 
     private fun speechResponseModeOptions() = arrayOf(
-        "HYBRID AUTO",
-        "FAST LOCAL FIRST",
-        "OPENAI IF CACHED",
-        "OPENAI PREFERRED"
+        "Samodejno uravnotezeno",
+        "Najprej hiter lokalni govor",
+        "OpenAI samo iz predpomnilnika",
+        "Vedno najprej OpenAI"
     )
 
     private fun speechStylePresetOptions() = arrayOf(
-        "Rehabilitation assistant",
-        "Calm",
-        "Warm",
-        "Slow and clear",
-        "Warm caregiver",
-        "Very simple speech",
-        "Ukrainian clear",
-        "Slovenian clear"
+        "Rehabilitacijski pomocnik",
+        "Miren govor",
+        "Topel govor",
+        "Pocasen in jasen govor",
+        "Topel skrbnik",
+        "Zelo preprost govor",
+        "Jasna ukrajinscina",
+        "Jasna slovenscina"
     )
 
-    private fun speechResponseFormatOptions() = arrayOf("mp3", "wav")
+    private fun speechResponseFormatOptions() = arrayOf("Stisnjen zvok (MP3)", "Visoka kakovost (WAV)")
 
     private fun hardwareVolumeModeOptions() = arrayOf(
-        "NORMAL ANDROID",
-        "SPEECH VOLUME CONTROL",
-        "REPEAT LAST PHRASE",
-        "STOP CURRENT SPEECH",
-        "NEXT/PREVIOUS ICON PAGE"
+        "Obicajno delovanje Androida",
+        "Urejanje glasnosti govora",
+        "Ponovi zadnji stavek",
+        "Ustavi trenutni govor",
+        "Naslednja ali prejsnja stran ikon"
     )
 
     private fun hardwareVolumeModeValue(position: Int): String = when (position) {
@@ -347,8 +349,8 @@ class SettingsActivity : AppCompatActivity() {
         else -> 0
     }
 
-    private fun speechResponseFormatIndex(value: String): Int = when (value.lowercase()) {
-        "wav" -> 1
+    private fun speechResponseFormatIndex(value: String): Int = when {
+        value.contains("wav", ignoreCase = true) -> 1
         else -> 0
     }
 
@@ -407,14 +409,14 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         panel.addView(TextView(this).apply {
-            text = "Jeziki pacienta in govor"
+            text = "Pacient"
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
 
         panel.addView(TextView(this).apply {
-            text = "Ĺ tevilo komunikacijskih ikon na stran:"
+            text = "Stevilo komunikacijskih ikon na stran:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -431,7 +433,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         autoSortRow.addView(TextView(this).apply {
-            text = "Samodejno razvrĹˇÄŤanje ikon"
+            text = "Samodejno razvrscanje ikon"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 13f
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -444,7 +446,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(autoSortRow)
 
         panel.addView(TextView(this).apply {
-            text = "ÄŚas izhoda iz podmenija:"
+            text = "Cas izhoda iz podmenija:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -456,7 +458,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(spinnerCommSubmenuTimeout)
 
         switchHardwareVolumeControl = Switch(this).apply {
-            text = "Use hardware volume buttons for communication control"
+            text = "Uporabi fizične tipke za glasnost za komunikacijo"
             setTextColor(0xFFFFFFFF.toInt())
         }
         panel.addView(switchHardwareVolumeControl)
@@ -473,7 +475,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(spinnerHardwareVolumeMode)
 
         panel.addView(TextView(this).apply {
-            text = "Privzeti jezik izgovora:"
+            text = "Privzeti jezik govora:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -526,14 +528,14 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         panel.addView(TextView(this).apply {
-            text = "Napredne nastavitve govora"
+            text = "Govor"
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
 
         panel.addView(TextView(this).apply {
-            text = "Rezervni jezik lokalnega govora:"
+            text = "Jezik lokalnega govora:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -573,172 +575,161 @@ class SettingsActivity : AppCompatActivity() {
         }
         panel.addView(spinnerSpeechVolume)
 
-        panel.addView(TextView(this).apply {
-            text = "Ponudnik govora:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerSpeechProviderMode = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*speechProviderOptions())
-            styleSpinner(this)
-        }
-        panel.addView(spinnerSpeechProviderMode)
-
-        panel.addView(TextView(this).apply {
-            text = "NaÄŤin odziva govora:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerSpeechResponseMode = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*speechResponseModeOptions())
-            styleSpinner(this)
-        }
-        panel.addView(spinnerSpeechResponseMode)
-
-        panel.addView(TextView(this).apply {
-            text = "Slog OpenAI govora:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerSpeechStylePreset = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*speechStylePresetOptions())
-            styleSpinner(this)
-        }
-        panel.addView(spinnerSpeechStylePreset)
-
-        panel.addView(TextView(this).apply {
-            text = "OpenAI model:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        etSpeechModel = EditText(this).apply {
-            hint = "gpt-4o-mini-tts"
-            setTextColor(0xFFFFFFFF.toInt())
-            setHintTextColor(0xFFD0D8E8.toInt())
-        }
-        panel.addView(etSpeechModel)
-
-        panel.addView(TextView(this).apply {
-            text = "Format zvoka:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        spinnerSpeechResponseFormat = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*speechResponseFormatOptions())
-            styleSpinner(this)
-        }
-        panel.addView(spinnerSpeechResponseFormat)
-
-        switchOpenAiTtsEnabled = Switch(this).apply {
-            text = "OpenAI TTS vklopljen"
-            setTextColor(0xFFFFFFFF.toInt())
-        }
-        panel.addView(switchOpenAiTtsEnabled)
-
-        switchLocalFallbackEnabled = Switch(this).apply {
-            text = "Lokalni fallback vklopljen"
-            setTextColor(0xFFFFFFFF.toInt())
-        }
-        panel.addView(switchLocalFallbackEnabled)
-
-        switchSpeechRehabilitationMode = Switch(this).apply {
-            text = "Rehabilitacijski naÄŤin govora"
-            setTextColor(0xFFFFFFFF.toInt())
-        }
-        panel.addView(switchSpeechRehabilitationMode)
-
-        switchSpeechShortSentenceMode = Switch(this).apply {
-            text = "Kratki stavki"
-            setTextColor(0xFFFFFFFF.toInt())
-        }
-        panel.addView(switchSpeechShortSentenceMode)
-
-        panel.addView(TextView(this).apply {
-            text = "Pavza med besedami (ms):"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        etSpeechPauseWords = EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        panel.addView(etSpeechPauseWords)
-
-        panel.addView(TextView(this).apply {
-            text = "Pavza med stavki (ms):"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        etSpeechPauseSentences = EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        panel.addView(etSpeechPauseSentences)
-
-        panel.addView(TextView(this).apply {
-            text = "Jasnost izgovorjave (0-100):"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        etSpeechClarity = EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        panel.addView(etSpeechClarity)
-
-        panel.addView(TextView(this).apply {
-            text = "Toplina govora (0-100):"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        etSpeechWarmth = EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        panel.addView(etSpeechWarmth)
-
-        panel.addView(TextView(this).apply {
-            text = "Mirnost govora (0-100):"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        etSpeechCalmness = EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        panel.addView(etSpeechCalmness)
-
-        panel.addView(TextView(this).apply {
-            text = "Testni stavek:"
-            setTextColor(0xFFAAAAAA.toInt())
-            textSize = 12f
-        })
-        etSpeechTestPhrase = EditText(this).apply {
-            setText("Ĺ˝elim vodo.")
-            setTextColor(0xFFFFFFFF.toInt())
-            setHintTextColor(0xFFD0D8E8.toInt())
-        }
-        panel.addView(etSpeechTestPhrase)
-
         btnTestHybridTts = Button(this).apply {
-            text = "TEST HYBRID GOVORA"
+            text = "TEST GOVORA"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF7A3E00.toInt())
         }
         panel.addView(btnTestHybridTts)
 
+        val advancedToggle = Button(this).apply {
+            text = "ODPRI NAPREDNE NASTAVITVE"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF333355.toInt())
+        }
+        panel.addView(advancedToggle)
+
+        val advancedPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(0, dp(8), 0, 0)
+        }
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Način govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechProviderMode = Spinner(this).apply {
+            adapter = themedSpinnerAdapter("Lokalni govor", "OpenAI govor", "Samodejno")
+            styleSpinner(this)
+        }
+        advancedPanel.addView(spinnerSpeechProviderMode)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Način odziva:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechResponseMode = Spinner(this).apply {
+            adapter = themedSpinnerAdapter("Samodejno", "Takoj lokalno", "OpenAI iz predpomnilnika", "OpenAI prednost")
+            styleSpinner(this)
+        }
+        advancedPanel.addView(spinnerSpeechResponseMode)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Slog OpenAI govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechStylePreset = Spinner(this).apply {
+            adapter = themedSpinnerAdapter("Rehabilitacijski pomočnik", "Miren", "Topel", "Počasen in jasen", "Topel skrbnik", "Zelo enostaven", "Jasna ukrajinščina", "Jasna slovenščina")
+            styleSpinner(this)
+        }
+        advancedPanel.addView(spinnerSpeechStylePreset)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "OpenAI model:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechModel = EditText(this).apply { hint = "Privzeti model" }
+        advancedPanel.addView(etSpeechModel)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Format zvoka:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechResponseFormat = Spinner(this).apply {
+            adapter = themedSpinnerAdapter("MP3", "WAV")
+            styleSpinner(this)
+        }
+        advancedPanel.addView(spinnerSpeechResponseFormat)
+
+        switchOpenAiTtsEnabled = Switch(this).apply { text = "OpenAI govor vklopljen" }
+        advancedPanel.addView(switchOpenAiTtsEnabled)
+
+        switchLocalFallbackEnabled = Switch(this).apply { text = "Lokalni rezervni govor vklopljen" }
+        advancedPanel.addView(switchLocalFallbackEnabled)
+
+        switchSpeechRehabilitationMode = Switch(this).apply { text = "Rehabilitacijski način govora" }
+        advancedPanel.addView(switchSpeechRehabilitationMode)
+
+        switchSpeechShortSentenceMode = Switch(this).apply { text = "Kratki stavki" }
+        advancedPanel.addView(switchSpeechShortSentenceMode)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Pavza med besedami (ms):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechPauseWords = EditText(this).apply { inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        advancedPanel.addView(etSpeechPauseWords)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Pavza med stavki (ms):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechPauseSentences = EditText(this).apply { inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        advancedPanel.addView(etSpeechPauseSentences)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Jasnost izgovorjave (0-100):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechClarity = EditText(this).apply { inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        advancedPanel.addView(etSpeechClarity)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Toplina govora (0-100):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechWarmth = EditText(this).apply { inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        advancedPanel.addView(etSpeechWarmth)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Mirnost govora (0-100):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechCalmness = EditText(this).apply { inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        advancedPanel.addView(etSpeechCalmness)
+
+        advancedPanel.addView(TextView(this).apply {
+            text = "Testni stavek:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechTestPhrase = EditText(this).apply { setText("Želim vodo.") }
+        advancedPanel.addView(etSpeechTestPhrase)
+
         btnClearSpeechCache = Button(this).apply {
-            text = "POÄŚISTI GOVORNI CACHE"
+            text = "POČISTI GOVORNI PREDPOMNILNIK"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
         }
-        panel.addView(btnClearSpeechCache)
+        advancedPanel.addView(btnClearSpeechCache)
 
         tvSpeechDiagnostics = TextView(this).apply {
             setTextColor(0xFFCCCCCC.toInt())
             textSize = 12f
         }
-        panel.addView(tvSpeechDiagnostics)
+        advancedPanel.addView(tvSpeechDiagnostics)
+
+        advancedToggle.setOnClickListener {
+            advancedPanel.visibility = if (advancedPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            advancedToggle.text = if (advancedPanel.visibility == View.VISIBLE) "SKRIJ NAPREDNE NASTAVITVE" else "ODPRI NAPREDNE NASTAVITVE"
+        }
+
+        panel.addView(advancedPanel)
 
         val insertIndex = 6.coerceAtMost(rootLayout.childCount)
         rootLayout.addView(panel, insertIndex)
     }
-
     private fun addUpdateSettingsPanel() {
         val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
 
@@ -748,7 +739,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         panel.addView(TextView(this).apply {
-            text = "Posodobitve aplikacije"
+            text = "Posodobitve"
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -763,7 +754,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(btnCheckUpdateNow)
 
         btnRestorePreviousVersion = Button(this).apply {
-            text = "OBNOVI PREJĹ NJO VERZIJO"
+            text = "OBNOVI PREJSNJO VERZIJO"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF0F3460.toInt())
             textSize = 15f
@@ -783,14 +774,14 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         panel.addView(TextView(this).apply {
-            text = "Aplikacije za sogovornike"
+            text = "Video klici in stiki"
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
 
         btnShareCompanionApp = Button(this).apply {
-            text = "POĹ LJI APLIKACIJO ZA SOGOVORNIKA"
+            text = "POSLJI NASTAVITEV ZA TELEFON"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
             textSize = 14f
@@ -810,7 +801,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         panel.addView(TextView(this).apply {
-            text = "Izvoz in uvoz profila"
+            text = "Backup / izvoz / uvoz"
             setTextColor(0xFFFFFFFF.toInt())
             textSize = 15f
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -962,7 +953,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun loadContactSettings() {
         val contacts = prefs.getContacts()
-        val defaultNames = listOf("Ĺ˝ana", "Dedek", "Inna", "Julija", "Kuma", "DuĹˇan")
+        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
         val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
         val nameFields = listOf(
@@ -1011,7 +1002,7 @@ class SettingsActivity : AppCompatActivity() {
             phoneFields[index].setText(contact?.phone.orEmpty())
 
             val spinner = Spinner(this).apply {
-                val options = arrayOf("SlovenĹˇÄŤina", "UkrajinĹˇÄŤina")
+                val options = arrayOf("Slovenscina", "Ukrajinscina")
                 adapter = themedSpinnerAdapter(*options)
                 styleSpinner(this)
 
@@ -1134,7 +1125,7 @@ class SettingsActivity : AppCompatActivity() {
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speakAndroid(
-                etSpeechTestPhrase.text.toString().trim().ifBlank { "Ĺ˝elim vodo." },
+                etSpeechTestPhrase.text.toString().trim().ifBlank { "Zelim vodo." },
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition)
             ) {
                 tts.destroy()
@@ -1158,7 +1149,7 @@ class SettingsActivity : AppCompatActivity() {
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speakOpenAiOnly(
-                etSpeechTestPhrase.text.toString().trim().ifBlank { "Ĺ˝elim vodo." },
+                etSpeechTestPhrase.text.toString().trim().ifBlank { "Zelim vodo." },
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition),
                 key,
                 voice,
@@ -1173,7 +1164,7 @@ class SettingsActivity : AppCompatActivity() {
             saveApiFields()
             saveSpeechSettings()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
-            val phrase = etSpeechTestPhrase.text.toString().trim().ifBlank { "Ĺ˝elim vodo." }
+            val phrase = etSpeechTestPhrase.text.toString().trim().ifBlank { "Zelim vodo." }
             tts.speak(
                 phrase,
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition),
@@ -1190,7 +1181,7 @@ class SettingsActivity : AppCompatActivity() {
             val cacheManager = SpeechCacheManager(this)
             cacheManager.clearCache()
             refreshSpeechDiagnostics()
-            Toast.makeText(this, "Govorni cache je poÄŤiĹˇÄŤen.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Govorni predpomnilnik je pociscen.", Toast.LENGTH_SHORT).show()
         }
 
         binding.btnTestApi.setOnClickListener {
@@ -1207,7 +1198,7 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
                 Toast.makeText(
                     this,
-                    "ÄŚe slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
+                    "Ce slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
                     Toast.LENGTH_LONG
                 ).show()
             } catch (_: Exception) {
@@ -1222,7 +1213,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnTestMail.setOnClickListener {
             saveSettings()
             ReportWorker.schedule(this, prefs.getReportHour())
-            Toast.makeText(this, "PoroÄŤilo bo poslano ob ${prefs.getReportHour()}:00", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Porocilo bo poslano ob ${prefs.getReportHour()}:00", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1241,7 +1232,7 @@ class SettingsActivity : AppCompatActivity() {
 
                 shareCompanionApp(contact)
             }
-            .setNegativeButton("PrekliÄŤi", null)
+            .setNegativeButton("Preklici", null)
             .create()
 
         dialog.show()
@@ -1282,7 +1273,7 @@ class SettingsActivity : AppCompatActivity() {
             putExtra(Intent.EXTRA_TEXT, message)
         }
 
-        startActivity(Intent.createChooser(intent, "Pošlji nastavitev"))
+        startActivity(Intent.createChooser(intent, "Poslji nastavitev"))
     }
 
     private fun buildCompanionApkUrl(contactId: String): String? {
@@ -1321,6 +1312,7 @@ class SettingsActivity : AppCompatActivity() {
             is EditText -> styleEditText(view)
             is Spinner -> styleSpinner(view)
             is Switch -> SettingsUiStyler.styleSwitch(view)
+            is Button -> SettingsUiStyler.styleButton(view, resources.displayMetrics.density)
             is TextView -> styleTextView(view)
         }
 
@@ -1341,6 +1333,98 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun styleAlertDialog(dialog: AlertDialog) {
         SettingsUiStyler.styleDialog(dialog)
+    }
+
+    private fun replaceSpinnersWithFullscreenPickers(root: View) {
+        if (root is Spinner) {
+            SettingsUiStyler.installFullscreenPickerForSpinner(
+                this,
+                root,
+                derivePickerTitle(root),
+                resources.displayMetrics.density
+            )
+            return
+        }
+
+        if (root is ViewGroup) {
+            for (index in 0 until root.childCount) {
+                replaceSpinnersWithFullscreenPickers(root.getChildAt(index))
+            }
+        }
+    }
+
+    private fun derivePickerTitle(spinner: Spinner): String {
+        val parent = spinner.parent as? ViewGroup ?: return "Izberi možnost"
+        val spinnerIndex = parent.indexOfChild(spinner)
+        for (index in spinnerIndex - 1 downTo 0) {
+            val previous = parent.getChildAt(index) as? TextView ?: continue
+            val candidate = previous.text?.toString()?.trim().orEmpty()
+            if (candidate.isNotBlank()) return candidate.removeSuffix(":")
+        }
+        return "Izberi možnost"
+    }
+
+    private fun installSectionNavigation() {
+        val rootLayout = (binding.root.getChildAt(0) as? LinearLayout) ?: return
+        if (rootLayout.findViewWithTag<View>("settings-section-nav") != null) return
+
+        val nav = LinearLayout(this).apply {
+            tag = "settings-section-nav"
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 0, 0, dp(16))
+        }
+
+        nav.addView(TextView(this).apply {
+            text = "Sekcije nastavitev"
+            SettingsUiStyler.styleSectionTitle(this)
+        })
+
+        listOf(
+            "Pacient" to "Ime pacienta",
+            "Komunikator" to "Komunikacijske ikone",
+            "Govor" to "Govor",
+            "OpenAI API" to "OpenAI API",
+            "Radio in glasba" to "Radio in glasba",
+            "Video klici in stiki" to "Video klici in stiki",
+            "Posodobitve" to "Posodobitve",
+            "Backup / izvoz / uvoz" to "Backup / izvoz / uvoz",
+            "Admin / PIN" to "Admin / PIN"
+        ).forEach { (label, anchor) ->
+            nav.addView(Button(this).apply {
+                text = label
+                SettingsUiStyler.styleButton(this, resources.displayMetrics.density)
+                setBackgroundColor(0xFF0F3460.toInt())
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(8) }
+                setOnClickListener { scrollToSection(anchor) }
+            })
+        }
+
+        rootLayout.addView(nav, 1)
+    }
+
+    private fun scrollToSection(anchorText: String) {
+        val rootLayout = binding.root.getChildAt(0) as? ViewGroup ?: return
+        val anchor = findTextViewRecursive(rootLayout, anchorText) ?: return
+        binding.root.post {
+            binding.root.smoothScrollTo(0, anchor.top.coerceAtLeast(0))
+        }
+    }
+
+    private fun findTextViewRecursive(group: ViewGroup, text: String): TextView? {
+        for (index in 0 until group.childCount) {
+            val child = group.getChildAt(index)
+            if (child is TextView && child.text?.toString()?.contains(text, ignoreCase = true) == true) {
+                return child
+            }
+            if (child is ViewGroup) {
+                val nested = findTextViewRecursive(child, text)
+                if (nested != null) return nested
+            }
+        }
+        return null
     }
 
     private fun restoreSettingsScrollPosition() {
@@ -1369,7 +1453,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun refreshSpeechDiagnostics() {
         if (!::tvSpeechDiagnostics.isInitialized) return
         tvSpeechDiagnostics.text = buildString {
-            appendLine("PovpreÄŤni zamik govora: ${prefs.getSpeechAverageDelayMs()} ms")
+            appendLine("Povprecni zamik govora: ${prefs.getSpeechAverageDelayMs()} ms")
             appendLine("Zadetki cache: ${prefs.getSpeechCacheHitRatePercent()} %")
             appendLine("Zadnji vir: ${prefs.getLastSpeechSource()}")
             append("Velikost cache: ${formatSize(SpeechCacheManager(this@SettingsActivity).cacheSize())}")
@@ -1382,7 +1466,7 @@ class SettingsActivity : AppCompatActivity() {
             .setItems(arrayOf("Shrani ZIP", "Deli ZIP")) { _, which ->
                 if (which == 0) openConfigExportPicker() else shareConfigZip()
             }
-            .setNegativeButton("PrekliÄŤi", null)
+            .setNegativeButton("Preklici", null)
             .create()
         dialog.show()
         styleAlertDialog(dialog)
@@ -1435,7 +1519,7 @@ class SettingsActivity : AppCompatActivity() {
         runCatching {
             val preview = configTransferManager.inspectImportBundle(uri)
             val summary = buildString {
-                appendLine("Ĺ tevilo datotek: ${preview.entryCount}")
+                appendLine("Stevilo datotek: ${preview.entryCount}")
                 appendLine("Ikone: ${if (preview.hasIcons) "DA" else "NE"}")
                 appendLine("Kontakti: ${if (preview.hasContacts) "DA" else "NE"}")
                 appendLine("Statistika: ${if (preview.hasStatistics) "DA" else "NE"}")
@@ -1454,12 +1538,12 @@ class SettingsActivity : AppCompatActivity() {
                     }
                     performImport(uri, mode)
                 }
-                .setNegativeButton("PrekliÄŤi", null)
+                .setNegativeButton("Preklici", null)
                 .create()
             dialog.show()
             styleAlertDialog(dialog)
         }.onFailure {
-            Toast.makeText(this, it.localizedMessage ?: "Uvozne datoteke ni bilo mogoÄŤe pregledati.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, it.localizedMessage ?: "Uvozne datoteke ni bilo mogoce pregledati.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1498,7 +1582,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveSpeechProviderMode(speechProviderValue(spinnerSpeechProviderMode.selectedItemPosition))
         prefs.saveSpeechResponseMode(speechResponseModeValue(spinnerSpeechResponseMode.selectedItemPosition))
         prefs.saveSpeechStylePreset(speechStylePresetValue(spinnerSpeechStylePreset.selectedItemPosition))
-        prefs.saveTtsResponseFormat(spinnerSpeechResponseFormat.selectedItem.toString())
+        prefs.saveTtsResponseFormat(if (spinnerSpeechResponseFormat.selectedItemPosition == 1) "wav" else "mp3")
         prefs.saveTtsModel(etSpeechModel.text.toString().trim().ifBlank { "gpt-4o-mini-tts" })
         prefs.saveOpenAiTtsEnabled(switchOpenAiTtsEnabled.isChecked)
         prefs.saveLocalTtsFallbackEnabled(switchLocalFallbackEnabled.isChecked)
@@ -1530,7 +1614,7 @@ class SettingsActivity : AppCompatActivity() {
                 input.readBytes().toString(Charsets.UTF_8)
             }.orEmpty()
         } catch (_: Exception) {
-            Toast.makeText(this, "API datoteke ni bilo mogoÄŤe prebrati.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "API datoteke ni bilo mogoce prebrati.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -1633,7 +1717,7 @@ class SettingsActivity : AppCompatActivity() {
                     refreshConfigTransferInfo()
                     Toast.makeText(
                         this,
-                        "Izvoz nastavitev je konÄŤan (${formatSize(it)}).",
+                        "Izvoz nastavitev je koncan (${formatSize(it)}).",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -1649,7 +1733,7 @@ class SettingsActivity : AppCompatActivity() {
                 .onSuccess {
                     Toast.makeText(
                         this,
-                        "Izvoz statistike je konÄŤan (${formatSize(it)}).",
+                        "Izvoz statistike je koncan (${formatSize(it)}).",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -1789,8 +1873,8 @@ class SettingsActivity : AppCompatActivity() {
             binding.etContact6Phone
         )
 
-        val defaultNames = listOf("Ĺ˝ana", "Dedek", "Inna", "Julija", "Kuma", "DuĹˇan")
-        val emojis = listOf("đź™‚", "đź™‚", "đź™‚", "đź™‚", "đź™‚", "đź™‚")
+        val defaultNames = listOf("Zana", "Dedek", "Inna", "Julija", "Kuma", "Dusan")
+        val emojis = listOf("\uD83D\uDC64", "\uD83D\uDC64", "\uD83D\uDC64", "\uD83D\uDC64", "\uD83D\uDC64", "\uD83D\uDC64")
         val contacts = mutableListOf<Contact>()
 
         nameFields.forEachIndexed { index, field ->
@@ -1801,7 +1885,7 @@ class SettingsActivity : AppCompatActivity() {
             prefs.saveContactIncomingCallEnabled(index, contactIncomingSwitches.getOrNull(index)?.isChecked ?: true)
             prefs.saveContactOutgoingCallEnabled(index, contactOutgoingSwitches.getOrNull(index)?.isChecked ?: true)
 
-            contacts.add(Contact(name, phone, emojis.getOrElse(index) { "đź™‚" }, lang))
+            contacts.add(Contact(name, phone, emojis.getOrElse(index) { "\uD83D\uDC64" }, lang))
         }
 
         prefs.saveContacts(contacts)
@@ -1825,6 +1909,12 @@ class SettingsActivity : AppCompatActivity() {
         val token: String
     )
 }
+
+
+
+
+
+
 
 
 

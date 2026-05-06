@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-06 - v1.0.9 (versionCode 9)
+
+Changed modules:
+- `settings`
+- `icon-settings`
+- `main-ui`
+- `release`
+
+Fixed / added:
+- Settings UI stabilization
+- replaced dropdowns with fullscreen pickers
+- improved tablet-safe readability across settings screens
+- fixed clipped and dark text in settings flows
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- companion and tablet blocker fixes remain in separate stabilization commits
 ## 2026-05-06 - v1.0.8 (versionCode 8)
 
 Changed modules:
@@ -131,5 +148,6 @@ Fixed bugs:
 Known issues:
 - Final green build confirmation still depends on GitHub Actions after push.
 - Some older update/backup code paths may still need future cleanup if new release workflows are added.
+
 
 

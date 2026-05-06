@@ -12,8 +12,8 @@ android {
         applicationId "com.novarehab.companion"
         minSdk 24
         targetSdk 34
-        versionCode 8
-        versionName "1.0.8"
+        versionCode 9
+        versionName "1.0.9"
         resValue "string", "app_name", "NovaRehab Companion"
         buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
         buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-version.json\""
@@ -61,4 +61,5 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
     implementation "io.github.webrtc-sdk:android:144.7559.01"
 }
+
 

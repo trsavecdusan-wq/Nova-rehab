@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fillViewport="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#1a1a2e">
@@ -41,7 +42,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="API in govor"
+            android:text="OpenAI API"
             android:textColor="#ffffff"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -214,7 +215,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Domači naslov:"
+            android:text="Domaci naslov:"
             android:textColor="#aaaaaa"
             android:textSize="12sp" />
 
@@ -230,7 +231,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Dnevna poročila (Gmail)"
+            android:text="Dnevna porocila (Gmail)"
             android:textColor="#ffffff"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -239,7 +240,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Gmail naslov pošiljatelja:"
+            android:text="Gmail naslov posiljatelja:"
             android:textColor="#aaaaaa"
             android:textSize="12sp" />
 
@@ -323,7 +324,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Ura pošiljanja (0-23):"
+            android:text="Ura posiljanja (0-23):"
             android:textColor="#aaaaaa"
             android:textSize="12sp" />
 
@@ -341,7 +342,7 @@
             android:id="@+id/btnTestMail"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:text="NAČRTUJ POŠILJANJE POROČILA"
+            android:text="NACRTUJ POSILJANJE POROCILA"
             android:backgroundTint="#4a1942"
             android:textColor="#ffffff"
             android:layout_marginBottom="16dp" />
@@ -349,7 +350,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Radio postaje"
+            android:text="Radio in glasba"
             android:textColor="#ffffff"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -388,7 +389,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kontakti (video klici)"
+            android:text="Video klici in stiki"
             android:textColor="#ffffff"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -448,7 +449,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Strežnik ni v prvi fazi" android:textColor="#ffffff" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="8dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Streznik ni v prvi fazi" android:textColor="#ffffff" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="8dp" />
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="IP naslov:" android:textColor="#aaaaaa" android:textSize="12sp" />
         <EditText android:id="@+id/etServerIp" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333" android:layout_marginBottom="4dp" android:hint="192.168.1.100 ali ddns naslov" android:inputType="textUri" />
@@ -459,8 +460,8 @@
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Kiosk - samodejni povratek (minute):" android:textColor="#aaaaaa" android:textSize="12sp" />
         <EditText android:id="@+id/etKioskMinutes" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333" android:layout_marginBottom="16dp" android:inputType="number" android:hint="5" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nova PIN koda (4 številke):" android:textColor="#ffffff" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="8dp" />
-        <EditText android:id="@+id/etNewPin" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333" android:layout_marginBottom="24dp" android:inputType="numberPassword" android:maxLength="4" android:hint="Pusti prazno, če ne menjaš" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Admin / PIN" android:textColor="#ffffff" android:textSize="15sp" android:textStyle="bold" android:layout_marginBottom="8dp" />
+        <EditText android:id="@+id/etNewPin" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#ffffff" android:backgroundTint="#333333" android:layout_marginBottom="24dp" android:inputType="numberPassword" android:maxLength="4" android:hint="Pusti prazno, ce ne menjas" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -492,3 +493,5 @@
 
     </LinearLayout>
 </ScrollView>
+
+
