@@ -27,6 +27,18 @@ class NovaRehabPaths(context: Context) {
         File(rootDir, "gallery").also { it.mkdirs() }
     }
 
+    val galleryImagesDir: File by lazy {
+        File(galleryDir, "images").also { it.mkdirs() }
+    }
+
+    val galleryVideosDir: File by lazy {
+        File(galleryDir, "videos").also { it.mkdirs() }
+    }
+
+    val galleryThumbnailsDir: File by lazy {
+        File(galleryDir, "thumbnails").also { it.mkdirs() }
+    }
+
     val galleryCameraDir: File by lazy {
         File(galleryDir, "camera").also { it.mkdirs() }
     }

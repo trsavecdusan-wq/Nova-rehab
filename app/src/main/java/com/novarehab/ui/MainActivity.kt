@@ -899,7 +899,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnGallery.setOnClickListener {
             mediaGalleryRepository.markAllSeen()
             updateGalleryButton()
-            startActivity(Intent(this, GalleryActivity::class.java))
+            openGalleryScreen()
         }
 
         binding.btnMirror.setOnClickListener {
@@ -977,10 +977,18 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("POKAŽI") { _, _ ->
                 mediaGalleryRepository.markAllSeen()
                 updateGalleryButton()
-                startActivity(Intent(this, GalleryActivity::class.java))
+                openGalleryScreen()
             }
             .setNegativeButton("KASNEJE", null)
             .show()
+    }
+
+    private fun openGalleryScreen() {
+        runCatching {
+            startActivity(Intent(this, GalleryActivity::class.java))
+        }.onFailure {
+            Toast.makeText(this, "Galerije ni bilo mogoče odpreti.", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun scheduleReports() {

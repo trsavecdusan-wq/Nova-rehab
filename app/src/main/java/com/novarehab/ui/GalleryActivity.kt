@@ -10,8 +10,10 @@ import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.novarehab.databinding.ActivityGalleryBinding
 import com.novarehab.media_messaging.repository.MediaGalleryRepository
+import com.novarehab.media_messaging.model.MediaMessage
 import com.novarehab.utils.StatEvent
 import com.novarehab.utils.StatsManager
+import java.io.File
 
 class GalleryActivity : AppCompatActivity() {
 
@@ -44,11 +46,11 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     private fun loadImage() {
-        val items = repository.loadAll()
+        val items = safeItems()
         if (items.isEmpty()) {
             binding.ivGallery.setImageDrawable(null)
             binding.tvNoImages.visibility = View.VISIBLE
-            binding.tvNoImages.text = "Ni prejetih slik v NovaRehab galeriji."
+            binding.tvNoImages.text = "Galerija je prazna"
             binding.tvImageCount.text = ""
             binding.tvImageMeta.text = ""
             binding.btnDelete.visibility = View.GONE
@@ -63,26 +65,40 @@ class GalleryActivity : AppCompatActivity() {
         binding.btnDelete.visibility = View.VISIBLE
         binding.tvImageCount.text = "${currentIndex + 1} / ${items.size}"
         binding.tvImageMeta.text = "Od: ${item.senderName}\n${android.text.format.DateFormat.format("dd.MM.yyyy HH:mm", item.receivedAt)}"
-        Glide.with(this).load(Uri.fromFile(java.io.File(item.localPath))).into(binding.ivGallery)
+        val imageFile = File(item.localPath)
+        if (!imageFile.exists()) {
+            binding.ivGallery.setImageDrawable(null)
+            binding.tvNoImages.visibility = View.VISIBLE
+            binding.tvNoImages.text = "Galerija je prazna"
+            return
+        }
+
+        runCatching {
+            Glide.with(this).load(Uri.fromFile(imageFile)).into(binding.ivGallery)
+        }.onFailure {
+            binding.ivGallery.setImageDrawable(null)
+            binding.tvNoImages.visibility = View.VISIBLE
+            binding.tvNoImages.text = "Galerije ni bilo mogoče odpreti."
+        }
     }
 
     private fun setupButtons() {
         binding.btnPrev.setOnClickListener {
-            val size = repository.loadAll().size
+            val size = safeItems().size
             if (size == 0) return@setOnClickListener
             currentIndex = if (currentIndex > 0) currentIndex - 1 else size - 1
             loadImage()
         }
 
         binding.btnNext.setOnClickListener {
-            val size = repository.loadAll().size
+            val size = safeItems().size
             if (size == 0) return@setOnClickListener
             currentIndex = (currentIndex + 1) % size
             loadImage()
         }
 
         binding.btnDelete.setOnClickListener {
-            val items = repository.loadAll()
+            val items = safeItems()
             val item = items.getOrNull(currentIndex) ?: return@setOnClickListener
             repository.delete(item.messageId)
             if (currentIndex > 0) currentIndex--
@@ -99,5 +115,11 @@ class GalleryActivity : AppCompatActivity() {
             }
         )
         finish()
+    }
+
+    private fun safeItems(): List<MediaMessage> {
+        return runCatching {
+            repository.loadAll().filter { it.localPath.isNotBlank() && File(it.localPath).exists() }
+        }.getOrDefault(emptyList())
     }
 }

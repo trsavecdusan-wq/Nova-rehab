@@ -61,7 +61,7 @@
             android:textColor="#ffffff" android:layout_marginEnd="8dp"/>
 
         <Button android:id="@+id/btnClose" android:layout_width="wrap_content"
-            android:layout_height="50dp" android:text="ZAPRI"
+            android:layout_height="50dp" android:text="ZAPRI GALERIJO"
             android:backgroundTint="#e94560" android:textColor="#ffffff"
             android:layout_marginEnd="8dp"
             android:minWidth="104dp"/>

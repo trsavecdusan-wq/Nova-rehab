@@ -9,7 +9,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.novarehab.core.storage.NovaRehabPaths
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -17,7 +16,6 @@ import java.util.Locale
 import java.util.concurrent.Executor
 
 class MirrorCameraManager(private val context: Context) {
-    private val paths = NovaRehabPaths(context)
     private var imageCapture: ImageCapture? = null
     private var currentSelector: CameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
@@ -49,9 +47,18 @@ class MirrorCameraManager(private val context: Context) {
         onSaved: (File) -> Unit,
         onError: (ImageCaptureException) -> Unit
     ) {
-        val capture = imageCapture ?: return
+        val capture = imageCapture ?: run {
+            onError(
+                ImageCaptureException(
+                    ImageCapture.ERROR_INVALID_CAMERA,
+                    "Kamera še ni pripravljena za slikanje.",
+                    null
+                )
+            )
+            return
+        }
         val fileName = "mirror_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
-        val outputFile = File(paths.galleryCameraDir, fileName)
+        val outputFile = File(context.cacheDir, fileName)
         outputFile.parentFile?.mkdirs()
 
         capture.takePicture(
