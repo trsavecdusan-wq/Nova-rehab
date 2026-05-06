@@ -40,9 +40,7 @@ object CommunicationRepository {
         }.ifEmpty {
             loadFallback(context)
         }
-    }
-
-    fun loadFallback(context: Context): List<CommunicationItem> {
+    }`r`n    fun loadFallback(context: Context): List<CommunicationItem> {
         return runCatching {
             val slDocument = parseDocument(context, readAsset(context, "communication/sl.json"))
             buildTopLevelItems(
