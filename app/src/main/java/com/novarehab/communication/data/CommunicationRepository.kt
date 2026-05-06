@@ -40,7 +40,9 @@ object CommunicationRepository {
         }.ifEmpty {
             loadFallback(context)
         }
-    }`r`n    fun loadFallback(context: Context): List<CommunicationItem> {
+    }
+
+    fun loadFallback(context: Context): List<CommunicationItem> {
         return runCatching {
             val slDocument = parseDocument(context, readAsset(context, "communication/sl.json"))
             buildTopLevelItems(
@@ -50,18 +52,18 @@ object CommunicationRepository {
             )
         }.getOrElse {
             listOf(
-                CommunicationItem("piti", "ŽEJNA", "Žejna sem.", R.drawable.comm_piti, shortLabel = "ŽEJNA", questionText = "Kaj želiš piti?", category = "basic", icon = "comm_piti", priority = 10),
-                CommunicationItem("jesti", "LAČNA", "Lačna sem.", R.drawable.comm_jesti, shortLabel = "LAČNA", questionText = "Kaj želiš jesti?", category = "basic", icon = "comm_jesti", priority = 20),
-                CommunicationItem("slabo", "SLABO", "Ne počutim se dobro.", R.drawable.comm_slabo, shortLabel = "SLABO", questionText = "Kaj te moti?", category = "feeling", icon = "comm_slabo", priority = 30),
-                CommunicationItem("pomoc", "POMOČ", "Potrebujem pomoč.", R.drawable.comm_pomoc, shortLabel = "POMOČ", questionText = "Kakšno pomoč potrebuješ?", category = "help", icon = "comm_pomoc", priority = 40),
+                CommunicationItem("piti", "Ĺ˝EJNA", "Ĺ˝ejna sem.", R.drawable.comm_piti, shortLabel = "Ĺ˝EJNA", questionText = "Kaj ĹľeliĹˇ piti?", category = "basic", icon = "comm_piti", priority = 10),
+                CommunicationItem("jesti", "LAÄŚNA", "LaÄŤna sem.", R.drawable.comm_jesti, shortLabel = "LAÄŚNA", questionText = "Kaj ĹľeliĹˇ jesti?", category = "basic", icon = "comm_jesti", priority = 20),
+                CommunicationItem("slabo", "SLABO", "Ne poÄŤutim se dobro.", R.drawable.comm_slabo, shortLabel = "SLABO", questionText = "Kaj te moti?", category = "feeling", icon = "comm_slabo", priority = 30),
+                CommunicationItem("pomoc", "POMOÄŚ", "Potrebujem pomoÄŤ.", R.drawable.comm_pomoc, shortLabel = "POMOÄŚ", questionText = "KakĹˇno pomoÄŤ potrebujeĹˇ?", category = "help", icon = "comm_pomoc", priority = 40),
                 CommunicationItem("kopalnica", "WC", "Potrebujem v kopalnico.", R.drawable.comm_kopalnica, shortLabel = "WC", category = "basic", icon = "comm_kopalnica", priority = 50),
-                CommunicationItem("dobro", "DOBRO", "Dobro se počutim.", R.drawable.comm_dobro, shortLabel = "DOBRO", category = "feeling", icon = "comm_dobro", priority = 60),
-                CommunicationItem("utrujena", "UTRUJENA", "Utrujena sem, rada bi počivala.", R.drawable.comm_utrujena, shortLabel = "UTRUJENA", category = "feeling", icon = "comm_utrujena", priority = 70),
+                CommunicationItem("dobro", "DOBRO", "Dobro se poÄŤutim.", R.drawable.comm_dobro, shortLabel = "DOBRO", category = "feeling", icon = "comm_dobro", priority = 60),
+                CommunicationItem("utrujena", "UTRUJENA", "Utrujena sem, rada bi poÄŤivala.", R.drawable.comm_utrujena, shortLabel = "UTRUJENA", category = "feeling", icon = "comm_utrujena", priority = 70),
                 CommunicationItem("mraz", "MRAZ", "Mrzlo mi je.", R.drawable.comm_mraz, shortLabel = "MRAZ", category = "comfort", icon = "comm_mraz", priority = 80),
-                CommunicationItem("vroce", "VROČE", "Vroče mi je.", R.drawable.comm_vroce, shortLabel = "VROČE", category = "comfort", icon = "comm_vroce", priority = 90),
+                CommunicationItem("vroce", "VROÄŚE", "VroÄŤe mi je.", R.drawable.comm_vroce, shortLabel = "VROÄŚE", category = "comfort", icon = "comm_vroce", priority = 90),
                 CommunicationItem("hvala", "HVALA", "Hvala lepa.", R.drawable.comm_hvala, shortLabel = "HVALA", category = "social", icon = "comm_hvala", priority = 100),
                 CommunicationItem("pridi_sem", "PRIDI", "Prosim pridi sem k meni.", R.drawable.comm_pridi_sem, shortLabel = "PRIDI", category = "help", icon = "comm_pridi_sem", priority = 110),
-                CommunicationItem("pocakaj", "POČAKAJ", "Počakaj prosim.", R.drawable.comm_pocakaj, shortLabel = "POČAKAJ", category = "social", icon = "comm_pocakaj", priority = 120)
+                CommunicationItem("pocakaj", "POÄŚAKAJ", "PoÄŤakaj prosim.", R.drawable.comm_pocakaj, shortLabel = "POÄŚAKAJ", category = "social", icon = "comm_pocakaj", priority = 120)
             )
         }
     }
