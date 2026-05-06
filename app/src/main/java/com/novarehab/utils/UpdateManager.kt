@@ -6,10 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
+import com.novarehab.core.storage.NovaRehabPaths
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,6 +34,7 @@ object UpdateManager {
     private val httpClient = OkHttpClient()
 
     fun markCurrentLaunchSuccessful(context: Context) {
+        appContext = context.applicationContext
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(KEY_UPDATE_PENDING, false)
@@ -42,6 +43,7 @@ object UpdateManager {
     }
 
     fun showRestorePromptIfNeeded(activity: Activity) {
+        appContext = activity.applicationContext
         val prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val updatePending = prefs.getBoolean(KEY_UPDATE_PENDING, false)
         val updateSuccess = prefs.getBoolean(KEY_UPDATE_SUCCESS, true)
@@ -62,6 +64,7 @@ object UpdateManager {
     }
 
     fun checkForUpdateNow(activity: Activity) {
+        appContext = activity.applicationContext
         CoroutineScope(Dispatchers.Main).launch {
             Toast.makeText(activity, "Preverjam posodobitev...", Toast.LENGTH_SHORT).show()
 
@@ -105,6 +108,7 @@ object UpdateManager {
     }
 
     fun showUpdateDialog(activity: Activity, versionName: String, apkUrl: String, message: String) {
+        appContext = activity.applicationContext
         if (apkUrl.isBlank()) {
             Toast.makeText(activity, "Povezava do nove APK datoteke ni na voljo.", Toast.LENGTH_LONG).show()
             return
@@ -131,6 +135,7 @@ object UpdateManager {
     }
 
     fun downloadAndInstallUpdate(activity: Activity, apkUrl: String) {
+        appContext = activity.applicationContext
         CoroutineScope(Dispatchers.Main).launch {
             Toast.makeText(activity, "Pripravljam posodobitev...", Toast.LENGTH_SHORT).show()
 
@@ -163,6 +168,7 @@ object UpdateManager {
     }
 
     fun openBackupInstaller(activity: Activity) {
+        appContext = activity.applicationContext
         val backupFile = getBackupApkFile()
         if (!isUsableApk(backupFile)) {
             Toast.makeText(activity, "Prejsnja verzija ni najdena.", Toast.LENGTH_LONG).show()
@@ -287,11 +293,11 @@ object UpdateManager {
     }
 
     private fun getNovaRehabDirectory(): File {
-        return File(Environment.getExternalStorageDirectory(), "NovaRehab")
+        return NovaRehabPaths(appContext).rootDir
     }
 
     private fun getBackupDirectory(): File {
-        return File(getNovaRehabDirectory(), "backups")
+        return NovaRehabPaths(appContext).apkBackupsDir
     }
 
     private fun getBackupApkFile(): File {
@@ -299,7 +305,7 @@ object UpdateManager {
     }
 
     private fun getUpdateApkFile(): File {
-        return File(getNovaRehabDirectory(), UPDATE_FILE_NAME)
+        return File(NovaRehabPaths(appContext).updatesDir, UPDATE_FILE_NAME)
     }
 
     private data class UpdateInfo(
@@ -307,4 +313,6 @@ object UpdateManager {
         val remoteVersionCode: Long,
         val currentVersionCode: Long
     )
+
+    private lateinit var appContext: Context
 }

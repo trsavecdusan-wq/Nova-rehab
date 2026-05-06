@@ -46,6 +46,14 @@ class NovaRehabPaths(context: Context) {
         File(rootDir, "contacts").also { it.mkdirs() }
     }
 
+    val updatesDir: File by lazy {
+        File(rootDir, "updates").also { it.mkdirs() }
+    }
+
+    val apkBackupsDir: File by lazy {
+        File(rootDir, "backups").also { it.mkdirs() }
+    }
+
     val backupDir: File by lazy {
         File(configDir, "backup").also { it.mkdirs() }
     }

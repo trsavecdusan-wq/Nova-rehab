@@ -1,4 +1,4 @@
-﻿package com.novarehab.ui
+package com.novarehab.ui
 
 import android.app.AlertDialog
 import android.content.Intent

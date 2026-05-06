@@ -26,7 +26,7 @@ object CompanionConfig {
     const val signalingBaseUrl: String =
         "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"
     const val updateCheckUrl: String =
-        "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/update.json"
+        "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-version.json"
     const val apkDownloadUrl: String =
         "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-debug.apk"
     const val incomingCallsEnabled: Boolean = true

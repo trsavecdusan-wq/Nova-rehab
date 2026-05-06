@@ -1,4 +1,4 @@
-﻿package com.novarehab.media_messaging.repository
+package com.novarehab.media_messaging.repository
 
 import android.content.Context
 import android.graphics.Bitmap

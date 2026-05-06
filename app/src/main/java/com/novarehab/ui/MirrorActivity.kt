@@ -1,4 +1,4 @@
-﻿package com.novarehab.ui
+package com.novarehab.ui
 
 import android.Manifest
 import android.os.Bundle

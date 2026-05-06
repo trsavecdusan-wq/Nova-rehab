@@ -1,4 +1,4 @@
-﻿package com.novarehab.utils
+package com.novarehab.utils
 
 import android.content.Context
 import com.novarehab.communication.data.PersonalIconBankManager

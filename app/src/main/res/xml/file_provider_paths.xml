@@ -6,9 +6,13 @@
 
     <external-files-path
         name="gallery"
-        path="gallery/" />
+        path="NovaRehab/gallery/" />
 
-    <external-path
+    <external-files-path
         name="novarehab_updates"
-        path="NovaRehab/" />
+        path="NovaRehab/updates/" />
+
+    <external-files-path
+        name="novarehab_backups"
+        path="NovaRehab/backups/" />
 </paths>

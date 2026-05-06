@@ -1,4 +1,4 @@
-﻿package com.novarehab.communication.data
+package com.novarehab.communication.data
 
 import android.content.Context
 import com.novarehab.communication.model.CommunicationItem

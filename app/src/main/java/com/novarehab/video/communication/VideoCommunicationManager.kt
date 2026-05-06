@@ -1,4 +1,4 @@
-﻿package com.novarehab.video.communication
+package com.novarehab.video.communication
 
 import android.content.Context
 import com.novarehab.communication.data.CommunicationRepository
