@@ -17,6 +17,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ListAdapter
 import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
@@ -172,16 +173,32 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun themedDialogAdapter(items: Array<String>): ListAdapter {
+        return object : ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_list_item_1,
+            items
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                return super.getView(position, convertView, parent).also { styleSpinnerText(it, true) }
+            }
+        }
+    }
+
     private fun styleSpinnerText(view: View, dropdown: Boolean) {
         val textView = view as? TextView ?: return
         textView.setTextColor(0xFFFFFFFF.toInt())
         if (dropdown) {
             textView.setBackgroundColor(0xFF16213E.toInt())
             textView.setPadding(dp(12), dp(12), dp(12), dp(12))
+        } else {
+            textView.setBackgroundColor(0x00000000)
+            textView.setPadding(dp(8), dp(10), dp(8), dp(10))
         }
     }
 
     private fun styleSpinner(spinner: Spinner) {
+        spinner.setBackgroundResource(com.novarehab.R.drawable.bg_settings_input)
         spinner.setPopupBackgroundDrawable(ColorDrawable(0xFF16213E.toInt()))
         spinner.post {
             (spinner.selectedView as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
@@ -757,11 +774,11 @@ class SettingsActivity : AppCompatActivity() {
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("Izberi sogovornika")
-            .setItems(names) { _, which ->
+            .setAdapter(themedDialogAdapter(names)) { _, which ->
                 val contact = contacts.getOrNull(which)
                 if (contact == null) {
                     Toast.makeText(this, "Neznan sogovornik.", Toast.LENGTH_LONG).show()
-                    return@setItems
+                    return@setAdapter
                 }
 
                 shareCompanionApp(contact)
@@ -834,9 +851,7 @@ class SettingsActivity : AppCompatActivity() {
             is EditText -> styleEditText(view)
             is Spinner -> styleSpinner(view)
             is Switch -> view.setTextColor(0xFFFFFFFF.toInt())
-            is TextView -> if (view.currentTextColor == Color.BLACK) {
-                view.setTextColor(0xFFFFFFFF.toInt())
-            }
+            is TextView -> styleTextView(view)
         }
 
         if (view is ViewGroup) {
@@ -848,16 +863,38 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun styleEditText(editText: EditText) {
         editText.setTextColor(0xFFFFFFFF.toInt())
-        editText.setHintTextColor(0xFFB8D8FF.toInt())
+        editText.setHintTextColor(0xFFD0D8E8.toInt())
         editText.setLinkTextColor(0xFFFFFFFF.toInt())
+        editText.setBackgroundResource(com.novarehab.R.drawable.bg_settings_input)
+        editText.setPadding(dp(12), dp(10), dp(12), dp(10))
+    }
+
+    private fun styleTextView(textView: TextView) {
+        if (textView is Button || textView is Switch || textView is EditText) return
+
+        val red = Color.red(textView.currentTextColor)
+        val green = Color.green(textView.currentTextColor)
+        val blue = Color.blue(textView.currentTextColor)
+        val brightness = (red + green + blue) / 3
+
+        if (brightness < 150) {
+            textView.setTextColor(0xFFFFFFFF.toInt())
+        }
     }
 
     private fun styleAlertDialog(dialog: AlertDialog) {
         dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
+        dialog.findViewById<TextView>(android.R.id.message)?.setTextColor(0xFFFFFFFF.toInt())
+        dialog.findViewById<TextView>(resources.getIdentifier("alertTitle", "id", "android"))?.setTextColor(0xFFFFFFFF.toInt())
         dialog.listView?.apply {
             setBackgroundColor(0xFF1A1A2E.toInt())
             divider = ColorDrawable(0xFF333355.toInt())
             dividerHeight = 1
+            post {
+                for (index in 0 until childCount) {
+                    (getChildAt(index) as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
+                }
+            }
         }
         dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(0xFFFFFFFF.toInt())
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xFFFFFFFF.toInt())

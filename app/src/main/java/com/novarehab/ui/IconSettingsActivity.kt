@@ -9,11 +9,15 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
 import android.view.WindowManager
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
@@ -219,8 +223,8 @@ class IconSettingsActivity : AppCompatActivity() {
         etTimeout.textSize = 15f
         etTimeout.gravity = Gravity.CENTER
         etTimeout.setTextColor(0xFFFFFFFF.toInt())
-        etTimeout.setHintTextColor(0xFF777799.toInt())
-        etTimeout.setBackgroundColor(0xFF16213e.toInt())
+        etTimeout.setHintTextColor(0xFFD0D8E8.toInt())
+        etTimeout.setBackgroundResource(R.drawable.bg_settings_input)
         etTimeout.layoutParams = LinearLayout.LayoutParams(dp(88), dp(48)).apply {
             setMargins(dp(8), 0, dp(8), 0)
         }
@@ -293,10 +297,7 @@ class IconSettingsActivity : AppCompatActivity() {
         etText.setSingleLine(false)
         etText.minLines = 1
         etText.maxLines = 3
-        etText.setTextColor(0xFFFFFFFF.toInt())
-        etText.setHintTextColor(0xFF777799.toInt())
-        etText.setBackgroundColor(0xFF16213e.toInt())
-        etText.setPadding(dp(10), dp(8), dp(10), dp(8))
+        styleEditText(etText)
         textBox.addView(etText)
 
         val submenuSwitch = Switch(this).apply {
@@ -314,10 +315,7 @@ class IconSettingsActivity : AppCompatActivity() {
             setSingleLine(false)
             minLines = 1
             maxLines = 2
-            setTextColor(0xFFFFFFFF.toInt())
-            setHintTextColor(0xFF777799.toInt())
-            setBackgroundColor(0xFF0F3460.toInt())
-            setPadding(dp(10), dp(8), dp(10), dp(8))
+            styleEditText(this)
         }
         textBox.addView(etSubmenuPrompt)
         row.addView(textBox)
@@ -397,28 +395,17 @@ class IconSettingsActivity : AppCompatActivity() {
         etTitle.setText(saved?.title ?: "")
         etTitle.hint = "Napis na ikoni"
         etTitle.textSize = 12f
-        etTitle.setTextColor(0xFFFFFFFF.toInt())
-        etTitle.setHintTextColor(0xFF777799.toInt())
-        etTitle.setBackgroundColor(0xFF16213e.toInt())
-        etTitle.setPadding(dp(8), dp(4), dp(8), dp(4))
+        styleEditText(etTitle)
 
         val etSpeech = EditText(this)
         etSpeech.setText(saved?.text ?: "")
         etSpeech.hint = "Besedilo za govor"
         etSpeech.textSize = 12f
-        etSpeech.setTextColor(0xFFFFFFFF.toInt())
-        etSpeech.setHintTextColor(0xFF777799.toInt())
-        etSpeech.setBackgroundColor(0xFF16213e.toInt())
-        etSpeech.setPadding(dp(8), dp(4), dp(8), dp(4))
+        styleEditText(etSpeech)
 
-        val langSpinner = android.widget.Spinner(this).apply {
-            adapter = android.widget.ArrayAdapter(
-                this@IconSettingsActivity,
-                android.R.layout.simple_spinner_item,
-                arrayOf("SL", "UK")
-            ).also {
-                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
+        val langSpinner = Spinner(this).apply {
+            adapter = themedSpinnerAdapter("SL", "UK")
+            styleSpinner(this)
             setSelection(if ((saved?.language ?: "sl") == "uk") 1 else 0)
         }
 
@@ -592,8 +579,8 @@ class IconSettingsActivity : AppCompatActivity() {
         val labels = files.map { it.nameWithoutExtension }.toTypedArray()
         val dialog = AlertDialog.Builder(this)
             .setTitle("Izberi sliko iz arhiva")
-            .setItems(labels) { _, which ->
-                val source = files.getOrNull(which) ?: return@setItems
+            .setAdapter(themedSpinnerAdapter(*labels)) { _, which ->
+                val source = files.getOrNull(which) ?: return@setAdapter
                 source.copyTo(paths.customIconFile(iconId), overwrite = true)
                 SettingsBackupManager(this).backupNow()
                 recreate()
@@ -602,9 +589,7 @@ class IconSettingsActivity : AppCompatActivity() {
             .create()
 
         dialog.show()
-        dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
-        dialog.listView?.setBackgroundColor(0xFF1A1A2E.toInt())
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xFFFFFFFF.toInt())
+        styleAlertDialog(dialog)
     }
 
     private fun launchCameraForIcon(iconId: String) {
@@ -643,5 +628,71 @@ class IconSettingsActivity : AppCompatActivity() {
 
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun styleEditText(editText: EditText) {
+        editText.setTextColor(0xFFFFFFFF.toInt())
+        editText.setHintTextColor(0xFFD0D8E8.toInt())
+        editText.setBackgroundResource(R.drawable.bg_settings_input)
+        editText.setPadding(dp(10), dp(8), dp(10), dp(8))
+    }
+
+    private fun themedSpinnerAdapter(vararg items: String): ArrayAdapter<String> {
+        return object : ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_spinner_item,
+            items
+        ) {
+            init {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                return super.getView(position, convertView, parent).also { styleSpinnerText(it, false) }
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                return super.getDropDownView(position, convertView, parent).also { styleSpinnerText(it, true) }
+            }
+        }
+    }
+
+    private fun styleSpinnerText(view: View, dropdown: Boolean) {
+        val textView = view as? TextView ?: return
+        textView.setTextColor(0xFFFFFFFF.toInt())
+        if (dropdown) {
+            textView.setBackgroundColor(0xFF16213E.toInt())
+            textView.setPadding(dp(12), dp(12), dp(12), dp(12))
+        } else {
+            textView.setBackgroundColor(0x00000000)
+            textView.setPadding(dp(8), dp(10), dp(8), dp(10))
+        }
+    }
+
+    private fun styleSpinner(spinner: Spinner) {
+        spinner.setBackgroundResource(R.drawable.bg_settings_input)
+        spinner.setPopupBackgroundDrawable(ColorDrawable(0xFF16213E.toInt()))
+        spinner.post {
+            (spinner.selectedView as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
+        }
+    }
+
+    private fun styleAlertDialog(dialog: AlertDialog) {
+        dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
+        dialog.findViewById<TextView>(android.R.id.message)?.setTextColor(0xFFFFFFFF.toInt())
+        dialog.findViewById<TextView>(resources.getIdentifier("alertTitle", "id", "android"))?.setTextColor(0xFFFFFFFF.toInt())
+        dialog.listView?.apply {
+            setBackgroundColor(0xFF1A1A2E.toInt())
+            divider = ColorDrawable(0xFF333355.toInt())
+            dividerHeight = 1
+            post {
+                for (index in 0 until childCount) {
+                    (getChildAt(index) as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
+                }
+            }
+        }
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(0xFFFFFFFF.toInt())
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xFFFFFFFF.toInt())
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(0xFFFFFFFF.toInt())
     }
 }

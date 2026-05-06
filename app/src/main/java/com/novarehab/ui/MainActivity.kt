@@ -500,7 +500,7 @@ class MainActivity : AppCompatActivity() {
         })
 
         val timeout = Runnable { if (popup.isShowing) popup.dismiss() }
-        languageReturnHandler.postDelayed(timeout, prefs.getCommSubmenuTimeoutSeconds() * 1000L)
+        languageReturnHandler.postDelayed(timeout, 15_000L)
         popup.setOnDismissListener { languageReturnHandler.removeCallbacks(timeout) }
         popup.showAtLocation(binding.root, Gravity.CENTER, 0, 0)
     }

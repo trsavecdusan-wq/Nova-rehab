@@ -14,8 +14,29 @@ object CommunicationRepository {
     fun load(context: Context, language: String): List<CommunicationItem> {
         val normalizedLanguage = normalizeLanguage(language)
         return runCatching {
-            parseItems(context, readAsset(context, "communication/$normalizedLanguage.json"))
+            val slDocument = parseDocument(context, readAsset(context, "communication/sl.json"))
+            if (slDocument.topLevelIds.isEmpty()) return@runCatching loadFallback()
+
+            if (normalizedLanguage == "sl") {
+                buildTopLevelItems(
+                    topLevelIds = slDocument.topLevelIds,
+                    primaryItems = slDocument.itemsById,
+                    fallbackItems = slDocument.itemsById
+                )
+            } else {
+                val localizedDocument = runCatching {
+                    parseDocument(context, readAsset(context, "communication/$normalizedLanguage.json"))
+                }.getOrNull()
+
+                buildTopLevelItems(
+                    topLevelIds = slDocument.topLevelIds,
+                    primaryItems = localizedDocument?.itemsById.orEmpty(),
+                    fallbackItems = slDocument.itemsById
+                )
+            }
         }.getOrElse {
+            loadFallback()
+        }.ifEmpty {
             loadFallback()
         }
     }
@@ -159,6 +180,26 @@ object CommunicationRepository {
         return normalizeMainItems(parsedItems).ifEmpty { loadFallback() }
     }
 
+    private fun parseDocument(context: Context, raw: String): ParsedDocument {
+        val root = JSONObject(raw)
+        val array = root.optJSONArray("items") ?: JSONArray()
+        val itemsById = linkedMapOf<String, ParsedItem>()
+        val topLevelIds = mutableListOf<String>()
+
+        for (index in 0 until array.length()) {
+            val itemJson = array.optJSONObject(index) ?: continue
+            val parsed = parseParsedItem(context, itemJson, itemsById)
+            if (parsed.id.isNotBlank()) {
+                topLevelIds += parsed.id
+            }
+        }
+
+        return ParsedDocument(
+            topLevelIds = topLevelIds.distinct(),
+            itemsById = itemsById
+        )
+    }
+
     private fun parseItem(context: Context, json: JSONObject): CommunicationItem {
         val iconName = json.optString("icon", "ic_contact_default")
         val childrenArray = json.optJSONArray("children") ?: JSONArray()
@@ -190,9 +231,156 @@ object CommunicationRepository {
         )
     }
 
+    private fun parseParsedItem(
+        context: Context,
+        json: JSONObject,
+        itemsById: MutableMap<String, ParsedItem>
+    ): ParsedItem {
+        val iconName = json.optString("icon", "ic_contact_default")
+        val childIds = mutableListOf<String>()
+        val childrenArray = json.optJSONArray("children") ?: JSONArray()
+
+        for (index in 0 until childrenArray.length()) {
+            val childObject = childrenArray.optJSONObject(index)
+            if (childObject != null) {
+                val child = parseParsedItem(context, childObject, itemsById)
+                if (child.id.isNotBlank()) {
+                    childIds += child.id
+                }
+                continue
+            }
+
+            val childId = childrenArray.optString(index).trim()
+            if (childId.isNotBlank()) {
+                childIds += childId
+            }
+        }
+
+        return ParsedItem(
+            id = json.optString("id"),
+            label = json.optString("label"),
+            shortLabel = json.optString("shortLabel", json.optString("label")),
+            ttsText = json.optString("ttsText"),
+            questionText = json.optString("questionText"),
+            category = json.optString("category"),
+            icon = iconName,
+            iconRes = resolveDrawable(context, iconName),
+            childIds = childIds.distinct(),
+            priority = json.optInt("priority", 0),
+            emotionalTags = json.optJSONArray("emotionalTags").toStringList(),
+            aiPromptHint = json.optString("aiPromptHint"),
+            requiresConfirmation = json.optBoolean("requiresConfirmation", false),
+            enabled = json.optBoolean("enabled", true),
+            arasaacKey = json.optString("arasaacKey"),
+            symbolKey = json.optString("symbolKey"),
+            logEventType = json.optString("logEventType", "iconClicked"),
+            pinnedMain = json.optBoolean("pinnedMain", json.optBoolean("pinned", false)),
+            pinnedVideo = json.optBoolean("pinnedVideo", json.optBoolean("pinned", false)),
+            usageRank = json.optInt("usageRank", 0)
+        ).also { parsed ->
+            if (parsed.id.isNotBlank()) {
+                itemsById[parsed.id] = parsed
+            }
+        }
+    }
+
+    private fun buildTopLevelItems(
+        topLevelIds: List<String>,
+        primaryItems: Map<String, ParsedItem>,
+        fallbackItems: Map<String, ParsedItem>
+    ): List<CommunicationItem> {
+        return normalizeMainItems(
+            topLevelIds.mapNotNull { id ->
+                buildStructuredItem(
+                    id = id,
+                    primaryItems = primaryItems,
+                    fallbackItems = fallbackItems,
+                    visited = emptySet()
+                )
+            }
+        )
+    }
+
+    private fun buildStructuredItem(
+        id: String,
+        primaryItems: Map<String, ParsedItem>,
+        fallbackItems: Map<String, ParsedItem>,
+        visited: Set<String>
+    ): CommunicationItem? {
+        if (id.isBlank() || id in visited) return null
+
+        val fallback = fallbackItems[id]
+        val primary = primaryItems[id]
+        val template = fallback ?: primary ?: return null
+
+        val childIds = if (fallback?.childIds?.isNotEmpty() == true) fallback.childIds else template.childIds
+        val nextVisited = visited + id
+        val children = normalizeChildren(
+            childIds.mapNotNull { childId ->
+                buildStructuredItem(childId, primaryItems, fallbackItems, nextVisited)
+            }
+        )
+
+        val label = primary?.label.takeUnless { it.isNullOrBlank() }
+            ?: fallback?.label.takeUnless { it.isNullOrBlank() }
+            ?: template.id.uppercase()
+        val shortLabel = primary?.shortLabel.takeUnless { it.isNullOrBlank() }
+            ?: fallback?.shortLabel.takeUnless { it.isNullOrBlank() }
+            ?: label
+        val ttsText = primary?.ttsText.takeUnless { it.isNullOrBlank() }
+            ?: fallback?.ttsText.takeUnless { it.isNullOrBlank() }
+            ?: label
+        val questionText = primary?.questionText.takeUnless { it.isNullOrBlank() }
+            ?: fallback?.questionText.takeUnless { it.isNullOrBlank() }
+            ?: ttsText
+        val iconName = primary?.icon.takeUnless { it.isNullOrBlank() }
+            ?: fallback?.icon.takeUnless { it.isNullOrBlank() }
+            ?: template.icon
+        val iconRes = when {
+            primary != null && primary.iconRes != R.drawable.ic_contact_default -> primary.iconRes
+            fallback != null -> fallback.iconRes
+            else -> template.iconRes
+        }
+
+        return CommunicationItem(
+            id = template.id,
+            label = label,
+            shortLabel = shortLabel,
+            ttsText = ttsText,
+            questionText = questionText,
+            category = primary?.category.takeUnless { it.isNullOrBlank() }
+                ?: fallback?.category.takeUnless { it.isNullOrBlank() }
+                ?: template.category,
+            icon = iconName,
+            iconRes = iconRes,
+            children = children,
+            priority = fallback?.priority ?: primary?.priority ?: template.priority,
+            emotionalTags = primary?.emotionalTags?.takeIf { it.isNotEmpty() }
+                ?: fallback?.emotionalTags?.takeIf { it.isNotEmpty() }
+                ?: template.emotionalTags,
+            aiPromptHint = primary?.aiPromptHint.takeUnless { it.isNullOrBlank() }
+                ?: fallback?.aiPromptHint.takeUnless { it.isNullOrBlank() }
+                ?: template.aiPromptHint,
+            requiresConfirmation = primary?.requiresConfirmation ?: fallback?.requiresConfirmation ?: template.requiresConfirmation,
+            enabled = primary?.enabled ?: fallback?.enabled ?: template.enabled,
+            arasaacKey = primary?.arasaacKey.takeUnless { it.isNullOrBlank() }
+                ?: fallback?.arasaacKey.takeUnless { it.isNullOrBlank() }
+                ?: template.arasaacKey,
+            symbolKey = primary?.symbolKey.takeUnless { it.isNullOrBlank() }
+                ?: fallback?.symbolKey.takeUnless { it.isNullOrBlank() }
+                ?: template.symbolKey,
+            logEventType = primary?.logEventType.takeUnless { it.isNullOrBlank() }
+                ?: fallback?.logEventType.takeUnless { it.isNullOrBlank() }
+                ?: template.logEventType,
+            pinnedMain = fallback?.pinnedMain ?: primary?.pinnedMain ?: template.pinnedMain,
+            pinnedVideo = fallback?.pinnedVideo ?: primary?.pinnedVideo ?: template.pinnedVideo,
+            usageRank = fallback?.usageRank ?: primary?.usageRank ?: template.usageRank
+        )
+    }
+
     private fun normalizeMainItems(items: List<CommunicationItem>): List<CommunicationItem> {
         return items
-            .filter { it.enabled && it.id.isNotBlank() && it.label.isNotBlank() && it.ttsText.isNotBlank() }
+            .filter { it.enabled && it.id.isNotBlank() && it.iconRes != 0 }
             .map { item -> item.copy(children = normalizeChildren(item.children)) }
             .sortedBy { it.priority }
             .take(MAX_MAIN_ITEMS)
@@ -200,7 +388,7 @@ object CommunicationRepository {
 
     private fun normalizeChildren(items: List<CommunicationItem>): List<CommunicationItem> {
         return items
-            .filter { it.enabled && it.id.isNotBlank() && it.label.isNotBlank() && it.ttsText.isNotBlank() }
+            .filter { it.enabled && it.id.isNotBlank() && it.iconRes != 0 }
             .sortedBy { it.priority }
             .take(MAX_SUBMENU_ITEMS)
     }
@@ -232,4 +420,32 @@ object CommunicationRepository {
         if (this == null) return emptyList()
         return (0 until length()).mapNotNull { index -> optString(index).takeIf { it.isNotBlank() } }
     }
+
+    private data class ParsedDocument(
+        val topLevelIds: List<String>,
+        val itemsById: Map<String, ParsedItem>
+    )
+
+    private data class ParsedItem(
+        val id: String,
+        val label: String,
+        val shortLabel: String,
+        val ttsText: String,
+        val questionText: String,
+        val category: String,
+        val icon: String,
+        val iconRes: Int,
+        val childIds: List<String>,
+        val priority: Int,
+        val emotionalTags: List<String>,
+        val aiPromptHint: String,
+        val requiresConfirmation: Boolean,
+        val enabled: Boolean,
+        val arasaacKey: String,
+        val symbolKey: String,
+        val logEventType: String,
+        val pinnedMain: Boolean,
+        val pinnedVideo: Boolean,
+        val usageRank: Int
+    )
 }

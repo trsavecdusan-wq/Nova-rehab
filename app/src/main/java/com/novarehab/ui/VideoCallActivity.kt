@@ -386,7 +386,7 @@ class VideoCallActivity : AppCompatActivity() {
         })
 
         val timeout = Runnable { if (popup.isShowing) popup.dismiss() }
-        callTimeoutHandler.postDelayed(timeout, prefs.getCommSubmenuTimeoutSeconds() * 1000L)
+        callTimeoutHandler.postDelayed(timeout, 15_000L)
         popup.setOnDismissListener { callTimeoutHandler.removeCallbacks(timeout) }
         popup.showAtLocation(findViewById(android.R.id.content), Gravity.CENTER, 0, 0)
     }
