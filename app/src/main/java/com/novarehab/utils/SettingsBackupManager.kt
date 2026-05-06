@@ -1,4 +1,4 @@
-package com.novarehab.utils
+﻿package com.novarehab.utils
 
 import android.content.Context
 import android.content.ContentUris
@@ -327,6 +327,8 @@ class SettingsBackupManager(private val context: Context) {
                     .put("enabled", it.enabled)
                     .put("pinnedMain", it.pinnedMain)
                     .put("pinnedVideo", it.pinnedVideo)
+                    .put("showOnMain", it.showOnMain)
+                    .put("children", JSONArray(it.children))
             }))
     }
 
@@ -406,7 +408,13 @@ class SettingsBackupManager(private val context: Context) {
                     imagePath = item.optString("imagePath"),
                     enabled = item.optBoolean("enabled", true),
                     pinnedMain = item.optBoolean("pinnedMain", false),
-                    pinnedVideo = item.optBoolean("pinnedVideo", false)
+                    pinnedVideo = item.optBoolean("pinnedVideo", false),
+                    showOnMain = item.optBoolean("showOnMain", true),
+                    children = item.optJSONArray("children").let { array ->
+                        if (array == null) emptyList() else (0 until array.length()).mapNotNull { idx ->
+                            array.optString(idx).trim().takeIf { value -> value.isNotBlank() }
+                        }
+                    }
                 )
             }.filter { it.id.isNotBlank() }
 
@@ -414,3 +422,4 @@ class SettingsBackupManager(private val context: Context) {
         }
     }
 }
+

@@ -1,4 +1,4 @@
-package com.novarehab.ui
+﻿package com.novarehab.ui
 
 import android.app.AlertDialog
 import android.content.Intent
@@ -24,6 +24,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.novarehab.R
+import com.novarehab.communication.data.CommunicationRepository
 import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.utils.CustomCommIcon
 import com.novarehab.utils.IconTextManager
@@ -119,7 +120,7 @@ class IconSettingsActivity : AppCompatActivity() {
         container.addView(header)
 
         val note = TextView(this)
-        note.text = "Vpiši besedilo za govor. Podmeni vklopiš posebej pri vsaki glavni ikoni."
+        note.text = "VpiĹˇi besedilo za govor. Podmeni vklopiĹˇ posebej pri vsaki glavni ikoni."
         note.textSize = 13f
         note.setTextColor(0xFFAAAAAA.toInt())
         note.setPadding(0, 0, 0, dp(12))
@@ -211,7 +212,7 @@ class IconSettingsActivity : AppCompatActivity() {
         ).apply { setMargins(0, dp(8), 0, dp(10)) }
 
         val label = TextView(this)
-        label.text = "Čas izhoda iz podmenija (sekunde)"
+        label.text = "ÄŚas izhoda iz podmenija (sekunde)"
         label.textSize = 13f
         label.setTextColor(0xFFFFFFFF.toInt())
         label.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -241,7 +242,7 @@ class IconSettingsActivity : AppCompatActivity() {
             prefs.saveCommSubmenuTimeoutSeconds(seconds)
             etTimeout.setText(prefs.getCommSubmenuTimeoutSeconds().toString())
             SettingsBackupManager(this).backupNow()
-            Toast.makeText(this, "Čas shranjen", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "ÄŚas shranjen", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnSave)
 
@@ -259,19 +260,24 @@ class IconSettingsActivity : AppCompatActivity() {
     }
 
     private fun createIconRow(id: String, defaultRes: Int, mgr: IconTextManager): LinearLayout {
-        val row = LinearLayout(this)
-        row.orientation = LinearLayout.HORIZONTAL
-        row.gravity = Gravity.CENTER_VERTICAL
-        row.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(0, dp(6), 0, dp(6)) }
+        val saved = prefs.getCustomCommIcons().firstOrNull { it.id == id }
+        val resolvedChildren = resolvedChildrenFor(id, saved).toMutableList()
 
-        val img = ImageView(this)
-        img.layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
-            setMargins(0, 0, dp(12), 0)
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, dp(6), 0, dp(6)) }
         }
-        img.scaleType = ImageView.ScaleType.FIT_CENTER
+
+        val img = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
+                setMargins(0, 0, dp(12), 0)
+            }
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
 
         val customFile = paths.customIconFile(id)
         if (customFile.exists()) {
@@ -286,17 +292,21 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         row.addView(img)
 
-        val textBox = LinearLayout(this)
-        textBox.orientation = LinearLayout.VERTICAL
-        textBox.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        val textBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
 
-        val etText = EditText(this)
-        etText.setText(mgr.getText(id))
-        etText.hint = "Besedilo za govor"
-        etText.textSize = 13f
-        etText.setSingleLine(false)
-        etText.minLines = 1
-        etText.maxLines = 3
+        textBox.addView(createReadonlyInfo("ID", id, "ID je povezava ikone. Če se spremeni, lahko podmeniji nehajo delovati."))
+
+        val etText = EditText(this).apply {
+            setText(mgr.getText(id))
+            hint = "Besedilo za govor"
+            textSize = 13f
+            setSingleLine(false)
+            minLines = 1
+            maxLines = 3
+        }
         styleEditText(etText)
         textBox.addView(etText)
 
@@ -315,64 +325,155 @@ class IconSettingsActivity : AppCompatActivity() {
             setSingleLine(false)
             minLines = 1
             maxLines = 2
-            styleEditText(this)
         }
+        styleEditText(etSubmenuPrompt)
         textBox.addView(etSubmenuPrompt)
+
+        val enabledSwitch = Switch(this).apply {
+            text = "IKONA AKTIVNA"
+            textSize = 12f
+            setTextColor(0xFFFFFFFF.toInt())
+            isChecked = saved?.enabled ?: true
+        }
+        textBox.addView(enabledSwitch)
+
+        val showOnMainSwitch = Switch(this).apply {
+            text = "PRIKAŽI NA GLAVNEM ZASLONU"
+            textSize = 12f
+            setTextColor(0xFFFFFFFF.toInt())
+            isChecked = saved?.showOnMain ?: defaultMainIds().contains(id)
+        }
+        textBox.addView(showOnMainSwitch)
+
+        textBox.addView(TextView(this).apply {
+            text = "Če je izklopljeno, ikona ni vidna."
+            textSize = 11f
+            setTextColor(0xFFD0D8E8.toInt())
+        })
+
+        val childrenLabel = TextView(this).apply {
+            textSize = 12f
+            setTextColor(0xFFFFFFFF.toInt())
+            setPadding(0, dp(6), 0, dp(4))
+        }
+        textBox.addView(childrenLabel)
+
+        val diagnosticsView = TextView(this).apply {
+            textSize = 11f
+            setTextColor(0xFFB8D8FF.toInt())
+            setPadding(0, dp(6), 0, dp(4))
+        }
+        textBox.addView(diagnosticsView)
+
+        textBox.addView(TextView(this).apply {
+            text = "Ikona je vidna samo, če ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
+            textSize = 11f
+            setTextColor(0xFFFFCC80.toInt())
+            setPadding(0, 0, 0, dp(6))
+        })
+
+        val childButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+        childButtons.addView(actionButton("DODAJ PODIKONO") {
+            showChildPickerDialog(id, resolvedChildren, remove = false) {
+                refreshChildrenLabel(childrenLabel, resolvedChildren)
+                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
+            }
+        })
+        childButtons.addView(actionButton("ODSTRANI PODIKONO") {
+            showChildPickerDialog(id, resolvedChildren, remove = true) {
+                refreshChildrenLabel(childrenLabel, resolvedChildren)
+                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
+            }
+        })
+        textBox.addView(childButtons)
+
+        refreshChildrenLabel(childrenLabel, resolvedChildren)
+        refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
+        enabledSwitch.setOnCheckedChangeListener { _, isChecked ->
+            refreshDiagnostics(diagnosticsView, id, isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
+        }
+        showOnMainSwitch.setOnCheckedChangeListener { _, isChecked ->
+            refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
+        }
+
         row.addView(textBox)
 
-        val btnSave = Button(this)
-        btnSave.text = "OK"
-        btnSave.textSize = 13f
-        btnSave.setBackgroundColor(0xFF1b5e20.toInt())
-        btnSave.setTextColor(0xFFFFFFFF.toInt())
-        btnSave.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
-            setMargins(dp(8), 0, 0, 0)
+        val sideButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(dp(8), 0, 0, 0) }
         }
-        btnSave.setOnClickListener {
-            mgr.setText(id, etText.text.toString().trim())
-            mgr.setSubmenuPrompt(id, etSubmenuPrompt.text.toString().trim())
-            prefs.saveCommSubmenuEnabled(id, submenuSwitch.isChecked)
-            SettingsBackupManager(this).backupNow()
-            Toast.makeText(this, "Shranjeno", Toast.LENGTH_SHORT).show()
-        }
-        row.addView(btnSave)
 
-        val btnReset = Button(this)
-        btnReset.text = "<-"
-        btnReset.textSize = 13f
-        btnReset.setBackgroundColor(0xFF333355.toInt())
-        btnReset.setTextColor(0xFFFFFFFF.toInt())
-        btnReset.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
-            setMargins(dp(4), 0, 0, 0)
+        val btnSave = Button(this).apply {
+            text = "OK"
+            textSize = 13f
+            setBackgroundColor(0xFF1b5e20.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(52)).apply { setMargins(0, 0, 0, dp(4)) }
+            setOnClickListener {
+                mgr.setText(id, etText.text.toString().trim())
+                mgr.setSubmenuPrompt(id, etSubmenuPrompt.text.toString().trim())
+                prefs.saveCommSubmenuEnabled(id, submenuSwitch.isChecked)
+                saveIconConfig(
+                    id = id,
+                    title = saved?.title.orEmpty(),
+                    text = saved?.text.orEmpty(),
+                    language = saved?.language ?: "sl",
+                    imagePath = paths.customIconFile(id).takeIf { it.exists() }?.absolutePath ?: saved?.imagePath.orEmpty(),
+                    enabled = enabledSwitch.isChecked,
+                    pinnedMain = saved?.pinnedMain ?: false,
+                    pinnedVideo = saved?.pinnedVideo ?: false,
+                    showOnMain = showOnMainSwitch.isChecked,
+                    children = resolvedChildren
+                )
+                SettingsBackupManager(this@IconSettingsActivity).backupNow()
+                Toast.makeText(this@IconSettingsActivity, "Shranjeno", Toast.LENGTH_SHORT).show()
+            }
         }
-        btnReset.setOnClickListener {
-            paths.customIconFile(id).delete()
-            img.setImageResource(defaultRes)
-            SettingsBackupManager(this).backupNow()
-            Toast.makeText(this, "Ikona ponastavljena", Toast.LENGTH_SHORT).show()
+        sideButtons.addView(btnSave)
+
+        val btnReset = Button(this).apply {
+            text = "<-"
+            textSize = 13f
+            setBackgroundColor(0xFF333355.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(52))
+            setOnClickListener {
+                paths.customIconFile(id).delete()
+                img.setImageResource(defaultRes)
+                SettingsBackupManager(this@IconSettingsActivity).backupNow()
+                Toast.makeText(this@IconSettingsActivity, "Ikona ponastavljena", Toast.LENGTH_SHORT).show()
+            }
         }
-        row.addView(btnReset)
+        sideButtons.addView(btnReset)
+        row.addView(sideButtons)
 
         return row
     }
-
     private fun createCustomIconRow(index: Int): LinearLayout {
         val id = "custom_$index"
         val saved = prefs.getCustomCommIcons().firstOrNull { it.id == id }
+        val resolvedChildren = resolvedChildrenFor(id, saved).toMutableList()
 
-        val row = LinearLayout(this)
-        row.orientation = LinearLayout.HORIZONTAL
-        row.gravity = Gravity.CENTER_VERTICAL
-        row.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(0, dp(6), 0, dp(6)) }
-
-        val img = ImageView(this)
-        img.layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
-            setMargins(0, 0, dp(12), 0)
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { setMargins(0, dp(6), 0, dp(6)) }
         }
-        img.scaleType = ImageView.ScaleType.FIT_CENTER
+
+        val img = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply {
+                setMargins(0, 0, dp(12), 0)
+            }
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
 
         val iconFile = paths.customIconFile(id)
         if (iconFile.exists()) {
@@ -387,20 +488,25 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         row.addView(img)
 
-        val texts = LinearLayout(this)
-        texts.orientation = LinearLayout.VERTICAL
-        texts.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        val texts = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
 
-        val etTitle = EditText(this)
-        etTitle.setText(saved?.title ?: "")
-        etTitle.hint = "Napis na ikoni"
-        etTitle.textSize = 12f
+        texts.addView(createReadonlyInfo("ID", id, "ID je povezava ikone. Če se spremeni, lahko podmeniji nehajo delovati."))
+
+        val etTitle = EditText(this).apply {
+            setText(saved?.title ?: "")
+            hint = "Napis na ikoni"
+            textSize = 12f
+        }
         styleEditText(etTitle)
 
-        val etSpeech = EditText(this)
-        etSpeech.setText(saved?.text ?: "")
-        etSpeech.hint = "Besedilo za govor"
-        etSpeech.textSize = 12f
+        val etSpeech = EditText(this).apply {
+            setText(saved?.text ?: "")
+            hint = "Besedilo za govor"
+            textSize = 12f
+        }
         styleEditText(etSpeech)
 
         val langSpinner = Spinner(this).apply {
@@ -410,17 +516,17 @@ class IconSettingsActivity : AppCompatActivity() {
         }
 
         val enabledSwitch = Switch(this).apply {
-            text = "VKLJUČENA"
+            text = "IKONA AKTIVNA"
             textSize = 11f
-            setTextColor(0xFFB8D8FF.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
             isChecked = saved?.enabled ?: true
         }
 
-        val pinnedMainSwitch = Switch(this).apply {
-            text = "PIN GLAVNI"
+        val showOnMainSwitch = Switch(this).apply {
+            text = "PRIKAŽI NA GLAVNEM ZASLONU"
             textSize = 11f
-            setTextColor(0xFFB8D8FF.toInt())
-            isChecked = saved?.pinnedMain ?: false
+            setTextColor(0xFFFFFFFF.toInt())
+            isChecked = saved?.showOnMain ?: true
         }
 
         val pinnedVideoSwitch = Switch(this).apply {
@@ -430,17 +536,63 @@ class IconSettingsActivity : AppCompatActivity() {
             isChecked = saved?.pinnedVideo ?: false
         }
 
-        val switchRow = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(langSpinner)
-            addView(enabledSwitch)
-            addView(pinnedMainSwitch)
-            addView(pinnedVideoSwitch)
-        }
-
         texts.addView(etTitle)
         texts.addView(etSpeech)
-        texts.addView(switchRow)
+        texts.addView(langSpinner)
+        texts.addView(enabledSwitch)
+        texts.addView(showOnMainSwitch)
+        texts.addView(pinnedVideoSwitch)
+        texts.addView(TextView(this).apply {
+            text = "Če je izklopljeno, ikona ni vidna."
+            textSize = 11f
+            setTextColor(0xFFD0D8E8.toInt())
+        })
+
+        val childrenLabel = TextView(this).apply {
+            textSize = 12f
+            setTextColor(0xFFFFFFFF.toInt())
+            setPadding(0, dp(6), 0, dp(4))
+        }
+        texts.addView(childrenLabel)
+
+        val diagnosticsView = TextView(this).apply {
+            textSize = 11f
+            setTextColor(0xFFB8D8FF.toInt())
+            setPadding(0, dp(6), 0, dp(4))
+        }
+        texts.addView(diagnosticsView)
+
+        texts.addView(TextView(this).apply {
+            text = "Ikona je vidna samo, če ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
+            textSize = 11f
+            setTextColor(0xFFFFCC80.toInt())
+            setPadding(0, 0, 0, dp(6))
+        })
+
+        val childButtons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        childButtons.addView(actionButton("DODAJ PODIKONO") {
+            showChildPickerDialog(id, resolvedChildren, remove = false) {
+                refreshChildrenLabel(childrenLabel, resolvedChildren)
+                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
+            }
+        })
+        childButtons.addView(actionButton("ODSTRANI PODIKONO") {
+            showChildPickerDialog(id, resolvedChildren, remove = true) {
+                refreshChildrenLabel(childrenLabel, resolvedChildren)
+                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
+            }
+        })
+        texts.addView(childButtons)
+
+        refreshChildrenLabel(childrenLabel, resolvedChildren)
+        refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
+        enabledSwitch.setOnCheckedChangeListener { _, isChecked ->
+            refreshDiagnostics(diagnosticsView, id, isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
+        }
+        showOnMainSwitch.setOnCheckedChangeListener { _, isChecked ->
+            refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
+        }
+
         row.addView(texts)
 
         val sideButtons = LinearLayout(this).apply {
@@ -455,71 +607,197 @@ class IconSettingsActivity : AppCompatActivity() {
             pendingIconId = id
             startActivityForResult(Intent(Intent.ACTION_PICK).apply { type = "image/*" }, requestImage)
         })
+        sideButtons.addView(actionButton("ARH") { showArchivePicker(id) })
+        sideButtons.addView(actionButton("FOTO") { launchCameraForIcon(id) })
 
-        sideButtons.addView(actionButton("ARH") {
-            showArchivePicker(id)
-        })
-
-        sideButtons.addView(actionButton("FOTO") {
-            launchCameraForIcon(id)
-        })
-
-        val btnSave = Button(this)
-        btnSave.text = "OK"
-        btnSave.textSize = 13f
-        btnSave.setBackgroundColor(0xFF1b5e20.toInt())
-        btnSave.setTextColor(0xFFFFFFFF.toInt())
-        btnSave.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
-            setMargins(dp(8), 0, 0, 0)
-        }
-        btnSave.setOnClickListener {
-            val list = prefs.getCustomCommIcons().filterNot { it.id == id }.toMutableList()
-            val titleText = etTitle.text.toString().trim()
-            val speechText = etSpeech.text.toString().trim()
-            val language = if (langSpinner.selectedItemPosition == 1) "uk" else "sl"
-            val imagePath = paths.customIconFile(id).takeIf { it.exists() }?.absolutePath.orEmpty()
-
-            if (titleText.isNotEmpty() || speechText.isNotEmpty()) {
-                list.add(
-                    CustomCommIcon(
-                        id = id,
-                        title = titleText,
-                        text = speechText,
-                        language = language,
-                        imagePath = imagePath,
-                        enabled = enabledSwitch.isChecked,
-                        pinnedMain = pinnedMainSwitch.isChecked,
-                        pinnedVideo = pinnedVideoSwitch.isChecked
-                    )
+        sideButtons.addView(Button(this).apply {
+            text = "OK"
+            textSize = 13f
+            setBackgroundColor(0xFF1b5e20.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(52)).apply { setMargins(0, 0, 0, dp(4)) }
+            setOnClickListener {
+                saveIconConfig(
+                    id = id,
+                    title = etTitle.text.toString().trim(),
+                    text = etSpeech.text.toString().trim(),
+                    language = if (langSpinner.selectedItemPosition == 1) "uk" else "sl",
+                    imagePath = paths.customIconFile(id).takeIf { it.exists() }?.absolutePath.orEmpty(),
+                    enabled = enabledSwitch.isChecked,
+                    pinnedMain = saved?.pinnedMain ?: false,
+                    pinnedVideo = pinnedVideoSwitch.isChecked,
+                    showOnMain = showOnMainSwitch.isChecked,
+                    children = resolvedChildren
                 )
+                SettingsBackupManager(this@IconSettingsActivity).backupNow()
+                Toast.makeText(this@IconSettingsActivity, "Shranjeno", Toast.LENGTH_SHORT).show()
             }
+        })
 
-            prefs.saveCustomCommIcons(list.sortedBy { it.id })
-            SettingsBackupManager(this).backupNow()
-            Toast.makeText(this, "Shranjeno", Toast.LENGTH_SHORT).show()
-        }
-        sideButtons.addView(btnSave)
-
-        val btnReset = Button(this)
-        btnReset.text = "<-"
-        btnReset.textSize = 13f
-        btnReset.setBackgroundColor(0xFF333355.toInt())
-        btnReset.setTextColor(0xFFFFFFFF.toInt())
-        btnReset.layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
-            setMargins(dp(4), 0, 0, 0)
-        }
-        btnReset.setOnClickListener {
-            prefs.saveCustomCommIcons(prefs.getCustomCommIcons().filterNot { it.id == id })
-            paths.customIconFile(id).delete()
-            SettingsBackupManager(this).backupNow()
-            recreate()
-        }
-        sideButtons.addView(btnReset)
+        sideButtons.addView(Button(this).apply {
+            text = "<-"
+            textSize = 13f
+            setBackgroundColor(0xFF333355.toInt())
+            setTextColor(0xFFFFFFFF.toInt())
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(52))
+            setOnClickListener {
+                prefs.saveCustomCommIcons(prefs.getCustomCommIcons().filterNot { it.id == id })
+                paths.customIconFile(id).delete()
+                SettingsBackupManager(this@IconSettingsActivity).backupNow()
+                recreate()
+            }
+        })
         row.addView(sideButtons)
 
         return row
     }
+    private fun createReadonlyInfo(label: String, value: String, description: String): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(this@IconSettingsActivity).apply {
+                text = "$label: $value"
+                textSize = 12f
+                setTextColor(0xFFFFFFFF.toInt())
+            })
+            addView(TextView(this@IconSettingsActivity).apply {
+                text = description
+                textSize = 11f
+                setTextColor(0xFFD0D8E8.toInt())
+                setPadding(0, 0, 0, dp(6))
+            })
+        }
+    }
 
+    private fun defaultMainIds(): Set<String> {
+        return CommunicationRepository.getMainItems(this, "sl").map { it.id }.toSet()
+    }
+
+    private fun defaultChildrenMap(): Map<String, List<String>> {
+        return CommunicationRepository.getMainItems(this, "sl")
+            .associate { item -> item.id to item.children.map { child -> child.id } }
+    }
+
+    private fun resolvedChildrenFor(id: String, saved: CustomCommIcon?): List<String> {
+        return when {
+            saved != null -> saved.children.distinct()
+            else -> defaultChildrenMap()[id].orEmpty().distinct()
+        }
+    }
+
+    private fun saveIconConfig(
+        id: String,
+        title: String,
+        text: String,
+        language: String,
+        imagePath: String,
+        enabled: Boolean,
+        pinnedMain: Boolean,
+        pinnedVideo: Boolean,
+        showOnMain: Boolean,
+        children: List<String>
+    ) {
+        val current = prefs.getCustomCommIcons().filterNot { it.id == id }.toMutableList()
+        current.add(
+            CustomCommIcon(
+                id = id,
+                title = title,
+                text = text,
+                language = language,
+                imagePath = imagePath,
+                enabled = enabled,
+                pinnedMain = pinnedMain,
+                pinnedVideo = pinnedVideo,
+                showOnMain = showOnMain,
+                children = children.distinct()
+            )
+        )
+        prefs.saveCustomCommIcons(current.sortedBy { it.id })
+    }
+
+    private fun refreshChildrenLabel(label: TextView, children: List<String>) {
+        label.text = if (children.isEmpty()) {
+            "Podikone: ni izbranih"
+        } else {
+            "Podikone: ${children.joinToString(", ") { displayNameForIcon(it) }}"
+        }
+    }
+
+    private fun refreshDiagnostics(
+        view: TextView,
+        id: String,
+        enabled: Boolean,
+        showOnMain: Boolean,
+        currentChildren: List<String>,
+        hasValidIcon: Boolean
+    ) {
+        val hasId = id.isNotBlank()
+        val currentMainIds = defaultMainIds().toMutableSet()
+        prefs.getCustomCommIcons().forEach { icon ->
+            if (icon.showOnMain) currentMainIds += icon.id else currentMainIds.remove(icon.id)
+        }
+        if (showOnMain) currentMainIds += id else currentMainIds.remove(id)
+
+        val currentChildMap = defaultChildrenMap().toMutableMap()
+        prefs.getCustomCommIcons().forEach { icon ->
+            currentChildMap[icon.id] = icon.children
+        }
+        currentChildMap[id] = currentChildren
+        val isChild = currentChildMap.any { (parentId, children) -> parentId != id && id in children }
+
+        view.text = listOf(
+            "enabled: ${if (enabled) "DA" else "NE"}",
+            "ima ID: ${if (hasId) "DA" else "NE"}",
+            "je v glavnem meniju: ${if (id in currentMainIds) "DA" else "NE"}",
+            "je podikona druge ikone: ${if (isChild) "DA" else "NE"}",
+            "ima veljavno sliko/ikono: ${if (hasValidIcon) "DA" else "NE"}"
+        ).joinToString("\n")
+    }
+
+    private fun showChildPickerDialog(
+        parentId: String,
+        selectedChildren: MutableList<String>,
+        remove: Boolean,
+        onChanged: () -> Unit
+    ) {
+        val candidates = if (remove) {
+            selectedChildren.toList()
+        } else {
+            (allIcons.map { it.first } + (1..18).map { "custom_$it" })
+                .distinct()
+                .filter { it != parentId && it !in selectedChildren }
+        }
+
+        if (candidates.isEmpty()) {
+            Toast.makeText(this, if (remove) "Ni podikon za odstraniti." else "Ni več ikon za dodati.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val labels = candidates.map { "$it — ${displayNameForIcon(it)}" }.toTypedArray()
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(if (remove) "Odstrani podikono" else "Dodaj podikono")
+            .setAdapter(themedSpinnerAdapter(*labels)) { _, which ->
+                val chosenId = candidates.getOrNull(which) ?: return@setAdapter
+                if (remove) {
+                    selectedChildren.remove(chosenId)
+                } else {
+                    selectedChildren += chosenId
+                }
+                onChanged()
+            }
+            .setNegativeButton("Prekliči", null)
+            .create()
+
+        dialog.show()
+        styleAlertDialog(dialog)
+    }
+
+    private fun displayNameForIcon(id: String): String {
+        val saved = prefs.getCustomCommIcons().firstOrNull { it.id == id }
+        if (saved != null) {
+            return saved.title.ifBlank { saved.text }.ifBlank { id }
+        }
+        return allIcons.firstOrNull { it.first == id }?.first ?: id
+    }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -558,9 +836,10 @@ class IconSettingsActivity : AppCompatActivity() {
             textSize = 11f
             setBackgroundColor(0xFF0F3460.toInt())
             setTextColor(0xFFFFFFFF.toInt())
-            layoutParams = LinearLayout.LayoutParams(dp(64), dp(42)).apply {
-                setMargins(0, 0, 0, dp(4))
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(42)).apply {
+                setMargins(0, 0, dp(4), dp(4))
             }
+            minWidth = dp(64)
             setOnClickListener { onClick() }
         }
     }
@@ -585,7 +864,7 @@ class IconSettingsActivity : AppCompatActivity() {
                 SettingsBackupManager(this).backupNow()
                 recreate()
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("PrekliÄŤi", null)
             .create()
 
         dialog.show()
@@ -696,3 +975,9 @@ class IconSettingsActivity : AppCompatActivity() {
         dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(0xFFFFFFFF.toInt())
     }
 }
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-package com.novarehab.communication.data
+﻿package com.novarehab.communication.data
 
 import android.content.Context
 import com.novarehab.communication.model.CommunicationItem
@@ -11,8 +11,11 @@ class CommunicationCatalog(
     private val learningProfileManager: LearningProfileManager
 ) {
     fun loadMain(language: String): List<CommunicationItem> {
-        val items = CommunicationRepository.getMainItems(context, language) +
-            CommunicationRepository.customItems(prefsManager.getCustomCommIcons())
+        val items = CommunicationRepository.getMainItems(
+            context = context,
+            language = language,
+            customIcons = prefsManager.getCustomCommIcons()
+        )
 
         if (!prefsManager.isAutoSortCommunicationIconsEnabled()) {
             return items.take(MAX_MAIN_ITEMS)
@@ -30,3 +33,4 @@ class CommunicationCatalog(
         val urgentIds = setOf("pomoc", "kopalnica", "bolecina", "slabo")
     }
 }
+

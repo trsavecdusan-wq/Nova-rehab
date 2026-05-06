@@ -1,4 +1,4 @@
-package com.novarehab.video.communication
+﻿package com.novarehab.video.communication
 
 import android.content.Context
 import com.novarehab.communication.data.CommunicationRepository
@@ -17,15 +17,13 @@ class VideoCommunicationManager(
         customIcons: List<CustomCommIcon>
     ): List<CommunicationItem> {
         val normalizedLanguage = language.trim().lowercase(Locale.getDefault()).ifBlank { "sl" }
-        val baseItems = CommunicationRepository.getMainItems(context, normalizedLanguage)
-        val customItems = CommunicationRepository.customItems(
-            customIcons.filter {
-                val itemLanguage = it.language.trim().lowercase(Locale.getDefault()).ifBlank { normalizedLanguage }
-                itemLanguage == normalizedLanguage
-            }
-        )
+        val localizedCustomIcons = customIcons.filter {
+            val itemLanguage = it.language.trim().lowercase(Locale.getDefault()).ifBlank { normalizedLanguage }
+            itemLanguage == normalizedLanguage || it.title.isBlank() && it.text.isBlank()
+        }
+        val baseItems = CommunicationRepository.getMainItems(context, normalizedLanguage, localizedCustomIcons)
 
-        return (baseItems + customItems)
+        return baseItems
             .distinctBy { it.id }
             .sortedWith(
                 compareByDescending<CommunicationItem> { it.pinnedVideo }
@@ -47,3 +45,4 @@ class VideoCommunicationManager(
 
     fun exportStats(): List<CommunicationStatEvent> = statsManager.exportSnapshot()
 }
+

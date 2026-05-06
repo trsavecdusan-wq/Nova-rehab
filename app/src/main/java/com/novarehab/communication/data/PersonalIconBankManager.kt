@@ -1,4 +1,4 @@
-package com.novarehab.communication.data
+﻿package com.novarehab.communication.data
 
 import android.content.Context
 import com.novarehab.core.storage.NovaRehabPaths
@@ -36,7 +36,9 @@ class PersonalIconBankManager(context: Context) {
                                 .ifBlank { resolveDefaultImagePath(id) },
                             enabled = item.optBoolean("enabled", true),
                             pinnedMain = item.optBoolean("pinnedMain", false),
-                            pinnedVideo = item.optBoolean("pinnedVideo", false)
+                            pinnedVideo = item.optBoolean("pinnedVideo", false),
+                            showOnMain = item.optBoolean("showOnMain", true),
+                            children = item.optJSONArray("children").toStringList()
                         )
                     }
                 }
@@ -63,6 +65,8 @@ class PersonalIconBankManager(context: Context) {
                     .put("enabled", item.enabled)
                     .put("pinnedMain", item.pinnedMain)
                     .put("pinnedVideo", item.pinnedVideo)
+                    .put("showOnMain", item.showOnMain)
+                    .put("children", JSONArray(item.children))
             )
         }
 
@@ -107,4 +111,13 @@ class PersonalIconBankManager(context: Context) {
         val file = paths.customIconFile(iconId)
         return if (file.exists()) file.absolutePath else ""
     }
+
+    private fun JSONArray?.toStringList(): List<String> {
+        if (this == null) return emptyList()
+        return (0 until length()).mapNotNull { index ->
+            optString(index).trim().takeIf { it.isNotBlank() }
+        }
+    }
 }
+
+

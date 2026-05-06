@@ -1,4 +1,4 @@
-package com.novarehab.utils
+﻿package com.novarehab.utils
 
 import android.content.Context
 import com.novarehab.communication.data.PersonalIconBankManager
@@ -25,7 +25,9 @@ data class CustomCommIcon(
     val imagePath: String = "",
     val enabled: Boolean = true,
     val pinnedMain: Boolean = false,
-    val pinnedVideo: Boolean = false
+    val pinnedVideo: Boolean = false,
+    val showOnMain: Boolean = true,
+    val children: List<String> = emptyList()
 )
 
 class PrefsManager(context: Context) {
@@ -287,3 +289,4 @@ class PrefsManager(context: Context) {
         RadioStation("USB glasba", "music://local")
     )
 }
+
