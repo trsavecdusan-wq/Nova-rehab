@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
@@ -17,16 +18,17 @@
             android:layout_height="0dp"
             android:layout_weight="2.6"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginBottom="5dp">
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1.6"
+                android:layout_weight="1.45"
                 android:orientation="vertical"
                 android:background="#16213e"
                 android:padding="6dp"
-                android:layout_marginEnd="4dp">
+                android:layout_marginEnd="6dp">
 
                 <ImageButton
                     android:id="@+id/btnRadioToggle"
@@ -36,134 +38,181 @@
                     android:src="@drawable/ic_radio"
                     android:contentDescription="Radio"/>
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
-                    android:layout_weight="1" android:orientation="horizontal" android:layout_marginBottom="3dp">
-                    <Button android:id="@+id/btnRadio1"
-                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                        android:text="P1" android:textSize="9sp" android:layout_marginEnd="2dp"
-                        android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
-                    <Button android:id="@+id/btnRadio2"
-                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                        android:text="P2" android:textSize="9sp"
-                        android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="3dp">
+                    <Button
+                        android:id="@+id/btnRadio1"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:text="P1"
+                        android:textSize="9sp"
+                        android:layout_marginEnd="2dp"
+                        android:backgroundTint="#0f3460"
+                        android:textColor="#ffffff"
+                        android:padding="2dp"/>
+                    <Button
+                        android:id="@+id/btnRadio2"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:text="P2"
+                        android:textSize="9sp"
+                        android:backgroundTint="#0f3460"
+                        android:textColor="#ffffff"
+                        android:padding="2dp"/>
                 </LinearLayout>
-                <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
-                    android:layout_weight="1" android:orientation="horizontal" android:layout_marginBottom="3dp">
-                    <Button android:id="@+id/btnRadio3"
-                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                        android:text="P3" android:textSize="9sp" android:layout_marginEnd="2dp"
-                        android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
-                    <Button android:id="@+id/btnRadio4"
-                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                        android:text="P4" android:textSize="9sp"
-                        android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
-                </LinearLayout>
-                <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
-                    android:layout_weight="1" android:orientation="horizontal">
-                    <Button android:id="@+id/btnRadio5"
-                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                        android:text="P5" android:textSize="9sp" android:layout_marginEnd="2dp"
-                        android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
-                    <Button android:id="@+id/btnRadio6"
-                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
-                        android:text="P6" android:textSize="9sp"
-                        android:backgroundTint="#0f3460" android:textColor="#ffffff" android:padding="2dp"/>
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="#16213e"
-                android:orientation="vertical"
-                android:padding="8dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="3dp">
                     <Button
-                        android:id="@+id/btnVolDown"
-                        android:layout_width="68dp"
-                        android:layout_height="68dp"
-                        android:backgroundTint="#B71C1C"
-                        android:text="－"
-                        android:textColor="#ffffff"
-                        android:textSize="28sp"
-                        android:textStyle="bold" />
-
-                    <LinearLayout
+                        android:id="@+id/btnRadio3"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingStart="6dp"
-                        android:paddingEnd="6dp">
-
-                        <TextView
-                            android:id="@+id/tvPatientName"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="4dp"
-                            android:gravity="center"
-                            android:text=""
-                            android:textColor="#e94560"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvSpeed"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textColor="#ffffff"
-                            android:textSize="52sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="km/h"
-                            android:textColor="#B8D8FF"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/tvClock"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="00:00"
-                            android:textColor="#aaaaaa"
-                            android:textSize="16sp" />
-                    </LinearLayout>
-
-                    <Button
-                        android:id="@+id/btnVolUp"
-                        android:layout_width="68dp"
-                        android:layout_height="68dp"
-                        android:backgroundTint="#1B5E20"
-                        android:text="＋"
+                        android:text="P3"
+                        android:textSize="9sp"
+                        android:layout_marginEnd="2dp"
+                        android:backgroundTint="#0f3460"
                         android:textColor="#ffffff"
-                        android:textSize="28sp"
-                        android:textStyle="bold" />
+                        android:padding="2dp"/>
+                    <Button
+                        android:id="@+id/btnRadio4"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:text="P4"
+                        android:textSize="9sp"
+                        android:backgroundTint="#0f3460"
+                        android:textColor="#ffffff"
+                        android:padding="2dp"/>
                 </LinearLayout>
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+                    <Button
+                        android:id="@+id/btnRadio5"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:text="P5"
+                        android:textSize="9sp"
+                        android:layout_marginEnd="2dp"
+                        android:backgroundTint="#0f3460"
+                        android:textColor="#ffffff"
+                        android:padding="2dp"/>
+                    <Button
+                        android:id="@+id/btnRadio6"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:text="P6"
+                        android:textSize="9sp"
+                        android:backgroundTint="#0f3460"
+                        android:textColor="#ffffff"
+                        android:padding="2dp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnVolDown"
+                android:layout_width="64dp"
+                android:layout_height="132dp"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="#B71C1C"
+                android:text="−"
+                android:textColor="#ffffff"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/patientInfoCard"
+                android:layout_width="0dp"
+                android:layout_height="132dp"
+                android:layout_weight="1"
+                android:background="#16213e"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="8dp"
+                android:layout_marginEnd="6dp">
+
                 <TextView
-                    android:id="@+id/tvVolLevel"
+                    android:id="@+id/tvPatientName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
                     android:gravity="center"
-                    android:layout_marginTop="6dp"
-                    android:text="●●●"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="Ime"
                     android:textColor="#e94560"
-                    android:textSize="12sp" />
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="14sp"
+                    app:autoSizeMaxTextSize="20sp"
+                    app:autoSizeStepGranularity="1sp" />
+
+                <TextView
+                    android:id="@+id/tvPatientDay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="sreda"
+                    android:textColor="#ffffff"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tvPatientDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="6. maj"
+                    android:textColor="#B8D8FF"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tvClock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="22:45"
+                    android:textColor="#ffffff"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvDayNight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="🌙"
+                    android:textColor="#FFD166"
+                    android:textSize="18sp" />
             </LinearLayout>
-        </LinearLayout>        <!-- KOMUNIKACIJSKE IKONE â€” ViewPager za swipe -->
+
+            <Button
+                android:id="@+id/btnVolUp"
+                android:layout_width="64dp"
+                android:layout_height="132dp"
+                android:backgroundTint="#1B5E20"
+                android:text="+"
+                android:textColor="#ffffff"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/viewPagerComm"
             android:layout_width="match_parent"
@@ -171,7 +220,6 @@
             android:layout_weight="3.5"
             android:layout_marginBottom="5dp"/>
 
-        <!-- SPODNJE TIPKE: VIDEO / GALERIJA / OGLEDALO / SPROSTITEV -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -183,8 +231,8 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="đź“ą\nVIDEO"
-                android:textSize="14sp"
+                android:text="VIDEO"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="#ffffff"
                 android:backgroundTint="#1a3a6b"
@@ -195,8 +243,8 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="đź–Ľ\nGALERIJA"
-                android:textSize="13sp"
+                android:text="GALERIJA"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="#ffffff"
                 android:backgroundTint="#305b2e"
@@ -207,8 +255,8 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="đźŞž\nOGLEDALO"
-                android:textSize="14sp"
+                android:text="OGLEDALO"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="#ffffff"
                 android:backgroundTint="#155c47"
@@ -219,8 +267,8 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="đźŚż\nSPROSTITEV"
-                android:textSize="13sp"
+                android:text="SPROSTITEV"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 android:textColor="#ffffff"
                 android:backgroundTint="#5a3d7a"/>
@@ -228,4 +276,3 @@
 
     </LinearLayout>
 </LinearLayout>
-

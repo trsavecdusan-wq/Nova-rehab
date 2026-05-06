@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-05-07 - v1.0.10 (versionCode 10)
+
+Changed modules:
+- `main-ui`
+- `gallery`
+- `mirror`
+- `settings`
+- `release`
+
+Fixed / added:
+- fixed broken UTF-8 labels on the main screen bottom buttons
+- corrected the patient/date module and removed the old km/h display
+- corrected on-screen volume button placement around the patient/date area
+- simplified patient gallery controls to arrow navigation and close-only flow
+- moved the mirror close button away from the capture button
+- replaced remaining settings dropdown use with fullscreen pickers and improved tablet-safe readability
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- this release intentionally avoids changing TTS, communicator logic, companion logic and video call behavior
+
 ## 2026-05-06 - v1.0.9 (versionCode 9)
 
 Changed modules:

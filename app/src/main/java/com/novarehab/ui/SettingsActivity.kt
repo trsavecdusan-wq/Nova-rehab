@@ -464,7 +464,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(switchHardwareVolumeControl)
 
         panel.addView(TextView(this).apply {
-            text = "Na?in tipk za glasnost:"
+            text = "Nacin tipk za glasnost:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })

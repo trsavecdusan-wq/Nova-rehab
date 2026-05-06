@@ -332,7 +332,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (!prefs.isNavigationEnabled()) {
-                    Toast.makeText(this@MainActivity, "Navigacija je izklopljena v Nastavitvah", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Navigacija je izklopljena v nastavitvah", Toast.LENGTH_SHORT).show()
                 } else if (prefs.getHomeAddress().isEmpty()) {
                     showHomeAddressDialog()
                 } else {
@@ -343,31 +343,17 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        binding.tvSpeed.isClickable = true
-        binding.tvSpeed.isFocusable = true
-        binding.tvSpeed.setOnTouchListener { _, event ->
+        binding.patientInfoCard.isClickable = true
+        binding.patientInfoCard.isFocusable = true
+        binding.patientInfoCard.setOnTouchListener { _, event ->
             speedGestureDetector.onTouchEvent(event)
             true
-        }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            startGps()
         }
     }
 
     private fun startGps() {
-        try {
-            val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                locationManager.requestLocationUpdates(android.location.LocationManager.GPS_PROVIDER, 1000L, 0.5f) { location ->
-                    val kmh = (location.speed * 3.6).toInt()
-                    binding.tvSpeed.text = if (location.accuracy > 10f || !location.hasSpeed()) "0" else kmh.toString()
-                }
-            }
-        } catch (_: Exception) {
-        }
+        // Hitrost je odstranjena z glavnega zaslona.
     }
-
     private fun showHomeAddressDialog() {
         val input = EditText(this).apply {
             hint = "npr. Dunajska cesta 1, Ljubljana"
@@ -701,13 +687,13 @@ class MainActivity : AppCompatActivity() {
         binding.tvPatientName.visibility = View.VISIBLE
         binding.tvPatientName.isClickable = true
         binding.tvPatientName.isFocusable = true
-        binding.tvPatientName.textSize = 18f
+        binding.tvPatientName.textSize = 20f
         binding.tvPatientName.gravity = Gravity.CENTER
-        binding.tvPatientName.setSingleLine(false)
-        binding.tvPatientName.maxLines = 2
+        binding.tvPatientName.setSingleLine(true)
+        binding.tvPatientName.maxLines = 1
 
         binding.tvPatientName.setOnClickListener {
-            Toast.makeText(this, "Za spremembo jezika držite zastavo.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Za spremembo jezika pridrzite ime pacienta.", Toast.LENGTH_SHORT).show()
         }
 
         binding.tvPatientName.setOnLongClickListener {
@@ -715,7 +701,6 @@ class MainActivity : AppCompatActivity() {
             true
         }
     }
-
     private fun showGuestLanguageDialog() {
         val languages = visibleLanguageChoices()
 
@@ -806,23 +791,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateLanguageFlag() {
-        val patientName = prefs.getPatientName().ifBlank { "Lana" }
-        val language = languageChoice(activeLang)
-        binding.tvPatientName.text = "${language.flag}\n$patientName"
+        val patientName = prefs.getPatientName().trim().ifBlank { "Ime" }
+        binding.tvPatientName.text = patientName
         binding.tvPatientName.visibility = View.VISIBLE
     }
 
     private fun languageChoice(code: String): LanguageChoice {
         return when (code) {
-            "uk" -> LanguageChoice("uk", "🇺🇦", "Ukrajinščina")
-            "en" -> LanguageChoice("en", "🇬🇧", "Angleščina")
-            "de" -> LanguageChoice("de", "🇩🇪", "Nemščina")
-            "hr" -> LanguageChoice("hr", "🇭🇷", "Hrvaščina")
-            "sr" -> LanguageChoice("sr", "🇷🇸", "Srbščina")
-            else -> LanguageChoice("sl", "🇸🇮", "Slovenščina")
+            "uk" -> LanguageChoice("uk", "\uD83C\uDDFA\uD83C\uDDE6", "Ukrajinscina")
+            "en" -> LanguageChoice("en", "\uD83C\uDDEC\uD83C\uDDE7", "Anglescina")
+            "de" -> LanguageChoice("de", "\uD83C\uDDE9\uD83C\uDDEA", "Nemscina")
+            "hr" -> LanguageChoice("hr", "\uD83C\uDDED\uD83C\uDDF7", "Hrvascina")
+            "sr" -> LanguageChoice("sr", "\uD83C\uDDF7\uD83C\uDDF8", "Srbscina")
+            else -> LanguageChoice("sl", "\uD83C\uDDF8\uD83C\uDDEE", "Slovenscina")
         }
     }
-
     private fun setupLanguageDetector() {
         langDetector?.stop()
         langDetector = LanguageDetector(this) { detectedLang ->
@@ -839,40 +822,36 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupVolumeControls() {
         val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-
-        fun updateIndicator() {
-            val current = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-            val pct = (current.toFloat() / max * 5).toInt().coerceIn(0, 5)
-            binding.tvVolLevel.text = "●".repeat(pct) + "○".repeat(5 - pct)
-        }
 
         binding.btnVolUp.setOnClickListener {
             audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
-            updateIndicator()
         }
 
         binding.btnVolDown.setOnClickListener {
             audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
-            updateIndicator()
         }
-
-        updateIndicator()
     }
-
     private fun setupClock() {
-        val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val dayFormat = SimpleDateFormat("EEEE", Locale("sl"))
+        val dateFormat = SimpleDateFormat("d. MMMM", Locale("sl"))
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
         clockRunnable = object : Runnable {
             override fun run() {
-                binding.tvClock.text = format.format(Date())
+                val now = Date()
+                val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                binding.tvPatientDay.text = dayFormat.format(now).replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(Locale("sl")) else it.toString()
+                }
+                binding.tvPatientDate.text = dateFormat.format(now)
+                binding.tvClock.text = timeFormat.format(now)
+                binding.tvDayNight.text = if (hour in 7..18) "☀" else "🌙"
                 clockHandler.postDelayed(this, 30000L)
             }
         }
 
         clockHandler.post(clockRunnable!!)
     }
-
     private fun setupVideoCallButton() {
         binding.btnVideoCall.setOnClickListener {
             if (radioPlaying) stopRadio()
@@ -959,7 +938,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnRelax.setOnClickListener {
             Toast.makeText(
                 this,
-                "Sprostitev in grafično učenje bova dodala v naslednji fazi.",
+                "Sprostitev bo dodana v naslednji fazi.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -1012,7 +991,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateGalleryButton() {
-        binding.btnGallery.text = MediaInboxBadge.format(mediaGalleryRepository.unseenCount())
+        binding.btnGallery.text = "GALERIJA"
     }
 
     private fun showIncomingImageDialog(senderName: String, receivedAt: Long) {

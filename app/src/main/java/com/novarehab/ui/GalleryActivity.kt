@@ -62,7 +62,7 @@ class GalleryActivity : AppCompatActivity() {
 
         val item = items[currentIndex]
         binding.tvNoImages.visibility = View.GONE
-        binding.btnDelete.visibility = View.VISIBLE
+        binding.btnDelete.visibility = View.GONE
         binding.tvImageCount.text = "${currentIndex + 1} / ${items.size}"
         binding.tvImageMeta.text =
             "Od: ${item.senderName}\n${android.text.format.DateFormat.format("dd.MM.yyyy HH:mm", item.receivedAt)}"
@@ -99,17 +99,8 @@ class GalleryActivity : AppCompatActivity() {
             loadImage()
         }
 
-        binding.btnDelete.setOnClickListener {
-            val items = safeItems()
-            val item = items.getOrNull(currentIndex) ?: return@setOnClickListener
-            repository.delete(item.messageId)
-            if (currentIndex > 0) currentIndex--
-            loadImage()
-        }
-
         binding.btnClose.setOnClickListener { returnToMain() }
     }
-
     private fun returnToMain() {
         startActivity(
             Intent(this, MainActivity::class.java).apply {
