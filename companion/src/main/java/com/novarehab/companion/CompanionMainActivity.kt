@@ -28,6 +28,8 @@ class CompanionMainActivity : Activity() {
     private lateinit var btnCallContact: Button
     private lateinit var btnSendImage: Button
     private lateinit var btnSelectContact: Button
+    private lateinit var btnMinimize: Button
+    private lateinit var btnExit: Button
     private lateinit var localRenderer: SurfaceViewRenderer
     private lateinit var remoteRenderer: SurfaceViewRenderer
     private lateinit var contactConfigManager: ContactConfigManager
@@ -56,6 +58,8 @@ class CompanionMainActivity : Activity() {
         btnCallContact = findViewById(R.id.btnCallLana)
         btnSendImage = findViewById(R.id.btnSendImage)
         btnSelectContact = findViewById(R.id.btnSelectContact)
+        btnMinimize = findViewById(R.id.btnMinimize)
+        btnExit = findViewById(R.id.btnExit)
         localRenderer = findViewById(R.id.localRenderer)
         remoteRenderer = findViewById(R.id.remoteRenderer)
 
@@ -85,6 +89,8 @@ class CompanionMainActivity : Activity() {
         btnCallContact.setOnClickListener { sendTestCallToTablet() }
         btnSendImage.setOnClickListener { openImagePicker() }
         btnSelectContact.setOnClickListener { showContactSettings() }
+        btnMinimize.setOnClickListener { minimizeCompanion() }
+        btnExit.setOnClickListener { showExitConfirmation() }
 
         requestVideoPermissions()
 
@@ -251,25 +257,6 @@ class CompanionMainActivity : Activity() {
         startActivityForResult(intent, 701)
     }
 
-    private fun legacyUpdateStatus() {
-        val name = CompanionConfig.contactName
-        tvContactInfo.text = "Kontakt: $name"
-        btnCallContact.text = "POKLIČI $name".uppercase()
-
-        tvStatus.text = when (callState) {
-            CompanionCallState.IDLE -> "Pokliči $name"
-            CompanionCallState.RINGING -> "Čakam odgovor $name"
-            CompanionCallState.ACTIVE -> "$name je sprejel"
-            CompanionCallState.BUSY -> "$name je zaseden"
-            CompanionCallState.MISSED -> "$name je zavrnil"
-        }
-
-        btnAcceptCall.visibility = if (callState == CompanionCallState.RINGING) View.VISIBLE else View.GONE
-        btnRejectCall.visibility = if (callState == CompanionCallState.RINGING || callState == CompanionCallState.ACTIVE) View.VISIBLE else View.GONE
-        btnRejectCall.text = if (callState == CompanionCallState.ACTIVE) "PREKINI KLIC" else "ZAVRNI KLIC"
-        btnCallContact.visibility = if (callState == CompanionCallState.IDLE) View.VISIBLE else View.GONE
-    }
-
     private fun updateStatus() {
         val name = CompanionConfig.contactName
         refreshContactUi()
@@ -297,6 +284,8 @@ class CompanionMainActivity : Activity() {
         btnRejectCall.visibility = if (callState == CompanionCallState.RINGING || callState == CompanionCallState.ACTIVE) View.VISIBLE else View.GONE
         btnRejectCall.text = if (callState == CompanionCallState.ACTIVE) "PREKINI KLIC" else "ZAVRNI KLIC"
         btnCallContact.visibility = if (callState == CompanionCallState.IDLE) View.VISIBLE else View.GONE
+        btnExit.isEnabled = callState != CompanionCallState.ACTIVE
+        btnExit.alpha = if (btnExit.isEnabled) 1f else 0.55f
     }
 
     private fun updateConnectionStateFromMessage(text: String) {
@@ -321,6 +310,37 @@ class CompanionMainActivity : Activity() {
     private fun setConnectionState(text: String, healthy: Boolean) {
         tvConnectionState.text = text
         tvConnectionState.setTextColor(if (healthy) 0xFFB8D8FF.toInt() else 0xFFFFC27A.toInt())
+    }
+
+    private fun showBackOptions() {
+        AlertDialog.Builder(this)
+            .setTitle("NovaRehab Companion")
+            .setMessage("Zapri aplikacijo ali pomanjšaj?")
+            .setPositiveButton("POMANJŠAJ") { _, _ -> minimizeCompanion() }
+            .setNegativeButton("ZAPRI") { _, _ -> closeCompanion() }
+            .setNeutralButton("PREKLIČI", null)
+            .show()
+    }
+
+    private fun showExitConfirmation() {
+        if (callState == CompanionCallState.ACTIVE) {
+            Toast.makeText(this, "Najprej zaključite klic.", Toast.LENGTH_LONG).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("NovaRehab Companion")
+            .setMessage("Ali želite zapreti NovaRehab Companion?")
+            .setPositiveButton("ZAPRI") { _, _ -> closeCompanion() }
+            .setNegativeButton("PREKLIČI", null)
+            .show()
+    }
+
+    private fun minimizeCompanion() {
+        moveTaskToBack(true)
+    }
+
+    private fun closeCompanion() {
+        finishAffinity()
     }
 
     private fun requestVideoPermissions() {
@@ -376,6 +396,10 @@ class CompanionMainActivity : Activity() {
                 or View.SYSTEM_UI_FLAG_FULLSCREEN
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             )
+    }
+
+    override fun onBackPressed() {
+        showBackOptions()
     }
 
     override fun onDestroy() {
