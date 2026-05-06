@@ -1,8 +1,6 @@
 ﻿package com.novarehab.ui
 
 import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -56,7 +54,7 @@ class MirrorActivity : AppCompatActivity() {
                         runCatching {
                             mediaGalleryRepository.saveCameraCapture(file)
                         }.onSuccess { saved ->
-                            if (java.io.File(saved.localPath).exists()) {
+                            if (java.io.File(saved.localPath).exists() && java.io.File(saved.localPath).length() > 0L) {
                                 cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
                                 cancelBackCameraReset()
                                 file.delete()
@@ -119,33 +117,16 @@ class MirrorActivity : AppCompatActivity() {
     }
 
     private fun requestRequiredPermissions() {
-        val permissions = mutableListOf(Manifest.permission.CAMERA)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions += Manifest.permission.READ_MEDIA_IMAGES
-        } else {
-            permissions += Manifest.permission.READ_EXTERNAL_STORAGE
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-                permissions += Manifest.permission.WRITE_EXTERNAL_STORAGE
-            }
-        }
-        ActivityCompat.requestPermissions(this, permissions.toTypedArray(), cameraPermissionRequest)
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.CAMERA),
+            cameraPermissionRequest
+        )
     }
 
     private fun hasRequiredPermissions(): Boolean {
-        val readPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_IMAGES
-        } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        }
-        val writeGranted = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, readPermission) == PackageManager.PERMISSION_GRANTED &&
-            writeGranted
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
     private fun startCamera() {

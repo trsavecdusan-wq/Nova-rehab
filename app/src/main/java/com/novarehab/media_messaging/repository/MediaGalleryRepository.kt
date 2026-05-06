@@ -150,7 +150,7 @@ class MediaGalleryRepository(context: Context) {
             bytes = bytes,
             targetDir = paths.galleryCameraDir
         )
-        check(targetFile.exists()) {
+        check(targetFile.exists() && targetFile.length() > 0L) {
             "Slike ni bilo mogoče shraniti v ${targetFile.absolutePath}."
         }
 
@@ -200,7 +200,7 @@ class MediaGalleryRepository(context: Context) {
         targetDir.mkdirs()
         val target = File(targetDir, fileName)
         target.writeBytes(bytes)
-        if (!target.exists()) {
+        if (!target.exists() || target.length() <= 0L) {
             throw IllegalStateException("Datoteke ni bilo mogoče zapisati v ${target.absolutePath}.")
         }
         return target

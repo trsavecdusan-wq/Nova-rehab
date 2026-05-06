@@ -765,9 +765,10 @@ class IconSettingsActivity : AppCompatActivity() {
         view.text = listOf(
             "enabled: ${if (enabled) "DA" else "NE"}",
             "ima ID: ${if (hasId) "DA" else "NE"}",
-            "je v glavnem meniju: ${if (id in currentMainIds) "DA" else "NE"}",
-            "je podikona druge ikone: ${if (isChild) "DA" else "NE"}",
-            "ima veljavno sliko/ikono: ${if (hasValidIcon) "DA" else "NE"}"
+            "je v main seznamu: ${if (id in currentMainIds) "DA" else "NE"}",
+            "je podikona: ${if (isChild) "DA" else "NE"}",
+            "children: ${if (currentChildren.isEmpty()) "ni" else currentChildren.joinToString(", ")}",
+            "image/resource: ${if (hasValidIcon) "OK" else "MANJKA"}"
         ).joinToString("\n")
     }
 

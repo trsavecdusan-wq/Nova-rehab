@@ -119,14 +119,23 @@ object CommunicationRepository {
         val root = JSONObject(raw)
         val array = root.optJSONArray("items") ?: JSONArray()
         val itemsById = linkedMapOf<String, ParsedItem>()
-        val topLevelIds = mutableListOf<String>()
+        val declaredMainIds = root.optJSONArray("main").toStringList()
+        val parsedIds = mutableListOf<String>()
+        val allChildrenIds = linkedSetOf<String>()
 
         for (index in 0 until array.length()) {
             val itemJson = array.optJSONObject(index) ?: continue
             val parsed = parseParsedItem(context, itemJson, itemsById)
             if (parsed.id.isNotBlank()) {
-                topLevelIds += parsed.id
+                parsedIds += parsed.id
+                allChildrenIds += parsed.childIds
             }
+        }
+
+        val topLevelIds = if (declaredMainIds.isNotEmpty()) {
+            declaredMainIds.filter { it in itemsById }
+        } else {
+            parsedIds.filter { it !in allChildrenIds }
         }
 
         return ParsedDocument(
@@ -423,7 +432,7 @@ object CommunicationRepository {
 
     private fun readAsset(context: Context, path: String): String {
         return context.assets.open(path).use { input ->
-            input.readBytes().toString(Charsets.UTF_8)
+            input.readBytes().toString(Charsets.UTF_8).removePrefix("\uFEFF")
         }
     }
 

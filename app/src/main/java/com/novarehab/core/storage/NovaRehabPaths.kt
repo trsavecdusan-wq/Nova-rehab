@@ -1,14 +1,13 @@
 package com.novarehab.core.storage
 
 import android.content.Context
-import android.os.Environment
 import java.io.File
 
 class NovaRehabPaths(context: Context) {
     private val appContext = context.applicationContext
 
     val rootDir: File by lazy {
-        File(Environment.getExternalStorageDirectory(), "NovaRehab").also { it.mkdirs() }
+        File(appContext.getExternalFilesDir(null) ?: appContext.filesDir, "NovaRehab").also { it.mkdirs() }
     }
 
     val configDir: File by lazy {
