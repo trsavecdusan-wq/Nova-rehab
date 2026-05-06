@@ -5,13 +5,17 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -93,12 +97,70 @@ class CompanionMainActivity : Activity() {
         btnExit.setOnClickListener { showExitConfirmation() }
 
         requestVideoPermissions()
+        initializeCompanion(intent)
+    }
 
-        if (!contactConfigManager.isConfigured()) {
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        initializeCompanion(intent)
+    }
+
+    private fun initializeCompanion(startIntent: Intent?) {
+        try {
+            if (tryImportSharedConfig(startIntent)) {
+                Toast.makeText(this, "Nastavitev iz tablice je uvožena.", Toast.LENGTH_LONG).show()
+            }
+
+            val currentConfig = contactConfigManager.getCurrentOrNull()
+            if (currentConfig == null) {
+                contactConfigManager.clear()
+                showContactSelector(force = true)
+                return
+            }
+
+            startCompanionWithConfig(currentConfig, restartCallManager = false)
+        } catch (error: Exception) {
+            Log.e(TAG, "Napaka pri zagonu Companion aplikacije", error)
+            contactConfigManager.clear()
+            tvStatus.text = "Izberi kontakt"
+            setConnectionState("Povezava ne deluje", false)
             showContactSelector(force = true)
-        } else {
-            applySelectedContact(contactConfigManager.getCurrent(), restartCallManager = false)
-            startWaitingForCall()
+        }
+    }
+
+    private fun tryImportSharedConfig(startIntent: Intent?): Boolean {
+        val action = startIntent?.action.orEmpty()
+        val payload = when {
+            action == Intent.ACTION_SEND -> startIntent?.getStringExtra(Intent.EXTRA_TEXT)
+            else -> null
+        }?.trim().orEmpty()
+
+        if (payload.isBlank()) return false
+
+        return contactConfigManager.importFromSharedPayload(payload)
+            .onSuccess { config ->
+                CompanionConfig.update(config)
+            }
+            .onFailure { error ->
+                Log.e(TAG, "Uvoz nastavitve iz tablice ni uspel", error)
+                Toast.makeText(this, error.localizedMessage ?: "Uvoz nastavitve ni uspel.", Toast.LENGTH_LONG).show()
+            }
+            .isSuccess
+    }
+
+    private fun startCompanionWithConfig(
+        config: CompanionContactConfig,
+        restartCallManager: Boolean
+    ) {
+        try {
+            applySelectedContact(config, restartCallManager)
+            startWaitingForCallSafely()
+        } catch (error: Exception) {
+            Log.e(TAG, "Napaka pri aktivaciji kontakta ${config.contactId}", error)
+            contactConfigManager.clear()
+            Toast.makeText(this, "Shranjena nastavitev kontakta ni veljavna. Izberite kontakt znova.", Toast.LENGTH_LONG).show()
+            showContactSelector(force = true)
         }
     }
 
@@ -111,59 +173,128 @@ class CompanionMainActivity : Activity() {
         refreshContactUi()
 
         if (restartCallManager) {
-            recreateCallManager()
+            recreateCallManagerSafely()
         }
     }
 
     private fun refreshContactUi() {
         val name = CompanionConfig.contactName
         val language = CompanionConfig.preferredLanguageCode.uppercase()
-        tvContactInfo.text = "Kontakt: $name  •  Jezik: $language"
+        val patient = CompanionConfig.patientName
+        tvContactInfo.text = "Kontakt: $name  •  Pacient: $patient  •  Jezik: $language"
         btnCallContact.text = CompanionContactText.callButtonText(name)
         btnSelectContact.text = "NASTAVITVE KONTAKTA"
     }
 
     private fun showContactSettings() {
-        AlertDialog.Builder(this)
+        val items = arrayOf(
+            "Ročna izbira kontakta",
+            "Uvozi nastavitev iz tablice",
+            "Ponastavi izbiro kontakta",
+            "Prekliči"
+        )
+
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Nastavitve kontakta")
-            .setItems(arrayOf("Spremeni kontakt", "Prekliči")) { dialog, which ->
-                if (which == 0) {
-                    showContactSelector(force = false)
-                } else {
-                    dialog.dismiss()
+            .setItems(items) { dialogInterface, which ->
+                when (which) {
+                    0 -> showContactSelector(force = false)
+                    1 -> showImportConfigDialog()
+                    2 -> resetSelectedContact()
+                    else -> dialogInterface.dismiss()
                 }
             }
-            .show()
+            .create()
+
+        dialog.show()
+        styleDialog(dialog)
     }
 
     private fun showContactSelector(force: Boolean) {
         val contacts = contactConfigManager.availableContacts
         val labels = contacts.map { it.contactName }.toTypedArray()
-        val selected = contacts.indexOfFirst { it.contactId == contactConfigManager.getCurrent().contactId }.coerceAtLeast(0)
+        val selected = contacts.indexOfFirst { it.contactId == contactConfigManager.getCurrent().contactId }
+            .coerceAtLeast(0)
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Izberi kontakt")
             .setSingleChoiceItems(labels, selected, null)
             .setCancelable(!force)
-            .setPositiveButton("Shrani") { dialog, _ ->
-                val position = (dialog as AlertDialog).listView.checkedItemPosition
+            .setPositiveButton("Shrani") { dialogInterface, _ ->
+                val position = (dialogInterface as AlertDialog).listView.checkedItemPosition
                 val config = contacts.getOrNull(position) ?: contacts.last()
-                applySelectedContact(config, restartCallManager = true)
-                startWaitingForCall()
+                startCompanionWithConfig(config, restartCallManager = true)
             }
             .setNegativeButton(if (force) null else "Prekliči", null)
-            .show()
+            .create()
+
+        dialog.show()
+        styleDialog(dialog)
     }
 
-    private fun startWaitingForCall() {
+    private fun showImportConfigDialog() {
+        val input = EditText(this).apply {
+            hint = "Prilepi nastavitveni zapis iz tablice"
+            setTextColor(Color.WHITE)
+            setHintTextColor(0xFFD0D8E8.toInt())
+            setBackgroundColor(0xFF16213E.toInt())
+            setPadding(32, 24, 32, 24)
+            minLines = 4
+            maxLines = 8
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Uvozi nastavitev iz tablice")
+            .setMessage("Prilepite besedilo, ki ga pošlje tablica.")
+            .setView(input)
+            .setPositiveButton("Uvozi") { _, _ ->
+                val payload = input.text?.toString().orEmpty().trim()
+                if (payload.isBlank()) {
+                    Toast.makeText(this, "Nastavitveni zapis je prazen.", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+
+                contactConfigManager.importFromSharedPayload(payload)
+                    .onSuccess { config ->
+                        startCompanionWithConfig(config, restartCallManager = true)
+                        Toast.makeText(this, "Nastavitev je uvožena.", Toast.LENGTH_LONG).show()
+                    }
+                    .onFailure { error ->
+                        Log.e(TAG, "Ročni uvoz nastavitve ni uspel", error)
+                        Toast.makeText(this, error.localizedMessage ?: "Uvoz nastavitve ni uspel.", Toast.LENGTH_LONG).show()
+                    }
+            }
+            .setNegativeButton("Prekliči", null)
+            .create()
+
+        dialog.show()
+        styleDialog(dialog)
+    }
+
+    private fun resetSelectedContact() {
+        contactConfigManager.clear()
+        CompanionConfig.update(contactConfigManager.availableContacts.last())
+        callManager?.endCall()
+        callManager = null
+        callState = CompanionCallState.IDLE
+        tvStatus.text = "Izberi kontakt"
+        setConnectionState("Povezava ne deluje", false)
+        showContactSelector(force = true)
+    }
+
+    private fun startWaitingForCallSafely() {
         callState = CompanionCallState.IDLE
         createCallManager()
         callManager?.startWaitingForCall()
         updateStatus()
     }
 
-    private fun recreateCallManager() {
-        callManager?.endCall()
+    private fun recreateCallManagerSafely() {
+        runCatching {
+            callManager?.endCall()
+        }.onFailure {
+            Log.e(TAG, "Varno ustavljanje starega klicnega upravljalnika ni uspelo", it)
+        }
         callManager = null
         createCallManager()
     }
@@ -199,9 +330,9 @@ class CompanionMainActivity : Activity() {
                     outgoingDialing = false
                     callState = CompanionCallState.IDLE
                     updateStatus()
-                    if (!destroyed && CompanionConfig.incomingCallsEnabled) {
+                    if (!destroyed && CompanionConfig.incomingCallsEnabled && contactConfigManager.isConfigured()) {
                         tvStatus.postDelayed({
-                            if (!destroyed) startWaitingForCall()
+                            if (!destroyed) startWaitingForCallSafely()
                         }, 1500L)
                     }
                 }
@@ -263,10 +394,7 @@ class CompanionMainActivity : Activity() {
 
         tvStatus.text = when (callState) {
             CompanionCallState.IDLE -> CompanionContactText.idleStatus(name)
-            CompanionCallState.RINGING -> {
-                if (outgoingDialing) CompanionContactText.callingStatus(name)
-                else CompanionContactText.waitingStatus(name)
-            }
+            CompanionCallState.RINGING -> if (outgoingDialing) CompanionContactText.callingStatus(name) else CompanionContactText.waitingStatus(name)
             CompanionCallState.ACTIVE -> CompanionContactText.acceptedStatus(name)
             CompanionCallState.BUSY -> CompanionContactText.busyStatus(name)
             CompanionCallState.MISSED -> CompanionContactText.rejectedStatus(name)
@@ -313,13 +441,15 @@ class CompanionMainActivity : Activity() {
     }
 
     private fun showBackOptions() {
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("NovaRehab Companion")
             .setMessage("Zapri aplikacijo ali pomanjšaj?")
             .setPositiveButton("POMANJŠAJ") { _, _ -> minimizeCompanion() }
             .setNegativeButton("ZAPRI") { _, _ -> closeCompanion() }
             .setNeutralButton("PREKLIČI", null)
-            .show()
+            .create()
+        dialog.show()
+        styleDialog(dialog)
     }
 
     private fun showExitConfirmation() {
@@ -327,12 +457,33 @@ class CompanionMainActivity : Activity() {
             Toast.makeText(this, "Najprej zaključite klic.", Toast.LENGTH_LONG).show()
             return
         }
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("NovaRehab Companion")
             .setMessage("Ali želite zapreti NovaRehab Companion?")
             .setPositiveButton("ZAPRI") { _, _ -> closeCompanion() }
             .setNegativeButton("PREKLIČI", null)
-            .show()
+            .create()
+        dialog.show()
+        styleDialog(dialog)
+    }
+
+    private fun styleDialog(dialog: AlertDialog) {
+        dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
+        dialog.findViewById<TextView>(android.R.id.message)?.setTextColor(Color.WHITE)
+        dialog.findViewById<TextView>(resources.getIdentifier("alertTitle", "id", "android"))?.setTextColor(Color.WHITE)
+        dialog.listView?.apply {
+            setBackgroundColor(0xFF1A1A2E.toInt())
+            divider = ColorDrawable(0xFF333355.toInt())
+            dividerHeight = 1
+            post {
+                for (index in 0 until childCount) {
+                    (getChildAt(index) as? TextView)?.setTextColor(Color.WHITE)
+                }
+            }
+        }
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(Color.WHITE)
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(Color.WHITE)
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(Color.WHITE)
     }
 
     private fun minimizeCompanion() {
@@ -377,6 +528,7 @@ class CompanionMainActivity : Activity() {
                         Toast.makeText(this, "Slika je bila poslana tablici.", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
+                    Log.e(TAG, "Pošiljanje slike ni uspelo", e)
                     runOnUiThread {
                         Toast.makeText(this, e.localizedMessage ?: "Pošiljanje slike ni uspelo.", Toast.LENGTH_LONG).show()
                     }
@@ -405,8 +557,13 @@ class CompanionMainActivity : Activity() {
     override fun onDestroy() {
         destroyed = true
         statusHandler.removeCallbacksAndMessages(null)
-        callManager?.endCall()
+        runCatching { callManager?.endCall() }
+            .onFailure { Log.e(TAG, "Varno zapiranje klica ni uspelo", it) }
         callManager = null
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "CompanionMain"
     }
 }

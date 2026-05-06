@@ -120,7 +120,7 @@ class IconSettingsActivity : AppCompatActivity() {
         container.addView(header)
 
         val note = TextView(this)
-        note.text = "Vpiši besedilo za govor. Podmeni vklopiš posebej pri vsaki glavni ikoni."
+        note.text = "VpiĹˇi besedilo za govor. Podmeni vklopiĹˇ posebej pri vsaki glavni ikoni."
         note.textSize = 13f
         note.setTextColor(0xFFAAAAAA.toInt())
         note.setPadding(0, 0, 0, dp(12))
@@ -153,21 +153,8 @@ class IconSettingsActivity : AppCompatActivity() {
         applyDarkSettingsStyle(scroll)
     }
 
-        private fun applyDarkSettingsStyle(view: View) {
-        when (view) {
-            is EditText -> styleEditText(view)
-            is Spinner -> styleSpinner(view)
-            is Switch -> view.setTextColor(0xFFFFFFFF.toInt())
-            is TextView -> if (view !is Button && view !is EditText && view !is Switch) {
-                view.setTextColor(0xFFFFFFFF.toInt())
-            }
-        }
-
-        if (view is ViewGroup) {
-            for (index in 0 until view.childCount) {
-                applyDarkSettingsStyle(view.getChildAt(index))
-            }
-        }
+    private fun applyDarkSettingsStyle(view: View) {
+        SettingsUiStyler.apply(view, resources.displayMetrics.density)
     }
     private fun createBackupControls(): LinearLayout {
         return LinearLayout(this).apply {
@@ -230,7 +217,7 @@ class IconSettingsActivity : AppCompatActivity() {
         ).apply { setMargins(0, dp(8), 0, dp(10)) }
 
         val label = TextView(this)
-        label.text = "Čas izhoda iz podmenija (sekunde)"
+        label.text = "ÄŚas izhoda iz podmenija (sekunde)"
         label.textSize = 13f
         label.setTextColor(0xFFFFFFFF.toInt())
         label.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -260,7 +247,7 @@ class IconSettingsActivity : AppCompatActivity() {
             prefs.saveCommSubmenuTimeoutSeconds(seconds)
             etTimeout.setText(prefs.getCommSubmenuTimeoutSeconds().toString())
             SettingsBackupManager(this).backupNow()
-            Toast.makeText(this, "Čas shranjen", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "ÄŚas shranjen", Toast.LENGTH_SHORT).show()
         }
         row.addView(btnSave)
 
@@ -315,7 +302,7 @@ class IconSettingsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        textBox.addView(createReadonlyInfo("ID", id, "ID je povezava ikone. Če se spremeni, lahko podmeniji nehajo delovati."))
+        textBox.addView(createReadonlyInfo("ID", id, "ID je povezava ikone. ÄŚe se spremeni, lahko podmeniji nehajo delovati."))
 
         val etText = EditText(this).apply {
             setText(mgr.getText(id))
@@ -338,7 +325,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
         val etSubmenuPrompt = EditText(this).apply {
             setText(mgr.getSubmenuPrompt(id))
-            hint = "Vprašanje po kliku, npr. Kaj želiš piti?"
+            hint = "VpraĹˇanje po kliku, npr. Kaj ĹľeliĹˇ piti?"
             textSize = 12f
             setSingleLine(false)
             minLines = 1
@@ -356,7 +343,7 @@ class IconSettingsActivity : AppCompatActivity() {
         textBox.addView(enabledSwitch)
 
         val showOnMainSwitch = Switch(this).apply {
-            text = "PRIKAŽI NA GLAVNEM ZASLONU"
+            text = "PRIKAĹ˝I NA GLAVNEM ZASLONU"
             textSize = 12f
             setTextColor(0xFFFFFFFF.toInt())
             isChecked = saved?.showOnMain ?: defaultMainIds().contains(id)
@@ -364,7 +351,7 @@ class IconSettingsActivity : AppCompatActivity() {
         textBox.addView(showOnMainSwitch)
 
         textBox.addView(TextView(this).apply {
-            text = "Če je izklopljeno, ikona ni vidna."
+            text = "ÄŚe je izklopljeno, ikona ni vidna."
             textSize = 11f
             setTextColor(0xFFD0D8E8.toInt())
         })
@@ -384,7 +371,7 @@ class IconSettingsActivity : AppCompatActivity() {
         textBox.addView(diagnosticsView)
 
         textBox.addView(TextView(this).apply {
-            text = "Ikona je vidna samo, če ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
+            text = "Ikona je vidna samo, ÄŤe ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
             textSize = 11f
             setTextColor(0xFFFFCC80.toInt())
             setPadding(0, 0, 0, dp(6))
@@ -511,7 +498,7 @@ class IconSettingsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        texts.addView(createReadonlyInfo("ID", id, "ID je povezava ikone. Če se spremeni, lahko podmeniji nehajo delovati."))
+        texts.addView(createReadonlyInfo("ID", id, "ID je povezava ikone. ÄŚe se spremeni, lahko podmeniji nehajo delovati."))
 
         val etTitle = EditText(this).apply {
             setText(saved?.title ?: "")
@@ -541,7 +528,7 @@ class IconSettingsActivity : AppCompatActivity() {
         }
 
         val showOnMainSwitch = Switch(this).apply {
-            text = "PRIKAŽI NA GLAVNEM ZASLONU"
+            text = "PRIKAĹ˝I NA GLAVNEM ZASLONU"
             textSize = 11f
             setTextColor(0xFFFFFFFF.toInt())
             isChecked = saved?.showOnMain ?: true
@@ -561,7 +548,7 @@ class IconSettingsActivity : AppCompatActivity() {
         texts.addView(showOnMainSwitch)
         texts.addView(pinnedVideoSwitch)
         texts.addView(TextView(this).apply {
-            text = "Če je izklopljeno, ikona ni vidna."
+            text = "ÄŚe je izklopljeno, ikona ni vidna."
             textSize = 11f
             setTextColor(0xFFD0D8E8.toInt())
         })
@@ -581,7 +568,7 @@ class IconSettingsActivity : AppCompatActivity() {
         texts.addView(diagnosticsView)
 
         texts.addView(TextView(this).apply {
-            text = "Ikona je vidna samo, če ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
+            text = "Ikona je vidna samo, ÄŤe ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
             textSize = 11f
             setTextColor(0xFFFFCC80.toInt())
             setPadding(0, 0, 0, dp(6))
@@ -787,11 +774,11 @@ class IconSettingsActivity : AppCompatActivity() {
         }
 
         if (candidates.isEmpty()) {
-            Toast.makeText(this, if (remove) "Ni podikon za odstraniti." else "Ni več ikon za dodati.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, if (remove) "Ni podikon za odstraniti." else "Ni veÄŤ ikon za dodati.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val labels = candidates.map { "$it — ${displayNameForIcon(it)}" }.toTypedArray()
+        val labels = candidates.map { "$it â€” ${displayNameForIcon(it)}" }.toTypedArray()
         val dialog = AlertDialog.Builder(this)
             .setTitle(if (remove) "Odstrani podikono" else "Dodaj podikono")
             .setAdapter(themedSpinnerAdapter(*labels)) { _, which ->
@@ -803,7 +790,7 @@ class IconSettingsActivity : AppCompatActivity() {
                 }
                 onChanged()
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("PrekliÄŤi", null)
             .create()
 
         dialog.show()
@@ -883,7 +870,7 @@ class IconSettingsActivity : AppCompatActivity() {
                 SettingsBackupManager(this).backupNow()
                 recreate()
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("PrekliÄŤi", null)
             .create()
 
         dialog.show()
@@ -929,10 +916,7 @@ class IconSettingsActivity : AppCompatActivity() {
     }
 
     private fun styleEditText(editText: EditText) {
-        editText.setTextColor(0xFFFFFFFF.toInt())
-        editText.setHintTextColor(0xFFD0D8E8.toInt())
-        editText.setBackgroundResource(R.drawable.bg_settings_input)
-        editText.setPadding(dp(10), dp(8), dp(10), dp(8))
+        SettingsUiStyler.styleEditText(editText, resources.displayMetrics.density)
     }
 
     private fun themedSpinnerAdapter(vararg items: String): ArrayAdapter<String> {
@@ -968,32 +952,15 @@ class IconSettingsActivity : AppCompatActivity() {
     }
 
     private fun styleSpinner(spinner: Spinner) {
-        spinner.setBackgroundResource(R.drawable.bg_settings_input)
-        spinner.setPopupBackgroundDrawable(ColorDrawable(0xFF16213E.toInt()))
-        spinner.post {
-            (spinner.selectedView as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
-        }
+        SettingsUiStyler.styleSpinner(spinner)
     }
 
     private fun styleAlertDialog(dialog: AlertDialog) {
-        dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
-        dialog.findViewById<TextView>(android.R.id.message)?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.findViewById<TextView>(resources.getIdentifier("alertTitle", "id", "android"))?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.listView?.apply {
-            setBackgroundColor(0xFF1A1A2E.toInt())
-            divider = ColorDrawable(0xFF333355.toInt())
-            dividerHeight = 1
-            post {
-                for (index in 0 until childCount) {
-                    (getChildAt(index) as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
-                }
-            }
-        }
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(0xFFFFFFFF.toInt())
+        SettingsUiStyler.styleDialog(dialog)
     }
 }
+
+
 
 
 

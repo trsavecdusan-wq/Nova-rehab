@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-06 - v1.0.8 (versionCode 8)
+
+Changed modules:
+- `companion`
+- `settings`
+- `main-ui`
+- `release`
+
+Fixed / added:
+- fixed companion crash after contact selection with safe startup validation and reset flow
+- added safe fallback for invalid saved contact config and text-based tablet config import foundation
+- standardized settings submenu readability with a shared settings UI styler
+- repositioned tablet on-screen volume controls to the top area around the speed module
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- companion config import currently uses shared text foundation; QR/file onboarding can be layered later
 ## 2026-05-06 - v1.0.7 (versionCode 7)
 
 Changed modules:
@@ -114,3 +131,5 @@ Fixed bugs:
 Known issues:
 - Final green build confirmation still depends on GitHub Actions after push.
 - Some older update/backup code paths may still need future cleanup if new release workflows are added.
+
+

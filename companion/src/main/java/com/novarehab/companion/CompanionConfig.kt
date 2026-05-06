@@ -5,7 +5,8 @@ object CompanionConfig {
         contactId = "c06",
         contactName = "Dušan",
         roomId = "novarehab_c06",
-        preferredLanguage = "sl"
+        preferredLanguage = "sl",
+        patientName = "Lana"
     )
 
     val companionId: String
@@ -22,6 +23,9 @@ object CompanionConfig {
 
     val preferredLanguageCode: String
         get() = current.preferredLanguage
+
+    val patientName: String
+        get() = current.patientName
 
     const val signalingBaseUrl: String =
         "https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app"

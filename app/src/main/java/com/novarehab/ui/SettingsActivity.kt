@@ -47,6 +47,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val REQUEST_IMPORT_CONFIG_FILE = 503
         private const val REQUEST_EXPORT_STATS_FILE = 504
         private const val PREF_SETTINGS_SCROLL_Y = "settings_scroll_y"
+        private const val COMPANION_CONFIG_PREFIX = "NOVAREHAB_COMPANION_CONFIG:"
     }
 
     private lateinit var binding: ActivitySettingsBinding
@@ -109,11 +110,17 @@ class SettingsActivity : AppCompatActivity() {
         val contacts = prefs.getContacts()
         val contactIds = listOf("c01", "c02", "c03", "c04", "c05", "c06")
         val fallbackNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
+        val fallbackLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
+        val patientName = prefs.getPatientName().ifBlank { "Lana" }
 
         return (0 until 6).map { index ->
+            val savedContact = contacts.getOrNull(index)
             CompanionShareContact(
                 contactId = contactIds[index],
-                displayName = contacts.getOrNull(index)?.name?.takeIf { it.isNotBlank() } ?: fallbackNames[index]
+                displayName = savedContact?.name?.takeIf { it.isNotBlank() } ?: fallbackNames[index],
+                preferredLanguage = savedContact?.language?.takeIf { it.isNotBlank() } ?: fallbackLanguages[index],
+                roomId = "novarehab_${contactIds[index]}",
+                patientName = patientName
             )
         }
     }
@@ -141,12 +148,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun langOptions() = arrayOf(
-        "Slovenščina",
-        "Ukrajinščina",
-        "Angleščina",
-        "Nemščina",
-        "Hrvaščina",
-        "Srbščina"
+        "SlovenĹˇÄŤina",
+        "UkrajinĹˇÄŤina",
+        "AngleĹˇÄŤina",
+        "NemĹˇÄŤina",
+        "HrvaĹˇÄŤina",
+        "SrbĹˇÄŤina"
     )
 
     private fun langCode(position: Int): String = when (position) {
@@ -237,11 +244,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun styleSpinner(spinner: Spinner) {
-        spinner.setBackgroundResource(com.novarehab.R.drawable.bg_settings_input)
-        spinner.setPopupBackgroundDrawable(ColorDrawable(0xFF16213E.toInt()))
-        spinner.post {
-            (spinner.selectedView as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
-        }
+        SettingsUiStyler.styleSpinner(spinner)
     }
 
     private fun speechRateOptions() = arrayOf("0.80x", "0.88x", "0.96x", "1.00x", "1.06x")
@@ -411,7 +414,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         panel.addView(TextView(this).apply {
-            text = "Število komunikacijskih ikon na stran:"
+            text = "Ĺ tevilo komunikacijskih ikon na stran:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -428,7 +431,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         autoSortRow.addView(TextView(this).apply {
-            text = "Samodejno razvrščanje ikon"
+            text = "Samodejno razvrĹˇÄŤanje ikon"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 13f
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -441,7 +444,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(autoSortRow)
 
         panel.addView(TextView(this).apply {
-            text = "Čas izhoda iz podmenija:"
+            text = "ÄŚas izhoda iz podmenija:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -582,7 +585,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(spinnerSpeechProviderMode)
 
         panel.addView(TextView(this).apply {
-            text = "Način odziva govora:"
+            text = "NaÄŤin odziva govora:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -639,7 +642,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(switchLocalFallbackEnabled)
 
         switchSpeechRehabilitationMode = Switch(this).apply {
-            text = "Rehabilitacijski način govora"
+            text = "Rehabilitacijski naÄŤin govora"
             setTextColor(0xFFFFFFFF.toInt())
         }
         panel.addView(switchSpeechRehabilitationMode)
@@ -706,7 +709,7 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 12f
         })
         etSpeechTestPhrase = EditText(this).apply {
-            setText("Želim vodo.")
+            setText("Ĺ˝elim vodo.")
             setTextColor(0xFFFFFFFF.toInt())
             setHintTextColor(0xFFD0D8E8.toInt())
         }
@@ -720,7 +723,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(btnTestHybridTts)
 
         btnClearSpeechCache = Button(this).apply {
-            text = "POČISTI GOVORNI CACHE"
+            text = "POÄŚISTI GOVORNI CACHE"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
         }
@@ -760,7 +763,7 @@ class SettingsActivity : AppCompatActivity() {
         panel.addView(btnCheckUpdateNow)
 
         btnRestorePreviousVersion = Button(this).apply {
-            text = "OBNOVI PREJŠNJO VERZIJO"
+            text = "OBNOVI PREJĹ NJO VERZIJO"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF0F3460.toInt())
             textSize = 15f
@@ -787,7 +790,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         btnShareCompanionApp = Button(this).apply {
-            text = "POŠLJI APLIKACIJO ZA SOGOVORNIKA"
+            text = "POĹ LJI APLIKACIJO ZA SOGOVORNIKA"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
             textSize = 14f
@@ -959,7 +962,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun loadContactSettings() {
         val contacts = prefs.getContacts()
-        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
+        val defaultNames = listOf("Ĺ˝ana", "Dedek", "Inna", "Julija", "Kuma", "DuĹˇan")
         val defaultLanguages = listOf("uk", "uk", "uk", "uk", "uk", "sl")
 
         val nameFields = listOf(
@@ -1008,7 +1011,7 @@ class SettingsActivity : AppCompatActivity() {
             phoneFields[index].setText(contact?.phone.orEmpty())
 
             val spinner = Spinner(this).apply {
-                val options = arrayOf("Slovenščina", "Ukrajinščina")
+                val options = arrayOf("SlovenĹˇÄŤina", "UkrajinĹˇÄŤina")
                 adapter = themedSpinnerAdapter(*options)
                 styleSpinner(this)
 
@@ -1131,7 +1134,7 @@ class SettingsActivity : AppCompatActivity() {
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speakAndroid(
-                etSpeechTestPhrase.text.toString().trim().ifBlank { "Želim vodo." },
+                etSpeechTestPhrase.text.toString().trim().ifBlank { "Ĺ˝elim vodo." },
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition)
             ) {
                 tts.destroy()
@@ -1155,7 +1158,7 @@ class SettingsActivity : AppCompatActivity() {
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speakOpenAiOnly(
-                etSpeechTestPhrase.text.toString().trim().ifBlank { "Želim vodo." },
+                etSpeechTestPhrase.text.toString().trim().ifBlank { "Ĺ˝elim vodo." },
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition),
                 key,
                 voice,
@@ -1170,7 +1173,7 @@ class SettingsActivity : AppCompatActivity() {
             saveApiFields()
             saveSpeechSettings()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
-            val phrase = etSpeechTestPhrase.text.toString().trim().ifBlank { "Želim vodo." }
+            val phrase = etSpeechTestPhrase.text.toString().trim().ifBlank { "Ĺ˝elim vodo." }
             tts.speak(
                 phrase,
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition),
@@ -1187,7 +1190,7 @@ class SettingsActivity : AppCompatActivity() {
             val cacheManager = SpeechCacheManager(this)
             cacheManager.clearCache()
             refreshSpeechDiagnostics()
-            Toast.makeText(this, "Govorni cache je počiščen.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Govorni cache je poÄŤiĹˇÄŤen.", Toast.LENGTH_SHORT).show()
         }
 
         binding.btnTestApi.setOnClickListener {
@@ -1204,7 +1207,7 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
                 Toast.makeText(
                     this,
-                    "Če slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
+                    "ÄŚe slovenskega glasu ni, namesti RHVoice iz Trgovine Play.",
                     Toast.LENGTH_LONG
                 ).show()
             } catch (_: Exception) {
@@ -1219,7 +1222,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnTestMail.setOnClickListener {
             saveSettings()
             ReportWorker.schedule(this, prefs.getReportHour())
-            Toast.makeText(this, "Poročilo bo poslano ob ${prefs.getReportHour()}:00", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "PoroÄŤilo bo poslano ob ${prefs.getReportHour()}:00", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1238,7 +1241,7 @@ class SettingsActivity : AppCompatActivity() {
 
                 shareCompanionApp(contact)
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("PrekliÄŤi", null)
             .create()
 
         dialog.show()
@@ -1252,17 +1255,25 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
 
-        val message = """
-            Namesti aplikacijo NovaRehab Companion za video klic z Lano.
+        val configJson = org.json.JSONObject().apply {
+            put("contact_id", contact.contactId)
+            put("contact_name", contact.displayName)
+            put("room_id", contact.roomId)
+            put("preferred_language", contact.preferredLanguage)
+            put("patient_name", contact.patientName)
+        }.toString()
 
-            1. Klikni povezavo:
+        val message = """
+            Namesti aplikacijo NovaRehab Companion in nato uvozi nastavitev.
+
+            1. Klikni povezavo za prenos:
             $url
 
-            2. Prenesi APK.
+            2. Po namestitvi v Companion odpri:
+            Uvozi nastavitev iz tablice
 
-            3. Po prenosu klikni datoteko in potrdi namestitev.
-
-            Če telefon vpraša za dovoljenje namestitve iz tega vira, dovoli.
+            3. Prilepi ta zapis:
+            ${COMPANION_CONFIG_PREFIX}$configJson
         """.trimIndent()
 
         val intent = Intent(Intent.ACTION_SEND).apply {
@@ -1271,7 +1282,7 @@ class SettingsActivity : AppCompatActivity() {
             putExtra(Intent.EXTRA_TEXT, message)
         }
 
-        startActivity(Intent.createChooser(intent, "Pošlji povezavo"))
+        startActivity(Intent.createChooser(intent, "Pošlji nastavitev"))
     }
 
     private fun buildCompanionApkUrl(contactId: String): String? {
@@ -1298,18 +1309,18 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun styleSettingsUi() {
-        applyDarkSettingsStyle(binding.root)
+        SettingsUiStyler.apply(binding.root, resources.displayMetrics.density)
     }
 
     private fun applyDarkSettingsStyle(view: View) {
-        styleViewTree(view)
+        SettingsUiStyler.apply(view, resources.displayMetrics.density)
     }
 
     private fun styleViewTree(view: View) {
         when (view) {
             is EditText -> styleEditText(view)
             is Spinner -> styleSpinner(view)
-            is Switch -> view.setTextColor(0xFFFFFFFF.toInt())
+            is Switch -> SettingsUiStyler.styleSwitch(view)
             is TextView -> styleTextView(view)
         }
 
@@ -1321,43 +1332,15 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun styleEditText(editText: EditText) {
-        editText.setTextColor(0xFFFFFFFF.toInt())
-        editText.setHintTextColor(0xFFD0D8E8.toInt())
-        editText.setLinkTextColor(0xFFFFFFFF.toInt())
-        editText.setBackgroundResource(com.novarehab.R.drawable.bg_settings_input)
-        editText.setPadding(dp(12), dp(10), dp(12), dp(10))
+        SettingsUiStyler.styleEditText(editText, resources.displayMetrics.density)
     }
 
     private fun styleTextView(textView: TextView) {
-        if (textView is Button || textView is Switch || textView is EditText) return
-
-        val red = Color.red(textView.currentTextColor)
-        val green = Color.green(textView.currentTextColor)
-        val blue = Color.blue(textView.currentTextColor)
-        val brightness = (red + green + blue) / 3
-
-        if (brightness < 150) {
-            textView.setTextColor(0xFFFFFFFF.toInt())
-        }
+        SettingsUiStyler.styleTextView(textView)
     }
 
     private fun styleAlertDialog(dialog: AlertDialog) {
-        dialog.window?.setBackgroundDrawable(ColorDrawable(0xFF1A1A2E.toInt()))
-        dialog.findViewById<TextView>(android.R.id.message)?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.findViewById<TextView>(resources.getIdentifier("alertTitle", "id", "android"))?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.listView?.apply {
-            setBackgroundColor(0xFF1A1A2E.toInt())
-            divider = ColorDrawable(0xFF333355.toInt())
-            dividerHeight = 1
-            post {
-                for (index in 0 until childCount) {
-                    (getChildAt(index) as? TextView)?.setTextColor(0xFFFFFFFF.toInt())
-                }
-            }
-        }
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xFFFFFFFF.toInt())
-        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(0xFFFFFFFF.toInt())
+        SettingsUiStyler.styleDialog(dialog)
     }
 
     private fun restoreSettingsScrollPosition() {
@@ -1386,7 +1369,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun refreshSpeechDiagnostics() {
         if (!::tvSpeechDiagnostics.isInitialized) return
         tvSpeechDiagnostics.text = buildString {
-            appendLine("Povprečni zamik govora: ${prefs.getSpeechAverageDelayMs()} ms")
+            appendLine("PovpreÄŤni zamik govora: ${prefs.getSpeechAverageDelayMs()} ms")
             appendLine("Zadetki cache: ${prefs.getSpeechCacheHitRatePercent()} %")
             appendLine("Zadnji vir: ${prefs.getLastSpeechSource()}")
             append("Velikost cache: ${formatSize(SpeechCacheManager(this@SettingsActivity).cacheSize())}")
@@ -1399,7 +1382,7 @@ class SettingsActivity : AppCompatActivity() {
             .setItems(arrayOf("Shrani ZIP", "Deli ZIP")) { _, which ->
                 if (which == 0) openConfigExportPicker() else shareConfigZip()
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("PrekliÄŤi", null)
             .create()
         dialog.show()
         styleAlertDialog(dialog)
@@ -1452,7 +1435,7 @@ class SettingsActivity : AppCompatActivity() {
         runCatching {
             val preview = configTransferManager.inspectImportBundle(uri)
             val summary = buildString {
-                appendLine("Število datotek: ${preview.entryCount}")
+                appendLine("Ĺ tevilo datotek: ${preview.entryCount}")
                 appendLine("Ikone: ${if (preview.hasIcons) "DA" else "NE"}")
                 appendLine("Kontakti: ${if (preview.hasContacts) "DA" else "NE"}")
                 appendLine("Statistika: ${if (preview.hasStatistics) "DA" else "NE"}")
@@ -1471,12 +1454,12 @@ class SettingsActivity : AppCompatActivity() {
                     }
                     performImport(uri, mode)
                 }
-                .setNegativeButton("Prekliči", null)
+                .setNegativeButton("PrekliÄŤi", null)
                 .create()
             dialog.show()
             styleAlertDialog(dialog)
         }.onFailure {
-            Toast.makeText(this, it.localizedMessage ?: "Uvozne datoteke ni bilo mogoče pregledati.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, it.localizedMessage ?: "Uvozne datoteke ni bilo mogoÄŤe pregledati.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1547,7 +1530,7 @@ class SettingsActivity : AppCompatActivity() {
                 input.readBytes().toString(Charsets.UTF_8)
             }.orEmpty()
         } catch (_: Exception) {
-            Toast.makeText(this, "API datoteke ni bilo mogoče prebrati.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "API datoteke ni bilo mogoÄŤe prebrati.", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -1650,7 +1633,7 @@ class SettingsActivity : AppCompatActivity() {
                     refreshConfigTransferInfo()
                     Toast.makeText(
                         this,
-                        "Izvoz nastavitev je končan (${formatSize(it)}).",
+                        "Izvoz nastavitev je konÄŤan (${formatSize(it)}).",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -1666,7 +1649,7 @@ class SettingsActivity : AppCompatActivity() {
                 .onSuccess {
                     Toast.makeText(
                         this,
-                        "Izvoz statistike je končan (${formatSize(it)}).",
+                        "Izvoz statistike je konÄŤan (${formatSize(it)}).",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -1806,8 +1789,8 @@ class SettingsActivity : AppCompatActivity() {
             binding.etContact6Phone
         )
 
-        val defaultNames = listOf("Žana", "Dedek", "Inna", "Julija", "Kuma", "Dušan")
-        val emojis = listOf("🙂", "🙂", "🙂", "🙂", "🙂", "🙂")
+        val defaultNames = listOf("Ĺ˝ana", "Dedek", "Inna", "Julija", "Kuma", "DuĹˇan")
+        val emojis = listOf("đź™‚", "đź™‚", "đź™‚", "đź™‚", "đź™‚", "đź™‚")
         val contacts = mutableListOf<Contact>()
 
         nameFields.forEachIndexed { index, field ->
@@ -1818,7 +1801,7 @@ class SettingsActivity : AppCompatActivity() {
             prefs.saveContactIncomingCallEnabled(index, contactIncomingSwitches.getOrNull(index)?.isChecked ?: true)
             prefs.saveContactOutgoingCallEnabled(index, contactOutgoingSwitches.getOrNull(index)?.isChecked ?: true)
 
-            contacts.add(Contact(name, phone, emojis.getOrElse(index) { "🙂" }, lang))
+            contacts.add(Contact(name, phone, emojis.getOrElse(index) { "đź™‚" }, lang))
         }
 
         prefs.saveContacts(contacts)
@@ -1831,7 +1814,10 @@ class SettingsActivity : AppCompatActivity() {
 
     private data class CompanionShareContact(
         val contactId: String,
-        val displayName: String
+        val displayName: String,
+        val preferredLanguage: String,
+        val roomId: String,
+        val patientName: String
     )
 
     private data class ImportedApiConfig(
@@ -1839,4 +1825,10 @@ class SettingsActivity : AppCompatActivity() {
         val token: String
     )
 }
+
+
+
+
+
+
 
