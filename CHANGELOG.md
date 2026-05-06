@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-05-06 - v1.0.6 (versionCode 6)
+
+Changed modules:
+- `speech`
+- `settings`
+- `core/storage`
+- `release`
+
+Fixed / added:
+- added hybrid OpenAI/local speech response modes with immediate fallback
+- added reusable SpeechCacheManager and background preload of common phrases
+- added advanced speech settings for provider, mode, style, model and cache cleanup
+- added speech diagnostics for average delay, cache hit rate and last source
+- bumped release version metadata for the speech responsiveness update
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- some older settings labels in SettingsActivity still contain legacy encoded text and can be cleaned separately
+
 ## 2026-05-06 - v1.0.5 (versionCode 5)
 
 Changed modules:

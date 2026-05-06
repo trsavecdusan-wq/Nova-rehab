@@ -312,6 +312,129 @@ class PrefsManager(context: Context) {
 
     fun saveLastConfigImportAt(timestamp: Long) =
         prefs.edit().putLong("config_import_last_at", timestamp).apply()
+
+    fun getSpeechProviderMode(): String =
+        prefs.getString("speech_provider_mode", "hybrid_auto") ?: "hybrid_auto"
+
+    fun saveSpeechProviderMode(mode: String) =
+        prefs.edit().putString("speech_provider_mode", mode.ifBlank { "hybrid_auto" }).apply()
+
+    fun getSpeechResponseMode(): String =
+        prefs.getString("speech_response_mode", "hybrid_auto") ?: "hybrid_auto"
+
+    fun saveSpeechResponseMode(mode: String) =
+        prefs.edit().putString("speech_response_mode", mode.ifBlank { "hybrid_auto" }).apply()
+
+    fun isOpenAiTtsEnabled(): Boolean =
+        prefs.getBoolean("speech_openai_enabled", true)
+
+    fun saveOpenAiTtsEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("speech_openai_enabled", enabled).apply()
+
+    fun isLocalTtsFallbackEnabled(): Boolean =
+        prefs.getBoolean("speech_local_fallback_enabled", true)
+
+    fun saveLocalTtsFallbackEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("speech_local_fallback_enabled", enabled).apply()
+
+    fun getTtsModel(): String =
+        prefs.getString("speech_tts_model", "gpt-4o-mini-tts") ?: "gpt-4o-mini-tts"
+
+    fun saveTtsModel(model: String) =
+        prefs.edit().putString("speech_tts_model", model.ifBlank { "gpt-4o-mini-tts" }).apply()
+
+    fun getTtsResponseFormat(): String =
+        prefs.getString("speech_tts_response_format", "mp3") ?: "mp3"
+
+    fun saveTtsResponseFormat(format: String) =
+        prefs.edit().putString("speech_tts_response_format", format.ifBlank { "mp3" }).apply()
+
+    fun getSpeechStylePreset(): String =
+        prefs.getString("speech_style_preset", "rehabilitation_assistant") ?: "rehabilitation_assistant"
+
+    fun saveSpeechStylePreset(preset: String) =
+        prefs.edit().putString("speech_style_preset", preset.ifBlank { "rehabilitation_assistant" }).apply()
+
+    fun getSpeechPauseBetweenWordsMs(): Int =
+        prefs.getInt("speech_pause_words_ms", 0).coerceIn(0, 400)
+
+    fun saveSpeechPauseBetweenWordsMs(value: Int) =
+        prefs.edit().putInt("speech_pause_words_ms", value.coerceIn(0, 400)).apply()
+
+    fun getSpeechPauseBetweenSentencesMs(): Int =
+        prefs.getInt("speech_pause_sentences_ms", 120).coerceIn(0, 1200)
+
+    fun saveSpeechPauseBetweenSentencesMs(value: Int) =
+        prefs.edit().putInt("speech_pause_sentences_ms", value.coerceIn(0, 1200)).apply()
+
+    fun getSpeechPronunciationClarity(): Int =
+        prefs.getInt("speech_pronunciation_clarity", 80).coerceIn(0, 100)
+
+    fun saveSpeechPronunciationClarity(value: Int) =
+        prefs.edit().putInt("speech_pronunciation_clarity", value.coerceIn(0, 100)).apply()
+
+    fun getSpeechEmotionalWarmth(): Int =
+        prefs.getInt("speech_emotional_warmth", 70).coerceIn(0, 100)
+
+    fun saveSpeechEmotionalWarmth(value: Int) =
+        prefs.edit().putInt("speech_emotional_warmth", value.coerceIn(0, 100)).apply()
+
+    fun getSpeechCalmness(): Int =
+        prefs.getInt("speech_calmness", 80).coerceIn(0, 100)
+
+    fun saveSpeechCalmness(value: Int) =
+        prefs.edit().putInt("speech_calmness", value.coerceIn(0, 100)).apply()
+
+    fun isSpeechRehabilitationModeEnabled(): Boolean =
+        prefs.getBoolean("speech_rehabilitation_mode", true)
+
+    fun saveSpeechRehabilitationModeEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("speech_rehabilitation_mode", enabled).apply()
+
+    fun isSpeechShortSentenceModeEnabled(): Boolean =
+        prefs.getBoolean("speech_short_sentence_mode", true)
+
+    fun saveSpeechShortSentenceModeEnabled(enabled: Boolean) =
+        prefs.edit().putBoolean("speech_short_sentence_mode", enabled).apply()
+
+    fun getLastSpeechSource(): String =
+        prefs.getString("speech_last_source", "ni podatka") ?: "ni podatka"
+
+    fun getSpeechAverageDelayMs(): Long =
+        prefs.getLong("speech_avg_delay_ms", 0L)
+
+    fun getSpeechRequestCount(): Int =
+        prefs.getInt("speech_request_count", 0)
+
+    fun getSpeechCacheHitCount(): Int =
+        prefs.getInt("speech_cache_hit_count", 0)
+
+    fun getSpeechFailureCount(): Int =
+        prefs.getInt("speech_failure_count", 0)
+
+    fun getSpeechCacheHitRatePercent(): Int {
+        val requests = getSpeechRequestCount()
+        if (requests <= 0) return 0
+        return ((getSpeechCacheHitCount() * 100.0) / requests).toInt().coerceIn(0, 100)
+    }
+
+    fun recordSpeechDiagnostic(delayMs: Long, source: String, cacheHit: Boolean, success: Boolean) {
+        val oldCount = getSpeechRequestCount()
+        val newCount = oldCount + 1
+        val currentAverage = getSpeechAverageDelayMs()
+        val newAverage = if (oldCount <= 0) delayMs else ((currentAverage * oldCount) + delayMs) / newCount
+        val currentHits = getSpeechCacheHitCount()
+        val currentFailures = getSpeechFailureCount()
+
+        prefs.edit()
+            .putInt("speech_request_count", newCount)
+            .putLong("speech_avg_delay_ms", newAverage)
+            .putString("speech_last_source", source)
+            .putInt("speech_cache_hit_count", if (cacheHit) currentHits + 1 else currentHits)
+            .putInt("speech_failure_count", if (success) currentFailures else currentFailures + 1)
+            .apply()
+    }
+
     private fun defaultContacts(): List<Contact> = listOf(
         Contact("Mama", "", "", "sl"),
         Contact("Ata", "", "", "sl"),

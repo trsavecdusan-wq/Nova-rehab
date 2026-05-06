@@ -50,6 +50,10 @@ class NovaRehabPaths(context: Context) {
         File(rootDir, "music").also { it.mkdirs() }
     }
 
+    val speechCacheDir: File by lazy {
+        File(rootDir, "speech_cache").also { it.mkdirs() }
+    }
+
     val updatesDir: File by lazy {
         File(rootDir, "updates").also { it.mkdirs() }
     }

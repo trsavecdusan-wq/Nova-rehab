@@ -133,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         incomingCallMonitor = IncomingCallMonitor(prefs, signalingBaseUrl = SIGNALING_BASE_URL)
         remoteCallStateStore = RemoteCallStateStore(SIGNALING_BASE_URL)
         activeLang = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
+        ttsManager.preloadCommonPhrasesAsync(activeLang)
 
         handleUpdateIntent(intent)
 

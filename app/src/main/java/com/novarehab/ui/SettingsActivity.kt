@@ -34,6 +34,7 @@ import com.novarehab.utils.ConfigImportMode
 import com.novarehab.utils.Contact
 import com.novarehab.utils.PrefsManager
 import com.novarehab.utils.RadioStation
+import com.novarehab.utils.SpeechCacheManager
 import com.novarehab.utils.SettingsBackupManager
 import com.novarehab.utils.UpdateManager
 import java.io.File
@@ -68,12 +69,20 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var spinnerSpeechRate: Spinner
     private lateinit var spinnerSpeechPitch: Spinner
     private lateinit var spinnerSpeechVolume: Spinner
+    private lateinit var spinnerSpeechProviderMode: Spinner
+    private lateinit var spinnerSpeechResponseMode: Spinner
+    private lateinit var spinnerSpeechStylePreset: Spinner
+    private lateinit var spinnerSpeechResponseFormat: Spinner
     private lateinit var spinnerPatientLang1: Spinner
     private lateinit var spinnerPatientLang2: Spinner
     private lateinit var spinnerCommIconsPerPage: Spinner
     private lateinit var spinnerCommSubmenuTimeout: Spinner
     private lateinit var switchAutoLanguage: Switch
     private lateinit var switchAutoSortIcons: Switch
+    private lateinit var switchOpenAiTtsEnabled: Switch
+    private lateinit var switchLocalFallbackEnabled: Switch
+    private lateinit var switchSpeechRehabilitationMode: Switch
+    private lateinit var switchSpeechShortSentenceMode: Switch
     private lateinit var btnCheckUpdateNow: Button
     private lateinit var btnRestorePreviousVersion: Button
     private lateinit var btnShareCompanionApp: Button
@@ -82,7 +91,17 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnExportStats: Button
     private lateinit var btnCreateBackup: Button
     private lateinit var btnRestoreBackupNow: Button
+    private lateinit var btnTestHybridTts: Button
+    private lateinit var btnClearSpeechCache: Button
     private lateinit var tvConfigTransferInfo: TextView
+    private lateinit var tvSpeechDiagnostics: TextView
+    private lateinit var etSpeechModel: EditText
+    private lateinit var etSpeechTestPhrase: EditText
+    private lateinit var etSpeechPauseWords: EditText
+    private lateinit var etSpeechPauseSentences: EditText
+    private lateinit var etSpeechClarity: EditText
+    private lateinit var etSpeechWarmth: EditText
+    private lateinit var etSpeechCalmness: EditText
 
     private fun companionContacts(): List<CompanionShareContact> {
         val contacts = prefs.getContacts()
@@ -228,6 +247,81 @@ class SettingsActivity : AppCompatActivity() {
     private fun speechPitchOptions() = arrayOf("0.8x", "0.9x", "1.0x", "1.1x", "1.2x")
 
     private fun speechVolumeOptions() = arrayOf("70 %", "80 %", "90 %", "100 %")
+
+    private fun speechProviderOptions() = arrayOf("Hybrid auto", "OpenAI TTS", "Local Android TTS")
+
+    private fun speechResponseModeOptions() = arrayOf(
+        "HYBRID AUTO",
+        "FAST LOCAL FIRST",
+        "OPENAI IF CACHED",
+        "OPENAI PREFERRED"
+    )
+
+    private fun speechStylePresetOptions() = arrayOf(
+        "Rehabilitation assistant",
+        "Calm",
+        "Warm",
+        "Slow and clear",
+        "Warm caregiver",
+        "Very simple speech",
+        "Ukrainian clear",
+        "Slovenian clear"
+    )
+
+    private fun speechResponseFormatOptions() = arrayOf("mp3", "wav")
+
+    private fun speechProviderValue(position: Int): String = when (position) {
+        1 -> "openai_tts"
+        2 -> "local_android_tts"
+        else -> "hybrid_auto"
+    }
+
+    private fun speechProviderIndex(value: String): Int = when (value) {
+        "openai_tts" -> 1
+        "local_android_tts" -> 2
+        else -> 0
+    }
+
+    private fun speechResponseModeValue(position: Int): String = when (position) {
+        1 -> "fast_local_first"
+        2 -> "openai_if_cached"
+        3 -> "openai_preferred"
+        else -> "hybrid_auto"
+    }
+
+    private fun speechResponseModeIndex(value: String): Int = when (value) {
+        "fast_local_first" -> 1
+        "openai_if_cached" -> 2
+        "openai_preferred" -> 3
+        else -> 0
+    }
+
+    private fun speechStylePresetValue(position: Int): String = when (position) {
+        1 -> "calm"
+        2 -> "warm"
+        3 -> "slow_clear"
+        4 -> "warm_caregiver"
+        5 -> "very_simple"
+        6 -> "ukrainian_clear"
+        7 -> "slovenian_clear"
+        else -> "rehabilitation_assistant"
+    }
+
+    private fun speechStylePresetIndex(value: String): Int = when (value) {
+        "calm" -> 1
+        "warm" -> 2
+        "slow_clear" -> 3
+        "warm_caregiver" -> 4
+        "very_simple" -> 5
+        "ukrainian_clear" -> 6
+        "slovenian_clear" -> 7
+        else -> 0
+    }
+
+    private fun speechResponseFormatIndex(value: String): Int = when (value.lowercase()) {
+        "wav" -> 1
+        else -> 0
+    }
 
     private fun speechRateValue(position: Int): Float = when (position) {
         0 -> 0.80f
@@ -433,6 +527,168 @@ class SettingsActivity : AppCompatActivity() {
         }
         panel.addView(spinnerSpeechVolume)
 
+        panel.addView(TextView(this).apply {
+            text = "Ponudnik govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechProviderMode = Spinner(this).apply {
+            adapter = themedSpinnerAdapter(*speechProviderOptions())
+            styleSpinner(this)
+        }
+        panel.addView(spinnerSpeechProviderMode)
+
+        panel.addView(TextView(this).apply {
+            text = "Način odziva govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechResponseMode = Spinner(this).apply {
+            adapter = themedSpinnerAdapter(*speechResponseModeOptions())
+            styleSpinner(this)
+        }
+        panel.addView(spinnerSpeechResponseMode)
+
+        panel.addView(TextView(this).apply {
+            text = "Slog OpenAI govora:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechStylePreset = Spinner(this).apply {
+            adapter = themedSpinnerAdapter(*speechStylePresetOptions())
+            styleSpinner(this)
+        }
+        panel.addView(spinnerSpeechStylePreset)
+
+        panel.addView(TextView(this).apply {
+            text = "OpenAI model:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechModel = EditText(this).apply {
+            hint = "gpt-4o-mini-tts"
+            setTextColor(0xFFFFFFFF.toInt())
+            setHintTextColor(0xFFD0D8E8.toInt())
+        }
+        panel.addView(etSpeechModel)
+
+        panel.addView(TextView(this).apply {
+            text = "Format zvoka:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        spinnerSpeechResponseFormat = Spinner(this).apply {
+            adapter = themedSpinnerAdapter(*speechResponseFormatOptions())
+            styleSpinner(this)
+        }
+        panel.addView(spinnerSpeechResponseFormat)
+
+        switchOpenAiTtsEnabled = Switch(this).apply {
+            text = "OpenAI TTS vklopljen"
+            setTextColor(0xFFFFFFFF.toInt())
+        }
+        panel.addView(switchOpenAiTtsEnabled)
+
+        switchLocalFallbackEnabled = Switch(this).apply {
+            text = "Lokalni fallback vklopljen"
+            setTextColor(0xFFFFFFFF.toInt())
+        }
+        panel.addView(switchLocalFallbackEnabled)
+
+        switchSpeechRehabilitationMode = Switch(this).apply {
+            text = "Rehabilitacijski način govora"
+            setTextColor(0xFFFFFFFF.toInt())
+        }
+        panel.addView(switchSpeechRehabilitationMode)
+
+        switchSpeechShortSentenceMode = Switch(this).apply {
+            text = "Kratki stavki"
+            setTextColor(0xFFFFFFFF.toInt())
+        }
+        panel.addView(switchSpeechShortSentenceMode)
+
+        panel.addView(TextView(this).apply {
+            text = "Pavza med besedami (ms):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechPauseWords = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        panel.addView(etSpeechPauseWords)
+
+        panel.addView(TextView(this).apply {
+            text = "Pavza med stavki (ms):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechPauseSentences = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        panel.addView(etSpeechPauseSentences)
+
+        panel.addView(TextView(this).apply {
+            text = "Jasnost izgovorjave (0-100):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechClarity = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        panel.addView(etSpeechClarity)
+
+        panel.addView(TextView(this).apply {
+            text = "Toplina govora (0-100):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechWarmth = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        panel.addView(etSpeechWarmth)
+
+        panel.addView(TextView(this).apply {
+            text = "Mirnost govora (0-100):"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechCalmness = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        panel.addView(etSpeechCalmness)
+
+        panel.addView(TextView(this).apply {
+            text = "Testni stavek:"
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 12f
+        })
+        etSpeechTestPhrase = EditText(this).apply {
+            setText("Želim vodo.")
+            setTextColor(0xFFFFFFFF.toInt())
+            setHintTextColor(0xFFD0D8E8.toInt())
+        }
+        panel.addView(etSpeechTestPhrase)
+
+        btnTestHybridTts = Button(this).apply {
+            text = "TEST HYBRID GOVORA"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF7A3E00.toInt())
+        }
+        panel.addView(btnTestHybridTts)
+
+        btnClearSpeechCache = Button(this).apply {
+            text = "POČISTI GOVORNI CACHE"
+            setTextColor(0xFFFFFFFF.toInt())
+            setBackgroundColor(0xFF4A1942.toInt())
+        }
+        panel.addView(btnClearSpeechCache)
+
+        tvSpeechDiagnostics = TextView(this).apply {
+            setTextColor(0xFFCCCCCC.toInt())
+            textSize = 12f
+        }
+        panel.addView(tvSpeechDiagnostics)
+
         val insertIndex = 6.coerceAtMost(rootLayout.childCount)
         rootLayout.addView(panel, insertIndex)
     }
@@ -603,6 +859,20 @@ class SettingsActivity : AppCompatActivity() {
         spinnerSpeechRate.setSelection(speechRateIndex(prefs.getTtsSpeed()))
         spinnerSpeechPitch.setSelection(speechPitchIndex(prefs.getTtsPitch()))
         spinnerSpeechVolume.setSelection(speechVolumeIndex(prefs.getTtsVolume()))
+        spinnerSpeechProviderMode.setSelection(speechProviderIndex(prefs.getSpeechProviderMode()))
+        spinnerSpeechResponseMode.setSelection(speechResponseModeIndex(prefs.getSpeechResponseMode()))
+        spinnerSpeechStylePreset.setSelection(speechStylePresetIndex(prefs.getSpeechStylePreset()))
+        spinnerSpeechResponseFormat.setSelection(speechResponseFormatIndex(prefs.getTtsResponseFormat()))
+        switchOpenAiTtsEnabled.isChecked = prefs.isOpenAiTtsEnabled()
+        switchLocalFallbackEnabled.isChecked = prefs.isLocalTtsFallbackEnabled()
+        switchSpeechRehabilitationMode.isChecked = prefs.isSpeechRehabilitationModeEnabled()
+        switchSpeechShortSentenceMode.isChecked = prefs.isSpeechShortSentenceModeEnabled()
+        etSpeechModel.setText(prefs.getTtsModel())
+        etSpeechPauseWords.setText(prefs.getSpeechPauseBetweenWordsMs().toString())
+        etSpeechPauseSentences.setText(prefs.getSpeechPauseBetweenSentencesMs().toString())
+        etSpeechClarity.setText(prefs.getSpeechPronunciationClarity().toString())
+        etSpeechWarmth.setText(prefs.getSpeechEmotionalWarmth().toString())
+        etSpeechCalmness.setText(prefs.getSpeechCalmness().toString())
         spinnerPatientLang1.setSelection(langIndex(prefs.getPatientLanguage1()))
         spinnerPatientLang2.setSelection(langIndex(prefs.getPatientLanguage2()))
         switchAutoLanguage.isChecked = prefs.isAutoLanguageEnabled()
@@ -611,6 +881,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etServerPort.setText(prefs.getServerPort())
         binding.etNewPin.setText("")
         binding.etKioskMinutes.setText(prefs.getKioskReturnMinutes().toString())
+        refreshSpeechDiagnostics()
         refreshConfigTransferInfo()
     }
 
@@ -815,10 +1086,11 @@ class SettingsActivity : AppCompatActivity() {
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speakAndroid(
-                "Zdravo, to je test lokalnega govora.",
+                etSpeechTestPhrase.text.toString().trim().ifBlank { "Želim vodo." },
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition)
             ) {
                 tts.destroy()
+                refreshSpeechDiagnostics()
             }
             Toast.makeText(this, "Test lokalnega govora.", Toast.LENGTH_SHORT).show()
         }
@@ -837,15 +1109,40 @@ class SettingsActivity : AppCompatActivity() {
             val voice = binding.spinnerTtsVoice.selectedItem.toString()
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
-            tts.speak(
-                "Zdravo, to je test API govora aplikacije Nova Rehab.",
+            tts.speakOpenAiOnly(
+                etSpeechTestPhrase.text.toString().trim().ifBlank { "Želim vodo." },
                 langCode(spinnerDefaultSpeechLang.selectedItemPosition),
                 key,
                 voice,
                 baseUrl
             ) {
                 tts.destroy()
+                refreshSpeechDiagnostics()
             }
+        }
+
+        btnTestHybridTts.setOnClickListener {
+            saveApiFields()
+            saveSpeechSettings()
+            val tts = com.novarehab.utils.OpenAiTtsManager(this)
+            val phrase = etSpeechTestPhrase.text.toString().trim().ifBlank { "Želim vodo." }
+            tts.speak(
+                phrase,
+                langCode(spinnerDefaultSpeechLang.selectedItemPosition),
+                apiConfig.getApiToken(),
+                binding.spinnerTtsVoice.selectedItem.toString(),
+                apiConfig.getApiBaseUrl()
+            ) {
+                tts.destroy()
+                refreshSpeechDiagnostics()
+            }
+        }
+
+        btnClearSpeechCache.setOnClickListener {
+            val cacheManager = SpeechCacheManager(this)
+            cacheManager.clearCache()
+            refreshSpeechDiagnostics()
+            Toast.makeText(this, "Govorni cache je počiščen.", Toast.LENGTH_SHORT).show()
         }
 
         binding.btnTestApi.setOnClickListener {
@@ -1041,6 +1338,16 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun refreshSpeechDiagnostics() {
+        if (!::tvSpeechDiagnostics.isInitialized) return
+        tvSpeechDiagnostics.text = buildString {
+            appendLine("Povprečni zamik govora: ${prefs.getSpeechAverageDelayMs()} ms")
+            appendLine("Zadetki cache: ${prefs.getSpeechCacheHitRatePercent()} %")
+            appendLine("Zadnji vir: ${prefs.getLastSpeechSource()}")
+            append("Velikost cache: ${formatSize(SpeechCacheManager(this@SettingsActivity).cacheSize())}")
+        }
+    }
+
     private fun showExportSettingsOptions() {
         val dialog = AlertDialog.Builder(this)
             .setTitle("Izvozi nastavitve")
@@ -1160,6 +1467,20 @@ class SettingsActivity : AppCompatActivity() {
         prefs.saveTtsSpeed(speechRateValue(spinnerSpeechRate.selectedItemPosition))
         prefs.saveTtsPitch(speechPitchValue(spinnerSpeechPitch.selectedItemPosition))
         prefs.saveTtsVolume(speechVolumeValue(spinnerSpeechVolume.selectedItemPosition))
+        prefs.saveSpeechProviderMode(speechProviderValue(spinnerSpeechProviderMode.selectedItemPosition))
+        prefs.saveSpeechResponseMode(speechResponseModeValue(spinnerSpeechResponseMode.selectedItemPosition))
+        prefs.saveSpeechStylePreset(speechStylePresetValue(spinnerSpeechStylePreset.selectedItemPosition))
+        prefs.saveTtsResponseFormat(spinnerSpeechResponseFormat.selectedItem.toString())
+        prefs.saveTtsModel(etSpeechModel.text.toString().trim().ifBlank { "gpt-4o-mini-tts" })
+        prefs.saveOpenAiTtsEnabled(switchOpenAiTtsEnabled.isChecked)
+        prefs.saveLocalTtsFallbackEnabled(switchLocalFallbackEnabled.isChecked)
+        prefs.saveSpeechRehabilitationModeEnabled(switchSpeechRehabilitationMode.isChecked)
+        prefs.saveSpeechShortSentenceModeEnabled(switchSpeechShortSentenceMode.isChecked)
+        prefs.saveSpeechPauseBetweenWordsMs(etSpeechPauseWords.text.toString().trim().toIntOrNull() ?: 0)
+        prefs.saveSpeechPauseBetweenSentencesMs(etSpeechPauseSentences.text.toString().trim().toIntOrNull() ?: 120)
+        prefs.saveSpeechPronunciationClarity(etSpeechClarity.text.toString().trim().toIntOrNull() ?: 80)
+        prefs.saveSpeechEmotionalWarmth(etSpeechWarmth.text.toString().trim().toIntOrNull() ?: 70)
+        prefs.saveSpeechCalmness(etSpeechCalmness.text.toString().trim().toIntOrNull() ?: 80)
     }
 
     private fun updateApiStatus(forced: String? = null) {
