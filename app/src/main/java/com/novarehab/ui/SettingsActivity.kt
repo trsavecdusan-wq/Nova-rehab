@@ -1912,7 +1912,7 @@ class SettingsActivity : AppCompatActivity() {
         nameFields.forEachIndexed { index, field ->
             val name = field.text.toString().trim().ifEmpty { defaultNames[index] }
             val phone = phoneFields[index].text.toString().trim()
-            val lang = if (getPickerSelection(contactLangButtons.getOrNull(index) ?: continue) == 1) "uk" else "sl"
+            val lang = if (getPickerSelection(contactLangButtons.getOrNull(index) ?: Button(this)) == 1) "uk" else "sl"
 
             prefs.saveContactIncomingCallEnabled(index, contactIncomingSwitches.getOrNull(index)?.isChecked ?: true)
             prefs.saveContactOutgoingCallEnabled(index, contactOutgoingSwitches.getOrNull(index)?.isChecked ?: true)
