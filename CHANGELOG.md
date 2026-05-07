@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-05-07 - v1.0.13 (versionCode 13)
+
+Changed modules:
+- main-ui
+- release
+
+Fixed / added:
+- rebuilt tablet main screen top row as stable ConstraintLayout zones for red minus, radio module, patient module and green plus
+- stabilized patient info module with centered flag, patient name, speed number, day, date and time without km/h text
+- rebuilt bottom navigation bar as four equal-width buttons with fixed readable labels
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- this patch intentionally avoids changes outside main screen layout architecture
+
 ## 2026-05-07 - v1.0.12 (versionCode 12)
 
 Changed modules:
