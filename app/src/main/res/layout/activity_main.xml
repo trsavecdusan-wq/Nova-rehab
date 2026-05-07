@@ -17,83 +17,99 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="2.6"
-            android:orientation="horizontal"
+            android:layout_marginBottom="5dp"
             android:gravity="center_vertical"
-            android:layout_marginBottom="5dp">
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnVolDown"
+                android:layout_width="56dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="#B71C1C"
+                android:gravity="center"
+                android:text="-"
+                android:textColor="#ffffff"
+                android:textSize="28sp"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1.45"
-                android:orientation="vertical"
+                android:layout_weight="1.1"
+                android:layout_marginEnd="6dp"
                 android:background="#16213e"
-                android:padding="6dp"
-                android:layout_marginEnd="6dp">
+                android:orientation="vertical"
+                android:padding="6dp">
 
                 <ImageButton
                     android:id="@+id/btnRadioToggle"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
-                    android:visibility="gone"
+                    android:contentDescription="Radio"
                     android:src="@drawable/ic_radio"
-                    android:contentDescription="Radio"/>
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="3dp">
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
+
                     <Button
                         android:id="@+id/btnRadio1"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="P1"
-                        android:textSize="9sp"
                         android:layout_marginEnd="2dp"
                         android:backgroundTint="#0f3460"
+                        android:padding="2dp"
+                        android:text="P1"
                         android:textColor="#ffffff"
-                        android:padding="2dp"/>
+                        android:textSize="9sp" />
+
                     <Button
                         android:id="@+id/btnRadio2"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="P2"
-                        android:textSize="9sp"
                         android:backgroundTint="#0f3460"
+                        android:padding="2dp"
+                        android:text="P2"
                         android:textColor="#ffffff"
-                        android:padding="2dp"/>
+                        android:textSize="9sp" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="3dp">
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
+
                     <Button
                         android:id="@+id/btnRadio3"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="P3"
-                        android:textSize="9sp"
                         android:layout_marginEnd="2dp"
                         android:backgroundTint="#0f3460"
+                        android:padding="2dp"
+                        android:text="P3"
                         android:textColor="#ffffff"
-                        android:padding="2dp"/>
+                        android:textSize="9sp" />
+
                     <Button
                         android:id="@+id/btnRadio4"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="P4"
-                        android:textSize="9sp"
                         android:backgroundTint="#0f3460"
+                        android:padding="2dp"
+                        android:text="P4"
                         android:textColor="#ffffff"
-                        android:padding="2dp"/>
+                        android:textSize="9sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -101,69 +117,81 @@
                     android:layout_height="0dp"
                     android:layout_weight="1"
                     android:orientation="horizontal">
+
                     <Button
                         android:id="@+id/btnRadio5"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="P5"
-                        android:textSize="9sp"
                         android:layout_marginEnd="2dp"
                         android:backgroundTint="#0f3460"
+                        android:padding="2dp"
+                        android:text="P5"
                         android:textColor="#ffffff"
-                        android:padding="2dp"/>
+                        android:textSize="9sp" />
+
                     <Button
                         android:id="@+id/btnRadio6"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="P6"
-                        android:textSize="9sp"
                         android:backgroundTint="#0f3460"
+                        android:padding="2dp"
+                        android:text="P6"
                         android:textColor="#ffffff"
-                        android:padding="2dp"/>
+                        android:textSize="9sp" />
                 </LinearLayout>
             </LinearLayout>
-
-            <Button
-                android:id="@+id/btnVolDown"
-                android:layout_width="64dp"
-                android:layout_height="132dp"
-                android:layout_marginEnd="6dp"
-                android:backgroundTint="#B71C1C"
-                android:text="−"
-                android:textColor="#ffffff"
-                android:textSize="30sp"
-                android:textStyle="bold" />
 
             <LinearLayout
                 android:id="@+id/patientInfoCard"
                 android:layout_width="0dp"
-                android:layout_height="132dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:layout_marginEnd="6dp"
                 android:background="#16213e"
-                android:orientation="vertical"
                 android:gravity="center"
-                android:padding="8dp"
-                android:layout_marginEnd="6dp">
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/tvLanguageFlag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SI"
+                    android:textColor="#ffffff"
+                    android:textSize="22sp" />
 
                 <TextView
                     android:id="@+id/tvPatientName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
+                    android:layout_marginTop="4dp"
                     android:layout_marginEnd="4dp"
+                    android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:ellipsize="end"
                     android:text="Ime"
                     android:textColor="#e94560"
-                    android:textSize="20sp"
                     android:textStyle="bold"
-                    app:autoSizeTextType="uniform"
-                    app:autoSizeMinTextSize="14sp"
                     app:autoSizeMaxTextSize="20sp"
-                    app:autoSizeStepGranularity="1sp" />
+                    app:autoSizeMinTextSize="14sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform" />
+
+                <TextView
+                    android:id="@+id/tvSpeed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="0"
+                    android:textColor="#ffffff"
+                    android:textStyle="bold"
+                    app:autoSizeMaxTextSize="42sp"
+                    app:autoSizeMinTextSize="28sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform" />
 
                 <TextView
                     android:id="@+id/tvPatientDay"
@@ -191,25 +219,17 @@
                     android:textColor="#ffffff"
                     android:textSize="18sp"
                     android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvDayNight"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="🌙"
-                    android:textColor="#FFD166"
-                    android:textSize="18sp" />
             </LinearLayout>
 
             <Button
                 android:id="@+id/btnVolUp"
-                android:layout_width="64dp"
-                android:layout_height="132dp"
+                android:layout_width="56dp"
+                android:layout_height="match_parent"
                 android:backgroundTint="#1B5E20"
+                android:gravity="center"
                 android:text="+"
                 android:textColor="#ffffff"
-                android:textSize="30sp"
+                android:textSize="28sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -218,7 +238,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="3.5"
-            android:layout_marginBottom="5dp"/>
+            android:layout_marginBottom="5dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -231,47 +251,71 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="VIDEO"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#ffffff"
+                android:layout_marginEnd="4dp"
                 android:backgroundTint="#1a3a6b"
-                android:layout_marginEnd="4dp"/>
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="VIDEO"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                app:autoSizeMaxTextSize="12sp"
+                app:autoSizeMinTextSize="9sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
 
             <Button
                 android:id="@+id/btnGallery"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="GALERIJA"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#ffffff"
+                android:layout_marginEnd="4dp"
                 android:backgroundTint="#305b2e"
-                android:layout_marginEnd="4dp"/>
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="GALERIJA"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                app:autoSizeMaxTextSize="12sp"
+                app:autoSizeMinTextSize="8sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
 
             <Button
                 android:id="@+id/btnMirror"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="OGLEDALO"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#ffffff"
+                android:layout_marginEnd="4dp"
                 android:backgroundTint="#155c47"
-                android:layout_marginEnd="4dp"/>
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="OGLEDALO"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                app:autoSizeMaxTextSize="12sp"
+                app:autoSizeMinTextSize="8sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
 
             <Button
                 android:id="@+id/btnRelax"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:backgroundTint="#5a3d7a"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
                 android:text="SPROSTITEV"
-                android:textSize="11sp"
-                android:textStyle="bold"
                 android:textColor="#ffffff"
-                android:backgroundTint="#5a3d7a"/>
+                android:textStyle="bold"
+                app:autoSizeMaxTextSize="11sp"
+                app:autoSizeMinTextSize="7sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
         </LinearLayout>
 
     </LinearLayout>

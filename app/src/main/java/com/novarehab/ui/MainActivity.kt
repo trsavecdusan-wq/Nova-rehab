@@ -349,11 +349,26 @@ class MainActivity : AppCompatActivity() {
             speedGestureDetector.onTouchEvent(event)
             true
         }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            startGps()
+        }
     }
 
     private fun startGps() {
-        // Hitrost je odstranjena z glavnega zaslona.
+        try {
+            val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                locationManager.requestLocationUpdates(android.location.LocationManager.GPS_PROVIDER, 1000L, 0.5f) { location ->
+                    val kmh = (location.speed * 3.6).toInt()
+                    binding.tvSpeed.text = if (location.accuracy > 10f || !location.hasSpeed()) "0" else kmh.toString()
+                }
+            }
+        } catch (_: Exception) {
+            binding.tvSpeed.text = "0"
+        }
     }
+
     private fun showHomeAddressDialog() {
         val input = EditText(this).apply {
             hint = "npr. Dunajska cesta 1, Ljubljana"
@@ -361,7 +376,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("Nastavi domači naslov")
+            .setTitle("Nastavi domaci naslov")
             .setView(input)
             .setPositiveButton("Shrani") { _, _ ->
                 val address = input.text.toString().trim()
@@ -371,7 +386,7 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, NavigationActivity::class.java))
                 }
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("Preklici", null)
             .show()
     }
 
@@ -384,7 +399,7 @@ class MainActivity : AppCompatActivity() {
         val adapter = CommPageAdapter(
             context = this,
             items = getCommItems(),
-            pageSize = prefs.getCommIconsPerPage().coerceIn(9, 12),
+            pageSize = prefs.getCommIconsPerPage().let { if (it in setOf(6, 8, 9, 12, 15, 18)) it else 9 },
             getLang = { activeLang },
             onItemSelected = { item -> handleCommunicationItem(item) }
         )
@@ -692,15 +707,20 @@ class MainActivity : AppCompatActivity() {
         binding.tvPatientName.setSingleLine(true)
         binding.tvPatientName.maxLines = 1
 
-        binding.tvPatientName.setOnClickListener {
-            Toast.makeText(this, "Za spremembo jezika pridrzite ime pacienta.", Toast.LENGTH_SHORT).show()
+        val openLanguageHint = View.OnClickListener {
+            Toast.makeText(this, "Za spremembo jezika pridrzite zastavo ali ime pacienta.", Toast.LENGTH_SHORT).show()
         }
-
-        binding.tvPatientName.setOnLongClickListener {
+        val openLanguageDialog = View.OnLongClickListener {
             showGuestLanguageDialog()
             true
         }
+
+        binding.tvPatientName.setOnClickListener(openLanguageHint)
+        binding.tvPatientName.setOnLongClickListener(openLanguageDialog)
+        binding.tvLanguageFlag.setOnClickListener(openLanguageHint)
+        binding.tvLanguageFlag.setOnLongClickListener(openLanguageDialog)
     }
+
     private fun showGuestLanguageDialog() {
         val languages = visibleLanguageChoices()
 
@@ -717,7 +737,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("Jezik")
             .setView(wrapper)
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("Preklici", null)
             .create()
 
         languages.forEach { lang ->
@@ -792,6 +812,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateLanguageFlag() {
         val patientName = prefs.getPatientName().trim().ifBlank { "Ime" }
+        val language = languageChoice(activeLang)
+        binding.tvLanguageFlag.text = language.flag
         binding.tvPatientName.text = patientName
         binding.tvPatientName.visibility = View.VISIBLE
     }
@@ -845,7 +867,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 binding.tvPatientDate.text = dateFormat.format(now)
                 binding.tvClock.text = timeFormat.format(now)
-                binding.tvDayNight.text = if (hour in 7..18) "☀" else "🌙"
                 clockHandler.postDelayed(this, 30000L)
             }
         }

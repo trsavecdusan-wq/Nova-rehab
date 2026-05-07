@@ -412,11 +412,20 @@ object CommunicationRepository {
     }
 
     private fun normalizeMainItems(items: List<CommunicationItem>): List<CommunicationItem> {
-        return items
+        val disabledCount = items.count { !it.enabled }
+        val missingIdCount = items.count { it.id.isBlank() }
+        val missingIconCount = items.count { it.iconRes == 0 }
+        val filtered = items
             .filter { it.enabled && it.id.isNotBlank() && it.iconRes != 0 }
             .map { item -> item.copy(children = normalizeChildren(item.children)) }
             .sortedBy { it.priority }
-            .take(MAX_MAIN_ITEMS)
+
+        Log.d(
+            "NovaRehabPaging",
+            "total_main_icons=${items.size}, enabled_main_icons=${filtered.size}, hidden_icons=disabled:$disabledCount,missing_id:$missingIdCount,missing_icon:$missingIconCount"
+        )
+
+        return filtered
     }
 
     private fun normalizeChildren(items: List<CommunicationItem>): List<CommunicationItem> {

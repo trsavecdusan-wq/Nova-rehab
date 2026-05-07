@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-05-07 - v1.0.11 (versionCode 11)
+
+Changed modules:
+- `main-ui`
+- `communication`
+- `paging`
+- `release`
+
+Fixed / added:
+- fixed tablet main screen layout regression with stable top zones for radio and patient info
+- moved on-screen volume buttons to standalone left/right positions around the top modules
+- restored patient name, language flag, speed value, day, date and time without km/h label
+- fixed bottom action button labels so they stay readable on one line
+- fixed communication paging so enabled main icons are no longer cut off after the first page
+- added paging diagnostics for total icons, enabled icons, hidden reasons, page size and page count
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- this release intentionally avoids changes to settings, gallery, mirror, companion and video call flows
 ## 2026-05-07 - v1.0.10 (versionCode 10)
 
 Changed modules:
