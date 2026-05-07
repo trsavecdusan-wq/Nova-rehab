@@ -20,7 +20,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListAdapter
-import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
@@ -58,27 +57,27 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var configTransferManager: ConfigExportImportManager
     private val uiStatePrefs by lazy { getSharedPreferences("nova_ui_state", MODE_PRIVATE) }
 
-    private val contactLangSpinners = mutableListOf<Spinner>()
+    private val contactLangButtons = mutableListOf<Button>()
     private val contactImageButtons = mutableListOf<ImageButton>()
     private val contactIncomingSwitches = mutableListOf<Switch>()
     private val contactOutgoingSwitches = mutableListOf<Switch>()
 
     private var pendingImageIndex = -1
 
-    private lateinit var spinnerDefaultSpeechLang: Spinner
-    private lateinit var spinnerFallbackSpeechLang: Spinner
-    private lateinit var spinnerSpeechRate: Spinner
-    private lateinit var spinnerSpeechPitch: Spinner
-    private lateinit var spinnerSpeechVolume: Spinner
-    private lateinit var spinnerSpeechProviderMode: Spinner
-    private lateinit var spinnerSpeechResponseMode: Spinner
-    private lateinit var spinnerSpeechStylePreset: Spinner
-    private lateinit var spinnerSpeechResponseFormat: Spinner
-    private lateinit var spinnerPatientLang1: Spinner
-    private lateinit var spinnerPatientLang2: Spinner
-    private lateinit var spinnerCommIconsPerPage: Spinner
-    private lateinit var spinnerCommSubmenuTimeout: Spinner
-    private lateinit var spinnerHardwareVolumeMode: Spinner
+    private lateinit var spinnerDefaultSpeechLang: Button
+    private lateinit var spinnerFallbackSpeechLang: Button
+    private lateinit var spinnerSpeechRate: Button
+    private lateinit var spinnerSpeechPitch: Button
+    private lateinit var spinnerSpeechVolume: Button
+    private lateinit var spinnerSpeechProviderMode: Button
+    private lateinit var spinnerSpeechResponseMode: Button
+    private lateinit var spinnerSpeechStylePreset: Button
+    private lateinit var spinnerSpeechResponseFormat: Button
+    private lateinit var spinnerPatientLang1: Button
+    private lateinit var spinnerPatientLang2: Button
+    private lateinit var spinnerCommIconsPerPage: Button
+    private lateinit var spinnerCommSubmenuTimeout: Button
+    private lateinit var spinnerHardwareVolumeMode: Button
     private lateinit var switchAutoLanguage: Switch
     private lateinit var switchHardwareVolumeControl: Switch
     private lateinit var switchAutoSortIcons: Switch
@@ -144,7 +143,6 @@ class SettingsActivity : AppCompatActivity() {
         addConfigTransferPanel()
         loadSettings()
         styleSettingsUi()
-        replaceSpinnersWithFullscreenPickers(binding.root)
         installSectionNavigation()
         restoreSettingsScrollPosition()
         setupButtons()
@@ -195,11 +193,59 @@ class SettingsActivity : AppCompatActivity() {
         else -> 1
     }
 
-    private fun newLangSpinner(): Spinner {
-        return Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*langOptions())
-            styleSpinner(this)
+    private fun newLangSpinner(title: String): Button {
+        return createPickerButton(title, langOptions())
+    }
+
+    private data class PickerState(
+        val title: String,
+        val items: List<String>,
+        var selectedIndex: Int = 0
+    )
+
+    private fun createPickerButton(title: String, items: Array<String>): Button {
+        return Button(this).apply {
+            SettingsUiStyler.stylePickerRow(this, resources.displayMetrics.density)
+            isAllCaps = false
+            tag = PickerState(title = title, items = items.toList(), selectedIndex = 0)
+            updatePickerButtonText(this)
+            setOnClickListener {
+                showPickerForButton(this)
+            }
         }
+    }
+
+    private fun showPickerForButton(button: Button) {
+        val state = button.tag as? PickerState ?: return
+        SettingsUiStyler.showFullscreenPicker(
+            this,
+            state.title,
+            state.items,
+            state.selectedIndex
+        ) { selectedIndex ->
+            state.selectedIndex = selectedIndex
+            updatePickerButtonText(button)
+        }
+    }
+
+    private fun setPickerSelection(button: Button, index: Int) {
+        val state = button.tag as? PickerState ?: return
+        state.selectedIndex = index.coerceIn(0, state.items.lastIndex.coerceAtLeast(0))
+        updatePickerButtonText(button)
+    }
+
+    private fun getPickerSelection(button: Button): Int {
+        return (button.tag as? PickerState)?.selectedIndex ?: 0
+    }
+
+    private fun getPickerValue(button: Button): String {
+        val state = button.tag as? PickerState ?: return ""
+        return state.items.getOrNull(state.selectedIndex).orEmpty()
+    }
+
+    private fun updatePickerButtonText(button: Button) {
+        val state = button.tag as? PickerState ?: return
+        button.text = state.items.getOrNull(state.selectedIndex).orEmpty().ifBlank { state.title }
     }
 
     private fun themedSpinnerAdapter(vararg items: String): ArrayAdapter<String> {
@@ -244,10 +290,6 @@ class SettingsActivity : AppCompatActivity() {
             textView.setBackgroundColor(0x00000000)
             textView.setPadding(dp(8), dp(10), dp(8), dp(10))
         }
-    }
-
-    private fun styleSpinner(spinner: Spinner) {
-        SettingsUiStyler.styleSpinner(spinner)
     }
 
     private fun speechRateOptions() = arrayOf("0.80x", "0.88x", "0.96x", "1.00x", "1.06x")
@@ -422,10 +464,10 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 12f
         })
 
-        spinnerCommIconsPerPage = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("4 ikone", "9 ikon", "16 ikon", "25 ikon")
-            styleSpinner(this)
-        }
+        spinnerCommIconsPerPage = createPickerButton(
+            "Stevilo komunikacijskih ikon na stran",
+            arrayOf("4 ikone", "9 ikon", "16 ikon", "25 ikon")
+        )
         panel.addView(spinnerCommIconsPerPage)
 
         val autoSortRow = LinearLayout(this).apply {
@@ -452,10 +494,10 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 12f
         })
 
-        spinnerCommSubmenuTimeout = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("8 sekund", "12 sekund", "15 sekund", "20 sekund", "30 sekund", "60 sekund")
-            styleSpinner(this)
-        }
+        spinnerCommSubmenuTimeout = createPickerButton(
+            "Cas izhoda iz podmenija",
+            arrayOf("8 sekund", "12 sekund", "15 sekund", "20 sekund", "30 sekund", "60 sekund")
+        )
         panel.addView(spinnerCommSubmenuTimeout)
 
         tvCommPagingDiagnostics = TextView(this).apply {
@@ -477,10 +519,10 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerHardwareVolumeMode = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*hardwareVolumeModeOptions())
-            styleSpinner(this)
-        }
+        spinnerHardwareVolumeMode = createPickerButton(
+            "Nacin tipk za glasnost",
+            hardwareVolumeModeOptions()
+        )
         panel.addView(spinnerHardwareVolumeMode)
 
         panel.addView(TextView(this).apply {
@@ -488,7 +530,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerDefaultSpeechLang = newLangSpinner()
+        spinnerDefaultSpeechLang = newLangSpinner("Privzeti jezik govora")
         panel.addView(spinnerDefaultSpeechLang)
 
         panel.addView(TextView(this).apply {
@@ -496,7 +538,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerPatientLang1 = newLangSpinner()
+        spinnerPatientLang1 = newLangSpinner("Jezik, ki ga pacient razume 1")
         panel.addView(spinnerPatientLang1)
 
         panel.addView(TextView(this).apply {
@@ -504,7 +546,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerPatientLang2 = newLangSpinner()
+        spinnerPatientLang2 = newLangSpinner("Jezik, ki ga pacient razume 2")
         panel.addView(spinnerPatientLang2)
 
         val autoRow = LinearLayout(this).apply {
@@ -548,7 +590,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerFallbackSpeechLang = newLangSpinner()
+        spinnerFallbackSpeechLang = newLangSpinner("Rezervni jezik lokalnega govora")
         panel.addView(spinnerFallbackSpeechLang)
 
         panel.addView(TextView(this).apply {
@@ -556,10 +598,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerSpeechRate = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*speechRateOptions())
-            styleSpinner(this)
-        }
+        spinnerSpeechRate = createPickerButton("Hitrost govora", speechRateOptions())
         panel.addView(spinnerSpeechRate)
 
         panel.addView(TextView(this).apply {
@@ -567,10 +606,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerSpeechPitch = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*speechPitchOptions())
-            styleSpinner(this)
-        }
+        spinnerSpeechPitch = createPickerButton("Visina glasu", speechPitchOptions())
         panel.addView(spinnerSpeechPitch)
 
         panel.addView(TextView(this).apply {
@@ -578,10 +614,7 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerSpeechVolume = Spinner(this).apply {
-            adapter = themedSpinnerAdapter(*speechVolumeOptions())
-            styleSpinner(this)
-        }
+        spinnerSpeechVolume = createPickerButton("Glasnost govora", speechVolumeOptions())
         panel.addView(spinnerSpeechVolume)
 
         btnTestHybridTts = Button(this).apply {
@@ -605,25 +638,25 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         advancedPanel.addView(TextView(this).apply {
-            text = "NaĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤in govora:"
+            text = "Ponudnik govora:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerSpeechProviderMode = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("Lokalni govor", "OpenAI govor", "Samodejno")
-            styleSpinner(this)
-        }
+        spinnerSpeechProviderMode = createPickerButton(
+            "Ponudnik govora",
+            speechProviderOptions()
+        )
         advancedPanel.addView(spinnerSpeechProviderMode)
 
         advancedPanel.addView(TextView(this).apply {
-            text = "NaĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤in odziva:"
+            text = "Nacin odziva govora:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerSpeechResponseMode = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("Samodejno", "Takoj lokalno", "OpenAI iz predpomnilnika", "OpenAI prednost")
-            styleSpinner(this)
-        }
+        spinnerSpeechResponseMode = createPickerButton(
+            "Nacin odziva govora",
+            speechResponseModeOptions()
+        )
         advancedPanel.addView(spinnerSpeechResponseMode)
 
         advancedPanel.addView(TextView(this).apply {
@@ -631,10 +664,10 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerSpeechStylePreset = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("Rehabilitacijski pomoĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤nik", "Miren", "Topel", "PoĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤asen in jasen", "Topel skrbnik", "Zelo enostaven", "Jasna ukrajinÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬Ă„â€¦Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ä‚â€ąĂ˘â‚¬Ë‡Ă„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤ina", "Jasna slovenÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬Ă„â€¦Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ä‚â€ąĂ˘â‚¬Ë‡Ă„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤ina")
-            styleSpinner(this)
-        }
+        spinnerSpeechStylePreset = createPickerButton(
+            "Slog OpenAI govora",
+            speechStylePresetOptions()
+        )
         advancedPanel.addView(spinnerSpeechStylePreset)
 
         advancedPanel.addView(TextView(this).apply {
@@ -650,10 +683,10 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        spinnerSpeechResponseFormat = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("MP3", "WAV")
-            styleSpinner(this)
-        }
+        spinnerSpeechResponseFormat = createPickerButton(
+            "Format zvoka",
+            speechResponseFormatOptions()
+        )
         advancedPanel.addView(spinnerSpeechResponseFormat)
 
         switchOpenAiTtsEnabled = Switch(this).apply { text = "OpenAI govor vklopljen" }
@@ -662,7 +695,7 @@ class SettingsActivity : AppCompatActivity() {
         switchLocalFallbackEnabled = Switch(this).apply { text = "Lokalni rezervni govor vklopljen" }
         advancedPanel.addView(switchLocalFallbackEnabled)
 
-        switchSpeechRehabilitationMode = Switch(this).apply { text = "Rehabilitacijski naĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤in govora" }
+        switchSpeechRehabilitationMode = Switch(this).apply { text = "Rehabilitacijski nacin govora" }
         advancedPanel.addView(switchSpeechRehabilitationMode)
 
         switchSpeechShortSentenceMode = Switch(this).apply { text = "Kratki stavki" }
@@ -713,11 +746,11 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        etSpeechTestPhrase = EditText(this).apply { setText("Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬Ă„â€¦Ä‚â€žĂ„â€¦Ä‚â€žĂ˘â‚¬Ĺľelim vodo.") }
+        etSpeechTestPhrase = EditText(this).apply { setText("Zelim vodo.") }
         advancedPanel.addView(etSpeechTestPhrase)
 
         btnClearSpeechCache = Button(this).apply {
-            text = "POĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ä‚â€žĂ„â€¦Ä‚â€ąĂ˘â‚¬Ë‡ISTI GOVORNI PREDPOMNILNIK"
+            text = "POCISTI GOVORNI PREDPOMNILNIK"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
         }
@@ -869,10 +902,10 @@ class SettingsActivity : AppCompatActivity() {
         updateApiStatus()
 
         val voices = arrayOf("marin", "cedar", "nova", "shimmer", "alloy", "echo", "fable", "onyx")
-        val voiceAdapter = themedSpinnerAdapter(*voices)
-        binding.spinnerTtsVoice.adapter = voiceAdapter
-        styleSpinner(binding.spinnerTtsVoice)
-        binding.spinnerTtsVoice.setSelection(voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
+        binding.spinnerTtsVoice.tag = PickerState("Glas", voices.toList(), voices.indexOf(prefs.getTtsVoice()).coerceAtLeast(0))
+        SettingsUiStyler.stylePickerRow(binding.spinnerTtsVoice, resources.displayMetrics.density)
+        updatePickerButtonText(binding.spinnerTtsVoice)
+        binding.spinnerTtsVoice.setOnClickListener { showPickerForButton(binding.spinnerTtsVoice) }
 
         binding.etGmailUser.setText(prefs.getGmailUser())
         binding.etGmailPass.setText(prefs.getGmailAppPassword())
@@ -886,7 +919,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etHomeAddress.setText(prefs.getHomeAddress())
         binding.etPatientName.setText(prefs.getPatientName())
 
-        spinnerCommIconsPerPage.setSelection(
+        setPickerSelection(spinnerCommIconsPerPage,
             when (prefs.getCommIconsPerPage()) {
                 4 -> 0
                 9 -> 1
@@ -896,19 +929,19 @@ class SettingsActivity : AppCompatActivity() {
             }
         )
         switchAutoSortIcons.isChecked = prefs.isAutoSortCommunicationIconsEnabled()
-        spinnerCommSubmenuTimeout.setSelection(timeoutIndex(prefs.getCommSubmenuTimeoutSeconds()))
+        setPickerSelection(spinnerCommSubmenuTimeout, timeoutIndex(prefs.getCommSubmenuTimeoutSeconds()))
         switchHardwareVolumeControl.isChecked = prefs.isHardwareVolumeControlEnabled()
-        spinnerHardwareVolumeMode.setSelection(hardwareVolumeModeIndex(prefs.getHardwareVolumeButtonMode()))
+        setPickerSelection(spinnerHardwareVolumeMode, hardwareVolumeModeIndex(prefs.getHardwareVolumeButtonMode()))
 
-        spinnerDefaultSpeechLang.setSelection(langIndex(prefs.getDefaultSpeechLanguage()))
-        spinnerFallbackSpeechLang.setSelection(langIndex(prefs.getFallbackSpeechLanguage()))
-        spinnerSpeechRate.setSelection(speechRateIndex(prefs.getTtsSpeed()))
-        spinnerSpeechPitch.setSelection(speechPitchIndex(prefs.getTtsPitch()))
-        spinnerSpeechVolume.setSelection(speechVolumeIndex(prefs.getTtsVolume()))
-        spinnerSpeechProviderMode.setSelection(speechProviderIndex(prefs.getSpeechProviderMode()))
-        spinnerSpeechResponseMode.setSelection(speechResponseModeIndex(prefs.getSpeechResponseMode()))
-        spinnerSpeechStylePreset.setSelection(speechStylePresetIndex(prefs.getSpeechStylePreset()))
-        spinnerSpeechResponseFormat.setSelection(speechResponseFormatIndex(prefs.getTtsResponseFormat()))
+        setPickerSelection(spinnerDefaultSpeechLang, langIndex(prefs.getDefaultSpeechLanguage()))
+        setPickerSelection(spinnerFallbackSpeechLang, langIndex(prefs.getFallbackSpeechLanguage()))
+        setPickerSelection(spinnerSpeechRate, speechRateIndex(prefs.getTtsSpeed()))
+        setPickerSelection(spinnerSpeechPitch, speechPitchIndex(prefs.getTtsPitch()))
+        setPickerSelection(spinnerSpeechVolume, speechVolumeIndex(prefs.getTtsVolume()))
+        setPickerSelection(spinnerSpeechProviderMode, speechProviderIndex(prefs.getSpeechProviderMode()))
+        setPickerSelection(spinnerSpeechResponseMode, speechResponseModeIndex(prefs.getSpeechResponseMode()))
+        setPickerSelection(spinnerSpeechStylePreset, speechStylePresetIndex(prefs.getSpeechStylePreset()))
+        setPickerSelection(spinnerSpeechResponseFormat, speechResponseFormatIndex(prefs.getTtsResponseFormat()))
         switchOpenAiTtsEnabled.isChecked = prefs.isOpenAiTtsEnabled()
         switchLocalFallbackEnabled.isChecked = prefs.isLocalTtsFallbackEnabled()
         switchSpeechRehabilitationMode.isChecked = prefs.isSpeechRehabilitationModeEnabled()
@@ -920,8 +953,8 @@ class SettingsActivity : AppCompatActivity() {
         etSpeechClarity.setText(prefs.getSpeechPronunciationClarity().toString())
         etSpeechWarmth.setText(prefs.getSpeechEmotionalWarmth().toString())
         etSpeechCalmness.setText(prefs.getSpeechCalmness().toString())
-        spinnerPatientLang1.setSelection(langIndex(prefs.getPatientLanguage1()))
-        spinnerPatientLang2.setSelection(langIndex(prefs.getPatientLanguage2()))
+        setPickerSelection(spinnerPatientLang1, langIndex(prefs.getPatientLanguage1()))
+        setPickerSelection(spinnerPatientLang2, langIndex(prefs.getPatientLanguage2()))
         switchAutoLanguage.isChecked = prefs.isAutoLanguageEnabled()
 
         binding.etServerIp.setText(prefs.getServerIp())
@@ -997,7 +1030,7 @@ class SettingsActivity : AppCompatActivity() {
             binding.imgContainer6
         )
 
-        contactLangSpinners.clear()
+        contactLangButtons.clear()
         contactImageButtons.clear()
         contactIncomingSwitches.clear()
         contactOutgoingSwitches.clear()
@@ -1009,16 +1042,11 @@ class SettingsActivity : AppCompatActivity() {
             nameFields[index].setText(contact?.name?.takeIf { it.isNotBlank() } ?: defaultNames[index])
             phoneFields[index].setText(contact?.phone.orEmpty())
 
-            val spinner = Spinner(this).apply {
-                val options = arrayOf("Slovenscina", "Ukrajinscina")
-                adapter = themedSpinnerAdapter(*options)
-                styleSpinner(this)
-
-                val language = contact?.language ?: defaultLanguages[index]
-                setSelection(if (language == "uk") 1 else 0)
-            }
-            languageContainers[index].addView(spinner)
-            contactLangSpinners.add(spinner)
+            val langButton = createPickerButton("Jezik kontakta", arrayOf("Slovenscina", "Ukrajinscina"))
+            val language = contact?.language ?: defaultLanguages[index]
+            setPickerSelection(langButton, if (language == "uk") 1 else 0)
+            languageContainers[index].addView(langButton)
+            contactLangButtons.add(langButton)
 
             val incomingSwitch = Switch(this).apply {
                 text = "Dohodni video klici"
@@ -1134,7 +1162,7 @@ class SettingsActivity : AppCompatActivity() {
             tts.initLocalTts()
             tts.speakAndroid(
                 etSpeechTestPhrase.text.toString().trim().ifBlank { "Zelim vodo." },
-                langCode(spinnerDefaultSpeechLang.selectedItemPosition)
+                langCode(getPickerSelection(spinnerDefaultSpeechLang))
             ) {
                 tts.destroy()
                 refreshSpeechDiagnostics()
@@ -1153,12 +1181,12 @@ class SettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val voice = binding.spinnerTtsVoice.selectedItem.toString()
+            val voice = getPickerValue(binding.spinnerTtsVoice)
             val tts = com.novarehab.utils.OpenAiTtsManager(this)
             tts.initLocalTts()
             tts.speakOpenAiOnly(
                 etSpeechTestPhrase.text.toString().trim().ifBlank { "Zelim vodo." },
-                langCode(spinnerDefaultSpeechLang.selectedItemPosition),
+                langCode(getPickerSelection(spinnerDefaultSpeechLang)),
                 key,
                 voice,
                 baseUrl
@@ -1175,9 +1203,9 @@ class SettingsActivity : AppCompatActivity() {
             val phrase = etSpeechTestPhrase.text.toString().trim().ifBlank { "Zelim vodo." }
             tts.speak(
                 phrase,
-                langCode(spinnerDefaultSpeechLang.selectedItemPosition),
+                langCode(getPickerSelection(spinnerDefaultSpeechLang)),
                 apiConfig.getApiToken(),
-                binding.spinnerTtsVoice.selectedItem.toString(),
+                getPickerValue(binding.spinnerTtsVoice),
                 apiConfig.getApiBaseUrl()
             ) {
                 tts.destroy()
@@ -1318,7 +1346,6 @@ class SettingsActivity : AppCompatActivity() {
     private fun styleViewTree(view: View) {
         when (view) {
             is EditText -> styleEditText(view)
-            is Spinner -> styleSpinner(view)
             is Switch -> SettingsUiStyler.styleSwitch(view)
             is Button -> SettingsUiStyler.styleButton(view, resources.displayMetrics.density)
             is TextView -> styleTextView(view)
@@ -1341,35 +1368,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun styleAlertDialog(dialog: AlertDialog) {
         SettingsUiStyler.styleDialog(dialog)
-    }
-
-    private fun replaceSpinnersWithFullscreenPickers(root: View) {
-        if (root is Spinner) {
-            SettingsUiStyler.installFullscreenPickerForSpinner(
-                this,
-                root,
-                derivePickerTitle(root),
-                resources.displayMetrics.density
-            )
-            return
-        }
-
-        if (root is ViewGroup) {
-            for (index in 0 until root.childCount) {
-                replaceSpinnersWithFullscreenPickers(root.getChildAt(index))
-            }
-        }
-    }
-
-    private fun derivePickerTitle(spinner: Spinner): String {
-        val parent = spinner.parent as? ViewGroup ?: return "Izberi moÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ„Äľnost"
-        val spinnerIndex = parent.indexOfChild(spinner)
-        for (index in spinnerIndex - 1 downTo 0) {
-            val previous = parent.getChildAt(index) as? TextView ?: continue
-            val candidate = previous.text?.toString()?.trim().orEmpty()
-            if (candidate.isNotBlank()) return candidate.removeSuffix(":")
-        }
-        return "Izberi moÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ„Äľnost"
     }
 
     private fun installSectionNavigation() {
@@ -1609,16 +1607,16 @@ class SettingsActivity : AppCompatActivity() {
         else String.format(java.util.Locale.US, "%.2f MB", kb / 1024.0)
     }
     private fun saveSpeechSettings() {
-        prefs.saveTtsVoice(binding.spinnerTtsVoice.selectedItem.toString())
-        prefs.saveDefaultSpeechLanguage(langCode(spinnerDefaultSpeechLang.selectedItemPosition))
-        prefs.saveFallbackSpeechLanguage(langCode(spinnerFallbackSpeechLang.selectedItemPosition))
-        prefs.saveTtsSpeed(speechRateValue(spinnerSpeechRate.selectedItemPosition))
-        prefs.saveTtsPitch(speechPitchValue(spinnerSpeechPitch.selectedItemPosition))
-        prefs.saveTtsVolume(speechVolumeValue(spinnerSpeechVolume.selectedItemPosition))
-        prefs.saveSpeechProviderMode(speechProviderValue(spinnerSpeechProviderMode.selectedItemPosition))
-        prefs.saveSpeechResponseMode(speechResponseModeValue(spinnerSpeechResponseMode.selectedItemPosition))
-        prefs.saveSpeechStylePreset(speechStylePresetValue(spinnerSpeechStylePreset.selectedItemPosition))
-        prefs.saveTtsResponseFormat(if (spinnerSpeechResponseFormat.selectedItemPosition == 1) "wav" else "mp3")
+        prefs.saveTtsVoice(getPickerValue(binding.spinnerTtsVoice))
+        prefs.saveDefaultSpeechLanguage(langCode(getPickerSelection(spinnerDefaultSpeechLang)))
+        prefs.saveFallbackSpeechLanguage(langCode(getPickerSelection(spinnerFallbackSpeechLang)))
+        prefs.saveTtsSpeed(speechRateValue(getPickerSelection(spinnerSpeechRate)))
+        prefs.saveTtsPitch(speechPitchValue(getPickerSelection(spinnerSpeechPitch)))
+        prefs.saveTtsVolume(speechVolumeValue(getPickerSelection(spinnerSpeechVolume)))
+        prefs.saveSpeechProviderMode(speechProviderValue(getPickerSelection(spinnerSpeechProviderMode)))
+        prefs.saveSpeechResponseMode(speechResponseModeValue(getPickerSelection(spinnerSpeechResponseMode)))
+        prefs.saveSpeechStylePreset(speechStylePresetValue(getPickerSelection(spinnerSpeechStylePreset)))
+        prefs.saveTtsResponseFormat(if (getPickerSelection(spinnerSpeechResponseFormat) == 1) "wav" else "mp3")
         prefs.saveTtsModel(etSpeechModel.text.toString().trim().ifBlank { "gpt-4o-mini-tts" })
         prefs.saveOpenAiTtsEnabled(switchOpenAiTtsEnabled.isChecked)
         prefs.saveLocalTtsFallbackEnabled(switchLocalFallbackEnabled.isChecked)
@@ -1826,7 +1824,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs.savePatientName(binding.etPatientName.text.toString().trim())
 
         prefs.saveCommIconsPerPage(
-            when (spinnerCommIconsPerPage.selectedItemPosition) {
+            when (getPickerSelection(spinnerCommIconsPerPage)) {
                 0 -> 4
                 2 -> 16
                 3 -> 25
@@ -1834,12 +1832,12 @@ class SettingsActivity : AppCompatActivity() {
             }
         )
         prefs.saveAutoSortCommunicationIconsEnabled(switchAutoSortIcons.isChecked)
-        prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(spinnerCommSubmenuTimeout.selectedItemPosition))
+        prefs.saveCommSubmenuTimeoutSeconds(timeoutSeconds(getPickerSelection(spinnerCommSubmenuTimeout)))
         prefs.saveHardwareVolumeControlEnabled(switchHardwareVolumeControl.isChecked)
-        prefs.saveHardwareVolumeButtonMode(hardwareVolumeModeValue(spinnerHardwareVolumeMode.selectedItemPosition))
+        prefs.saveHardwareVolumeButtonMode(hardwareVolumeModeValue(getPickerSelection(spinnerHardwareVolumeMode)))
 
-        prefs.savePatientLanguage1(langCode(spinnerPatientLang1.selectedItemPosition))
-        prefs.savePatientLanguage2(langCode(spinnerPatientLang2.selectedItemPosition))
+        prefs.savePatientLanguage1(langCode(getPickerSelection(spinnerPatientLang1)))
+        prefs.savePatientLanguage2(langCode(getPickerSelection(spinnerPatientLang2)))
         prefs.saveAutoLanguageEnabled(switchAutoLanguage.isChecked)
 
         prefs.saveServerIp(binding.etServerIp.text.toString().trim())
@@ -1914,7 +1912,7 @@ class SettingsActivity : AppCompatActivity() {
         nameFields.forEachIndexed { index, field ->
             val name = field.text.toString().trim().ifEmpty { defaultNames[index] }
             val phone = phoneFields[index].text.toString().trim()
-            val lang = if (contactLangSpinners.getOrNull(index)?.selectedItemPosition == 1) "uk" else "sl"
+            val lang = if (getPickerSelection(contactLangButtons.getOrNull(index) ?: continue) == 1) "uk" else "sl"
 
             prefs.saveContactIncomingCallEnabled(index, contactIncomingSwitches.getOrNull(index)?.isChecked ?: true)
             prefs.saveContactOutgoingCallEnabled(index, contactOutgoingSwitches.getOrNull(index)?.isChecked ?: true)
@@ -1943,6 +1941,8 @@ class SettingsActivity : AppCompatActivity() {
         val token: String
     )
 }
+
+
 
 
 

@@ -364,45 +364,22 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         textBox.addView(childrenLabel)
 
-        val diagnosticsView = TextView(this).apply {
-            textSize = 11f
-            setTextColor(0xFFB8D8FF.toInt())
-            setPadding(0, dp(6), 0, dp(4))
-        }
-        textBox.addView(diagnosticsView)
-
-        textBox.addView(TextView(this).apply {
-            text = "Ikona je vidna samo, ce ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
-            textSize = 11f
-            setTextColor(0xFFFFCC80.toInt())
-            setPadding(0, 0, 0, dp(6))
-        })
-
         val childButtons = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
         childButtons.addView(actionButton("DODAJ PODIKONO") {
             showChildPickerDialog(id, resolvedChildren, remove = false) {
                 refreshChildrenLabel(childrenLabel, resolvedChildren)
-                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
             }
         })
         childButtons.addView(actionButton("ODSTRANI PODIKONO") {
             showChildPickerDialog(id, resolvedChildren, remove = true) {
                 refreshChildrenLabel(childrenLabel, resolvedChildren)
-                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
             }
         })
         textBox.addView(childButtons)
 
         refreshChildrenLabel(childrenLabel, resolvedChildren)
-        refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
-        enabledSwitch.setOnCheckedChangeListener { _, isChecked ->
-            refreshDiagnostics(diagnosticsView, id, isChecked, showOnMainSwitch.isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
-        }
-        showOnMainSwitch.setOnCheckedChangeListener { _, isChecked ->
-            refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, isChecked, resolvedChildren, defaultRes != 0 || paths.customIconFile(id).exists())
-        }
 
         row.addView(textBox)
 
@@ -561,43 +538,20 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         texts.addView(childrenLabel)
 
-        val diagnosticsView = TextView(this).apply {
-            textSize = 11f
-            setTextColor(0xFFB8D8FF.toInt())
-            setPadding(0, dp(6), 0, dp(4))
-        }
-        texts.addView(diagnosticsView)
-
-        texts.addView(TextView(this).apply {
-            text = "Ikona je vidna samo, ce ima enabled=true in je dodana na glavni zaslon ali kot podikona druge ikone."
-            textSize = 11f
-            setTextColor(0xFFFFCC80.toInt())
-            setPadding(0, 0, 0, dp(6))
-        })
-
         val childButtons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         childButtons.addView(actionButton("DODAJ PODIKONO") {
             showChildPickerDialog(id, resolvedChildren, remove = false) {
                 refreshChildrenLabel(childrenLabel, resolvedChildren)
-                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
             }
         })
         childButtons.addView(actionButton("ODSTRANI PODIKONO") {
             showChildPickerDialog(id, resolvedChildren, remove = true) {
                 refreshChildrenLabel(childrenLabel, resolvedChildren)
-                refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
             }
         })
         texts.addView(childButtons)
 
         refreshChildrenLabel(childrenLabel, resolvedChildren)
-        refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
-        enabledSwitch.setOnCheckedChangeListener { _, isChecked ->
-            refreshDiagnostics(diagnosticsView, id, isChecked, showOnMainSwitch.isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
-        }
-        showOnMainSwitch.setOnCheckedChangeListener { _, isChecked ->
-            refreshDiagnostics(diagnosticsView, id, enabledSwitch.isChecked, isChecked, resolvedChildren, paths.customIconFile(id).exists() || saved?.imagePath?.let { File(it).exists() } == true)
-        }
 
         row.addView(texts)
 
@@ -726,38 +680,6 @@ class IconSettingsActivity : AppCompatActivity() {
         } else {
             "Podikone: ${children.joinToString(", ") { displayNameForIcon(it) }}"
         }
-    }
-
-    private fun refreshDiagnostics(
-        view: TextView,
-        id: String,
-        enabled: Boolean,
-        showOnMain: Boolean,
-        currentChildren: List<String>,
-        hasValidIcon: Boolean
-    ) {
-        val hasId = id.isNotBlank()
-        val currentMainIds = defaultMainIds().toMutableSet()
-        prefs.getCustomCommIcons().forEach { icon ->
-            if (icon.showOnMain) currentMainIds += icon.id else currentMainIds.remove(icon.id)
-        }
-        if (showOnMain) currentMainIds += id else currentMainIds.remove(id)
-
-        val currentChildMap = defaultChildrenMap().toMutableMap()
-        prefs.getCustomCommIcons().forEach { icon ->
-            currentChildMap[icon.id] = icon.children
-        }
-        currentChildMap[id] = currentChildren
-        val isChild = currentChildMap.any { (parentId, children) -> parentId != id && id in children }
-
-        view.text = listOf(
-            "enabled: ${if (enabled) "DA" else "NE"}",
-            "ima ID: ${if (hasId) "DA" else "NE"}",
-            "je v main seznamu: ${if (id in currentMainIds) "DA" else "NE"}",
-            "je podikona: ${if (isChild) "DA" else "NE"}",
-            "children: ${if (currentChildren.isEmpty()) "ni" else currentChildren.joinToString(", ")}",
-            "image/resource: ${if (hasValidIcon) "OK" else "MANJKA"}"
-        ).joinToString("\n")
     }
 
     private fun showChildPickerDialog(

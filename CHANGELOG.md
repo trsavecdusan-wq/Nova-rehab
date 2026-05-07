@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-07 - v1.0.14 (versionCode 14)
+
+Changed modules:
+- settings-ui
+- icon-editor
+- release
+
+Fixed / added:
+- replaced broken settings spinners with tablet-safe fullscreen pickers for key speech, language and communication size selections
+- fixed settings clipping risk on tablet by using large picker rows instead of Android dropdown overlays
+- verified main screen labels and patient/date module remain aligned without km/h text
+- kept communication page sizes consistent at 4 / 9 / 16 / 25
+- removed production-facing developer diagnostics from the normal icon editor view
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- this patch intentionally avoids companion, video call, gallery, mirror and AI changes
+
 ## 2026-05-07 - v1.0.13 (versionCode 13)
 
 Changed modules:
