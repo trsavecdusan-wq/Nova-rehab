@@ -29,7 +29,7 @@ class CommunicationCatalog(
             )
         }
 
-        val pageSize = prefsManager.getCommIconsPerPage().let { if (it in setOf(6, 8, 9, 12, 15, 18)) it else 9 }
+        val pageSize = prefsManager.getCommIconsPerPage().let { if (it in setOf(4, 9, 16, 25)) it else 9 }
         val pageCount = maxOf(1, ceil(sortedItems.size.toDouble() / pageSize).toInt())
         Log.d(
             "NovaRehabPaging",

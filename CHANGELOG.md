@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-07 - v1.0.12 (versionCode 12)
+
+Changed modules:
+- communication
+- main-ui
+- elease
+
+Fixed / added:
+- fixed communication page-size inconsistency so CommunicationCatalog now matches 4 / 9 / 16 / 25
+- verified main screen top-zone layout remains [RED -] [RADIO 2x3] [PATIENT/SPEED/DATE] [GREEN +]
+- verified patient/date module updates language flag, patient name, speed, day, date and time without km/h
+- verified bottom labels stay one-line and compact with SPROSTI fallback
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- this patch intentionally avoids changes outside main screen and paging
+
 ## 2026-05-07 - v1.0.11 (versionCode 11)
 
 Changed modules:
