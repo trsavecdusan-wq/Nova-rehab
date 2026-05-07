@@ -5,7 +5,7 @@
 Changed modules:
 - communication
 - main-ui
-- elease
+- release
 
 Fixed / added:
 - fixed communication page-size inconsistency so CommunicationCatalog now matches 4 / 9 / 16 / 25
@@ -16,7 +16,6 @@ Fixed / added:
 Known issues:
 - final green build still depends on GitHub Actions after push
 - this patch intentionally avoids changes outside main screen and paging
-
 ## 2026-05-07 - v1.0.11 (versionCode 11)
 
 Changed modules:
