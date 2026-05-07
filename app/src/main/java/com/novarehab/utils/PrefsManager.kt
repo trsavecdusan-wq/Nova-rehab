@@ -102,11 +102,11 @@ class PrefsManager(context: Context) {
 
     fun getCommIconsPerPage(): Int {
         val v = prefs.getInt("comm_icons_per_page", 9)
-        return if (v in setOf(6, 8, 9, 12, 15, 18)) v else 9
+        return if (v in setOf(4, 9, 16, 25)) v else 9
     }
 
     fun saveCommIconsPerPage(v: Int) {
-        val safe = if (v in setOf(6, 8, 9, 12, 15, 18)) v else 9
+        val safe = if (v in setOf(4, 9, 16, 25)) v else 9
         prefs.edit().putInt("comm_icons_per_page", safe).apply()
     }
 

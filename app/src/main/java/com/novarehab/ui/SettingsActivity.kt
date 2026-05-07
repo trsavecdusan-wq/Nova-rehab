@@ -98,6 +98,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnClearSpeechCache: Button
     private lateinit var tvConfigTransferInfo: TextView
     private lateinit var tvSpeechDiagnostics: TextView
+    private lateinit var tvCommPagingDiagnostics: TextView
     private lateinit var etSpeechModel: EditText
     private lateinit var etSpeechTestPhrase: EditText
     private lateinit var etSpeechPauseWords: EditText
@@ -422,7 +423,7 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         spinnerCommIconsPerPage = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("6 ikon", "8 ikon", "9 ikon", "12 ikon", "15 ikon", "18 ikon")
+            adapter = themedSpinnerAdapter("4 ikone", "9 ikon", "16 ikon", "25 ikon")
             styleSpinner(this)
         }
         panel.addView(spinnerCommIconsPerPage)
@@ -457,8 +458,16 @@ class SettingsActivity : AppCompatActivity() {
         }
         panel.addView(spinnerCommSubmenuTimeout)
 
+        tvCommPagingDiagnostics = TextView(this).apply {
+            text = "Diagnostika komunikacijskih strani"
+            setTextColor(0xFFB8D8FF.toInt())
+            textSize = 12f
+            setPadding(0, dp(10), 0, dp(8))
+        }
+        panel.addView(tvCommPagingDiagnostics)
+
         switchHardwareVolumeControl = Switch(this).apply {
-            text = "Uporabi fizične tipke za glasnost za komunikacijo"
+            text = "Uporabi fizicne tipke za glasnost za komunikacijo"
             setTextColor(0xFFFFFFFF.toInt())
         }
         panel.addView(switchHardwareVolumeControl)
@@ -596,7 +605,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         advancedPanel.addView(TextView(this).apply {
-            text = "Način govora:"
+            text = "NaĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤in govora:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -607,7 +616,7 @@ class SettingsActivity : AppCompatActivity() {
         advancedPanel.addView(spinnerSpeechProviderMode)
 
         advancedPanel.addView(TextView(this).apply {
-            text = "Način odziva:"
+            text = "NaĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤in odziva:"
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
@@ -623,7 +632,7 @@ class SettingsActivity : AppCompatActivity() {
             textSize = 12f
         })
         spinnerSpeechStylePreset = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("Rehabilitacijski pomočnik", "Miren", "Topel", "Počasen in jasen", "Topel skrbnik", "Zelo enostaven", "Jasna ukrajinščina", "Jasna slovenščina")
+            adapter = themedSpinnerAdapter("Rehabilitacijski pomoĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤nik", "Miren", "Topel", "PoĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤asen in jasen", "Topel skrbnik", "Zelo enostaven", "Jasna ukrajinÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬Ă„â€¦Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ä‚â€ąĂ˘â‚¬Ë‡Ă„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤ina", "Jasna slovenÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬Ă„â€¦Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ä‚â€ąĂ˘â‚¬Ë‡Ă„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤ina")
             styleSpinner(this)
         }
         advancedPanel.addView(spinnerSpeechStylePreset)
@@ -653,7 +662,7 @@ class SettingsActivity : AppCompatActivity() {
         switchLocalFallbackEnabled = Switch(this).apply { text = "Lokalni rezervni govor vklopljen" }
         advancedPanel.addView(switchLocalFallbackEnabled)
 
-        switchSpeechRehabilitationMode = Switch(this).apply { text = "Rehabilitacijski način govora" }
+        switchSpeechRehabilitationMode = Switch(this).apply { text = "Rehabilitacijski naĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ă„â€šĂ˘â‚¬ĹˇÄ‚â€šĂ‚Â¤in govora" }
         advancedPanel.addView(switchSpeechRehabilitationMode)
 
         switchSpeechShortSentenceMode = Switch(this).apply { text = "Kratki stavki" }
@@ -704,11 +713,11 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(0xFFAAAAAA.toInt())
             textSize = 12f
         })
-        etSpeechTestPhrase = EditText(this).apply { setText("Želim vodo.") }
+        etSpeechTestPhrase = EditText(this).apply { setText("Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬Ă„â€¦Ä‚â€žĂ„â€¦Ä‚â€žĂ˘â‚¬Ĺľelim vodo.") }
         advancedPanel.addView(etSpeechTestPhrase)
 
         btnClearSpeechCache = Button(this).apply {
-            text = "POČISTI GOVORNI PREDPOMNILNIK"
+            text = "POĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬ÄąË‡Ă„â€šĂ‹ÂÄ‚ËĂ˘â‚¬ĹˇĂ‚Â¬Ă„Ä…Ă„ÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ˘â‚¬Â¦Ä‚â€žĂ„â€¦Ä‚â€ąĂ˘â‚¬Ë‡ISTI GOVORNI PREDPOMNILNIK"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF4A1942.toInt())
         }
@@ -879,13 +888,11 @@ class SettingsActivity : AppCompatActivity() {
 
         spinnerCommIconsPerPage.setSelection(
             when (prefs.getCommIconsPerPage()) {
-                6 -> 0
-                8 -> 1
-                9 -> 2
-                12 -> 3
-                15 -> 4
-                18 -> 5
-                else -> 2
+                4 -> 0
+                9 -> 1
+                16 -> 2
+                25 -> 3
+                else -> 1
             }
         )
         switchAutoSortIcons.isChecked = prefs.isAutoSortCommunicationIconsEnabled()
@@ -909,6 +916,7 @@ class SettingsActivity : AppCompatActivity() {
         etSpeechModel.setText(prefs.getTtsModel())
         etSpeechPauseWords.setText(prefs.getSpeechPauseBetweenWordsMs().toString())
         etSpeechPauseSentences.setText(prefs.getSpeechPauseBetweenSentencesMs().toString())
+        refreshCommPagingDiagnostics()
         etSpeechClarity.setText(prefs.getSpeechPronunciationClarity().toString())
         etSpeechWarmth.setText(prefs.getSpeechEmotionalWarmth().toString())
         etSpeechCalmness.setText(prefs.getSpeechCalmness().toString())
@@ -1354,14 +1362,14 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun derivePickerTitle(spinner: Spinner): String {
-        val parent = spinner.parent as? ViewGroup ?: return "Izberi možnost"
+        val parent = spinner.parent as? ViewGroup ?: return "Izberi moÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ„Äľnost"
         val spinnerIndex = parent.indexOfChild(spinner)
         for (index in spinnerIndex - 1 downTo 0) {
             val previous = parent.getChildAt(index) as? TextView ?: continue
             val candidate = previous.text?.toString()?.trim().orEmpty()
             if (candidate.isNotBlank()) return candidate.removeSuffix(":")
         }
-        return "Izberi možnost"
+        return "Izberi moÄ‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚ËĂ˘â€šÂ¬Ă‚Â¦Ä‚â€žĂ˘â‚¬ĹˇÄ‚ËĂ˘â€šÂ¬ÄąÄľĂ„â€šĂ˘â‚¬ĹľÄ‚â€žĂ„Äľnost"
     }
 
     private fun installSectionNavigation() {
@@ -1460,6 +1468,34 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun refreshCommPagingDiagnostics() {
+        if (!::tvCommPagingDiagnostics.isInitialized) return
+
+        val language = prefs.getDefaultSpeechLanguage().ifBlank { "sl" }
+        val items = com.novarehab.communication.data.CommunicationRepository.getMainItems(
+            context = this,
+            language = language,
+            customIcons = prefs.getCustomCommIcons()
+        )
+        val pageSize = prefs.getCommIconsPerPage()
+        val pageCount = maxOf(1, kotlin.math.ceil(items.size.toDouble() / pageSize).toInt())
+        val page1Count = minOf(pageSize, items.size)
+        val page2Count = if (items.size > pageSize) minOf(pageSize, items.size - pageSize) else 0
+        val customMainCount = prefs.getCustomCommIcons().count { it.enabled && it.showOnMain }
+
+        tvCommPagingDiagnostics.text = buildString {
+            appendLine("Diagnostika komunikacijskih strani")
+            appendLine("Skupno glavnih ikon: ${items.size}")
+            appendLine("Omogocene glavne ikone: ${items.size}")
+            appendLine("Velikost strani: $pageSize")
+            appendLine("Stevilo strani: $pageCount")
+            appendLine("Stran 1: $page1Count")
+            appendLine("Stran 2: $page2Count")
+            appendLine("Dodatne glavne ikone po meri: $customMainCount")
+            appendLine("Ce je glavnih ikon 12 in je stran 9, je druga stran pravilno 3.")
+            append("Skrite ikone in razlog: preveri dnevnik NovaRehabPaging (onemogocena, brez ID ali brez slike).")
+        }
+    }
     private fun showExportSettingsOptions() {
         val dialog = AlertDialog.Builder(this)
             .setTitle("Izvozi nastavitve")
@@ -1791,11 +1827,9 @@ class SettingsActivity : AppCompatActivity() {
 
         prefs.saveCommIconsPerPage(
             when (spinnerCommIconsPerPage.selectedItemPosition) {
-                0 -> 6
-                1 -> 8
-                3 -> 12
-                4 -> 15
-                5 -> 18
+                0 -> 4
+                2 -> 16
+                3 -> 25
                 else -> 9
             }
         )

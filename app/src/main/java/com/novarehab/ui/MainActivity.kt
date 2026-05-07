@@ -198,7 +198,7 @@ class MainActivity : AppCompatActivity() {
     private fun importApiConfigFromDevice() {
         when (ApiConfigImportManager(this).importIfAvailable()) {
             is ApiConfigImportManager.ImportResult.Imported -> {
-                Toast.makeText(this, "API nastavitve so bile uvožene.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "API nastavitve so bile uvoÄąÄľene.", Toast.LENGTH_LONG).show()
             }
             ApiConfigImportManager.ImportResult.Invalid -> {
                 Toast.makeText(this, "API config datoteka ni pravilna.", Toast.LENGTH_LONG).show()
@@ -399,7 +399,7 @@ class MainActivity : AppCompatActivity() {
         val adapter = CommPageAdapter(
             context = this,
             items = getCommItems(),
-            pageSize = prefs.getCommIconsPerPage().let { if (it in setOf(6, 8, 9, 12, 15, 18)) it else 9 },
+            pageSize = prefs.getCommIconsPerPage().let { if (it in setOf(4, 9, 16, 25)) it else 9 },
             getLang = { activeLang },
             onItemSelected = { item -> handleCommunicationItem(item) }
         )
@@ -582,17 +582,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun commGridColumns(pageSize: Int): Int = when (pageSize) {
-        8 -> 4
-        6 -> 3
+        4 -> 2
+        9 -> 3
+        16 -> 4
+        25 -> 5
         else -> 3
     }
 
     private fun commGridRows(pageSize: Int): Int = when (pageSize) {
-        6 -> 2
-        8 -> 2
-        12 -> 4
-        15 -> 5
-        18 -> 6
+        4 -> 2
+        9 -> 3
+        16 -> 4
+        25 -> 5
         else -> 3
     }
 
@@ -919,8 +920,8 @@ class MainActivity : AppCompatActivity() {
         activeIncomingRoomId = request.roomId
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("${request.contactName} kliče")
-            .setMessage("TESTNI KLIC\nSogovornik želi poklicati Lano.")
+            .setTitle("${request.contactName} kliĂ„Ĺ¤e")
+            .setMessage("TESTNI KLIC\nSogovornik ÄąÄľeli poklicati Lano.")
             .setPositiveButton("SPREJMI") { _, _ ->
                 sendIncomingCallStatus(request.roomId, "accepted")
                 Toast.makeText(this, "Testni klic sprejet.", Toast.LENGTH_LONG).show()
@@ -1022,8 +1023,8 @@ class MainActivity : AppCompatActivity() {
 
         android.app.AlertDialog.Builder(this)
             .setTitle("Prejeta nova slika od: $senderName")
-            .setMessage("Čas prejema: $time")
-            .setPositiveButton("POKAŽI") { _, _ ->
+            .setMessage("Ă„Ĺšas prejema: $time")
+            .setPositiveButton("POKAÄąËťI") { _, _ ->
                 mediaGalleryRepository.markAllSeen()
                 updateGalleryButton()
                 openGalleryScreen()
@@ -1036,7 +1037,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             startActivity(Intent(this, GalleryActivity::class.java))
         }.onFailure {
-            Toast.makeText(this, "Galerije ni bilo mogoče odpreti.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Galerije ni bilo mogoĂ„Ĺ¤e odpreti.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1072,7 +1073,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Administrator")
-            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejšnjo verzijo", "Izhod v Android")) { _, which ->
+            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejÄąË‡njo verzijo", "Izhod v Android")) { _, which ->
                 when (which) {
                     0 -> startActivity(Intent(this, SettingsActivity::class.java))
                     1 -> startActivity(Intent(this, StatsActivity::class.java))

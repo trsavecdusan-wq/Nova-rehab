@@ -309,7 +309,7 @@
                 android:ellipsize="end"
                 android:gravity="center"
                 android:maxLines="1"
-                android:text="SPROSTITEV"
+                android:text="SPROSTI"
                 android:textColor="#ffffff"
                 android:textStyle="bold"
                 app:autoSizeMaxTextSize="11sp"

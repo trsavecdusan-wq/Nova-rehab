@@ -12,33 +12,27 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.novarehab.communication.model.CommunicationItem
 import com.novarehab.core.storage.NovaRehabPaths
+import kotlin.math.ceil
 
 class CommPageAdapter(
     private val context: Context,
     private val items: List<CommunicationItem>,
-    private val pageSize: Int = 8,
+    private val pageSize: Int = 9,
     private val getLang: () -> String,
     private val onItemSelected: (CommunicationItem) -> Unit
 ) : RecyclerView.Adapter<CommPageAdapter.PageViewHolder>() {
     private val paths = NovaRehabPaths(context)
 
-    private val safePageSize = if (pageSize in setOf(6, 8, 9, 12, 15, 18)) pageSize else 9
+    private val safePageSize = if (pageSize in setOf(4, 9, 16, 25)) pageSize else 9
     private val gridColumns = when (safePageSize) {
-        8 -> 4
-        6 -> 3
+        4 -> 2
         9 -> 3
+        16 -> 4
+        25 -> 5
         else -> 3
     }
-    private val gridRows = when (safePageSize) {
-        6 -> 2
-        8 -> 2
-        9 -> 3
-        12 -> 4
-        15 -> 5
-        18 -> 6
-        else -> 3
-    }
-    val pageCount get() = maxOf(1, Math.ceil(items.size.toDouble() / safePageSize).toInt())
+    private val gridRows = gridColumns
+    val pageCount get() = maxOf(1, ceil(items.size.toDouble() / safePageSize).toInt())
 
     override fun getItemCount() = pageCount
 
@@ -59,7 +53,6 @@ class CommPageAdapter(
         grid.removeAllViews()
         val start = position * safePageSize
         val end = minOf(start + safePageSize, items.size)
-
         val pageItems = items.subList(start, end)
 
         for (slot in 0 until safePageSize) {
@@ -72,7 +65,7 @@ class CommPageAdapter(
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(0xFF16213e.toInt())
+            setBackgroundColor(0xFF16213E.toInt())
             layoutParams = GridLayout.LayoutParams().apply {
                 width = 0
                 height = 0
@@ -107,12 +100,11 @@ class CommPageAdapter(
             addView(TextView(context).apply {
                 text = displayLabel(item)
                 textSize = when (safePageSize) {
-                    18 -> 11f
-                    15 -> 12f
-                    12 -> 13f
-                    9 -> 14f
-                    8 -> 13f
-                    else -> 15f
+                    25 -> 10f
+                    16 -> 11f
+                    9 -> 13f
+                    4 -> 16f
+                    else -> 13f
                 }
                 setTextColor(0xFFFFFFFF.toInt())
                 gravity = Gravity.CENTER
@@ -129,9 +121,7 @@ class CommPageAdapter(
 
             isClickable = true
             isFocusable = true
-            setOnClickListener {
-                onItemSelected(item)
-            }
+            setOnClickListener { onItemSelected(item) }
         }
     }
 
