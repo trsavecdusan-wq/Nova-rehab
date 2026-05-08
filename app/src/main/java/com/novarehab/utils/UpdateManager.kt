@@ -6,6 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.view.Gravity
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
@@ -14,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -27,6 +33,7 @@ object UpdateManager {
 
     private const val BACKUP_FILE_NAME = "NovaRehab_last_working.apk"
     private const val UPDATE_FILE_NAME = "NovaRehab_update.apk"
+    private const val UPDATE_PREPARE_TIMEOUT_MS = 120_000L
 
     private const val UPDATE_METADATA_URL =
         "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-version.json"
@@ -137,15 +144,32 @@ object UpdateManager {
     fun downloadAndInstallUpdate(activity: Activity, apkUrl: String) {
         appContext = activity.applicationContext
         CoroutineScope(Dispatchers.Main).launch {
-            Toast.makeText(activity, "Pripravljam posodobitev...", Toast.LENGTH_SHORT).show()
+            val progressDialog = UpdateProgressDialog(activity).apply {
+                show("Prenašanje APK", "Posodobitev se prenaša v napravo.")
+            }
 
             val result = withContext(Dispatchers.IO) {
                 try {
-                    saveCurrentApkBackupIfMissing(activity)
-                    val updateApk = downloadUpdateApk(apkUrl)
-                    validateApk(updateApk)
-                    markUpdateInstallStarted(activity)
-                    Result.success(updateApk)
+                    withTimeout(UPDATE_PREPARE_TIMEOUT_MS) {
+                        saveCurrentApkBackupIfMissing(activity)
+                        val updateApk = downloadUpdateApk(apkUrl) { progress ->
+                            progressDialog.update(
+                                title = "Prenašanje APK",
+                                message = if (progress in 0..100) {
+                                    "Preneseno $progress %."
+                                } else {
+                                    "Posodobitev se prenaša v napravo."
+                                }
+                            )
+                        }
+                        progressDialog.update(
+                            title = "Priprava namestitve",
+                            message = "Preverjam preneseno datoteko in pripravljam Android namestitev."
+                        )
+                        validateApk(updateApk)
+                        markUpdateInstallStarted(activity)
+                        Result.success(updateApk)
+                    }
                 } catch (e: Exception) {
                     Result.failure(e)
                 }
@@ -153,13 +177,24 @@ object UpdateManager {
 
             result.fold(
                 onSuccess = { file ->
-                    Toast.makeText(activity, "APK je prenesen. Potrdi namestitev.", Toast.LENGTH_LONG).show()
+                    progressDialog.update(
+                        title = "Pripravljeno za namestitev",
+                        message = "Odpiram Android namestitev. Nato lahko Android nekaj sekund preverja aplikacijo."
+                    )
                     openApkInstaller(activity, file)
-                },
-                onFailure = { error ->
+                    progressDialog.dismiss()
                     Toast.makeText(
                         activity,
-                        "Posodobitve ni bilo mogoce pripraviti: ${error.message}",
+                        "Android preverja aplikacijo. To lahko traja nekaj sekund.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                },
+                onFailure = { error ->
+                    progressDialog.dismiss()
+                    val message = error.message ?: "Prekoracen cas priprave posodobitve."
+                    Toast.makeText(
+                        activity,
+                        "Posodobitve ni bilo mogoce pripraviti: $message",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -233,7 +268,7 @@ object UpdateManager {
         }
     }
 
-    private fun downloadUpdateApk(apkUrl: String): File {
+    private fun downloadUpdateApk(apkUrl: String, onProgress: (Int) -> Unit): File {
         val request = Request.Builder()
             .url(apkUrl)
             .get()
@@ -248,9 +283,25 @@ object UpdateManager {
             }
 
             val body = response.body ?: throw IllegalStateException("Prenesena datoteka je prazna")
+            val totalBytes = body.contentLength()
+            var downloadedBytes = 0L
+            var lastProgress = -1
             updateFile.outputStream().use { output ->
                 body.byteStream().use { input ->
-                    input.copyTo(output)
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read <= 0) break
+                        output.write(buffer, 0, read)
+                        downloadedBytes += read
+                        if (totalBytes > 0L) {
+                            val progress = ((downloadedBytes * 100L) / totalBytes).toInt().coerceIn(0, 100)
+                            if (progress != lastProgress) {
+                                lastProgress = progress
+                                onProgress(progress)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -313,6 +364,82 @@ object UpdateManager {
         val remoteVersionCode: Long,
         val currentVersionCode: Long
     )
+
+    private class UpdateProgressDialog(private val activity: Activity) {
+        private val titleView = TextView(activity).apply {
+            textSize = 24f
+            setTextColor(0xFFFFFFFF.toInt())
+            gravity = Gravity.CENTER
+        }
+
+        private val messageView = TextView(activity).apply {
+            textSize = 18f
+            setTextColor(0xFFE0E0E0.toInt())
+            gravity = Gravity.CENTER
+            setLineSpacing(0f, 1.15f)
+        }
+
+        private val dialog: AlertDialog = AlertDialog.Builder(activity)
+            .setView(
+                LinearLayout(activity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(64, 64, 64, 64)
+                    setBackgroundColor(0xFF111111.toInt())
+                    gravity = Gravity.CENTER
+                    addView(
+                        titleView,
+                        LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
+                    )
+                    addView(
+                        ProgressBar(activity).apply { isIndeterminate = true },
+                        LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            gravity = Gravity.CENTER_HORIZONTAL
+                            topMargin = 32
+                            bottomMargin = 32
+                        }
+                    )
+                    addView(
+                        messageView,
+                        LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
+                    )
+                }
+            )
+            .setCancelable(false)
+            .create()
+
+        fun show(title: String, message: String) {
+            update(title, message)
+            dialog.show()
+            dialog.window?.setLayout(
+                (activity.resources.displayMetrics.widthPixels * 0.9f).toInt(),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        fun update(title: String, message: String) {
+            activity.runOnUiThread {
+                titleView.text = title
+                messageView.text = message
+            }
+        }
+
+        fun dismiss() {
+            activity.runOnUiThread {
+                if (dialog.isShowing) {
+                    dialog.dismiss()
+                }
+            }
+        }
+    }
 
     private lateinit var appContext: Context
 }

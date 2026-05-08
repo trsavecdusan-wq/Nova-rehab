@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-05-08 - v1.0.18 (versionCode 18)
+
+Changed modules:
+- update
+- release
+
+Fixed / added:
+- added clear update preparation states for APK download, install preparation and installer handoff
+- removed indefinite update waiting by adding a preparation timeout and clearer failure message
+- closed the internal loading overlay immediately after opening Android installer
+- added Play Protect guidance message so the user knows Android may verify the app for a few seconds
+
+Known issues:
+- final confirmation still depends on the next GitHub Actions build and real device update test
+- if Android signature differs from an older installed build, update install can still be blocked outside this UX flow
 ## 2026-05-08 - v1.0.17 (versionCode 17)
 
 Changed modules:
@@ -287,6 +302,7 @@ Fixed bugs:
 Known issues:
 - Final green build confirmation still depends on GitHub Actions after push.
 - Some older update/backup code paths may still need future cleanup if new release workflows are added.
+
 
 
 
