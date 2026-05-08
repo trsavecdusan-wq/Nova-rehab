@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
     private fun importApiConfigFromDevice() {
         when (ApiConfigImportManager(this).importIfAvailable()) {
             is ApiConfigImportManager.ImportResult.Imported -> {
-                Toast.makeText(this, "API nastavitve so bile uvoĹľene.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "API nastavitve so bile uvožene.", Toast.LENGTH_LONG).show()
             }
             ApiConfigImportManager.ImportResult.Invalid -> {
                 Toast.makeText(this, "API config datoteka ni pravilna.", Toast.LENGTH_LONG).show()
@@ -904,8 +904,8 @@ class MainActivity : AppCompatActivity() {
         activeIncomingRoomId = request.roomId
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("${request.contactName} kliÄŤe")
-            .setMessage("TESTNI KLIC\nSogovornik Ĺľeli poklicati Lano.")
+            .setTitle("${request.contactName} kliče")
+            .setMessage("TESTNI KLIC\nSogovornik želi poklicati Lano.")
             .setPositiveButton("SPREJMI") { _, _ ->
                 sendIncomingCallStatus(request.roomId, "accepted")
                 Toast.makeText(this, "Testni klic sprejet.", Toast.LENGTH_LONG).show()
@@ -1012,8 +1012,8 @@ class MainActivity : AppCompatActivity() {
 
         android.app.AlertDialog.Builder(this)
             .setTitle("Prejeta nova slika od: $senderName")
-            .setMessage("ÄŚas prejema: $time")
-            .setPositiveButton("POKAĹ˝I") { _, _ ->
+            .setMessage("Čas prejema: $time")
+            .setPositiveButton("POKAŽI") { _, _ ->
                 mediaGalleryRepository.markAllSeen()
                 updateGalleryButton()
                 openGalleryScreen()
@@ -1026,7 +1026,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             startActivity(Intent(this, GalleryActivity::class.java))
         }.onFailure {
-            Toast.makeText(this, "Galerije ni bilo mogoÄŤe odpreti.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Galerije ni bilo mogoče odpreti.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1062,7 +1062,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Administrator")
-            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejĹˇnjo verzijo", "Izhod v Android")) { _, which ->
+            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejšnjo verzijo", "Izhod v Android")) { _, which ->
                 when (which) {
                     0 -> startActivity(Intent(this, SettingsActivity::class.java))
                     1 -> startActivity(Intent(this, StatsActivity::class.java))

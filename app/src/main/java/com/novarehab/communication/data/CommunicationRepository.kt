@@ -51,18 +51,18 @@ object CommunicationRepository {
             )
         }.getOrElse {
             listOf(
-                CommunicationItem("piti", "ÄąËťEJNA", "ÄąËťejna sem.", R.drawable.comm_piti, shortLabel = "ÄąËťEJNA", questionText = "Kaj ÄąÄľeliÄąË‡ piti?", category = "basic", icon = "comm_piti", priority = 10),
-                CommunicationItem("jesti", "LAĂ„ĹšNA", "LaĂ„Ĺ¤na sem.", R.drawable.comm_jesti, shortLabel = "LAĂ„ĹšNA", questionText = "Kaj ÄąÄľeliÄąË‡ jesti?", category = "basic", icon = "comm_jesti", priority = 20),
-                CommunicationItem("slabo", "SLABO", "Ne poĂ„Ĺ¤utim se dobro.", R.drawable.comm_slabo, shortLabel = "SLABO", questionText = "Kaj te moti?", category = "feeling", icon = "comm_slabo", priority = 30),
-                CommunicationItem("pomoc", "POMOĂ„Ĺš", "Potrebujem pomoĂ„Ĺ¤.", R.drawable.comm_pomoc, shortLabel = "POMOĂ„Ĺš", questionText = "KakÄąË‡no pomoĂ„Ĺ¤ potrebujeÄąË‡?", category = "help", icon = "comm_pomoc", priority = 40),
+                CommunicationItem("piti", "ŽEJNA", "Žejna sem.", R.drawable.comm_piti, shortLabel = "ŽEJNA", questionText = "Kaj želiš piti?", category = "basic", icon = "comm_piti", priority = 10),
+                CommunicationItem("jesti", "LAČNA", "Lačna sem.", R.drawable.comm_jesti, shortLabel = "LAČNA", questionText = "Kaj želiš jesti?", category = "basic", icon = "comm_jesti", priority = 20),
+                CommunicationItem("slabo", "SLABO", "Ne počutim se dobro.", R.drawable.comm_slabo, shortLabel = "SLABO", questionText = "Kaj te moti?", category = "feeling", icon = "comm_slabo", priority = 30),
+                CommunicationItem("pomoc", "POMOČ", "Potrebujem pomoč.", R.drawable.comm_pomoc, shortLabel = "POMOČ", questionText = "Kakšno pomoč potrebuješ?", category = "help", icon = "comm_pomoc", priority = 40),
                 CommunicationItem("kopalnica", "WC", "Potrebujem v kopalnico.", R.drawable.comm_kopalnica, shortLabel = "WC", category = "basic", icon = "comm_kopalnica", priority = 50),
-                CommunicationItem("dobro", "DOBRO", "Dobro se poĂ„Ĺ¤utim.", R.drawable.comm_dobro, shortLabel = "DOBRO", category = "feeling", icon = "comm_dobro", priority = 60),
-                CommunicationItem("utrujena", "UTRUJENA", "Utrujena sem, rada bi poĂ„Ĺ¤ivala.", R.drawable.comm_utrujena, shortLabel = "UTRUJENA", category = "feeling", icon = "comm_utrujena", priority = 70),
+                CommunicationItem("dobro", "DOBRO", "Dobro se počutim.", R.drawable.comm_dobro, shortLabel = "DOBRO", category = "feeling", icon = "comm_dobro", priority = 60),
+                CommunicationItem("utrujena", "UTRUJENA", "Utrujena sem, rada bi počivala.", R.drawable.comm_utrujena, shortLabel = "UTRUJENA", category = "feeling", icon = "comm_utrujena", priority = 70),
                 CommunicationItem("mraz", "MRAZ", "Mrzlo mi je.", R.drawable.comm_mraz, shortLabel = "MRAZ", category = "comfort", icon = "comm_mraz", priority = 80),
-                CommunicationItem("vroce", "VROĂ„ĹšE", "VroĂ„Ĺ¤e mi je.", R.drawable.comm_vroce, shortLabel = "VROĂ„ĹšE", category = "comfort", icon = "comm_vroce", priority = 90),
+                CommunicationItem("vroce", "VROČE", "Vroče mi je.", R.drawable.comm_vroce, shortLabel = "VROČE", category = "comfort", icon = "comm_vroce", priority = 90),
                 CommunicationItem("hvala", "HVALA", "Hvala lepa.", R.drawable.comm_hvala, shortLabel = "HVALA", category = "social", icon = "comm_hvala", priority = 100),
                 CommunicationItem("pridi_sem", "PRIDI", "Prosim pridi sem k meni.", R.drawable.comm_pridi_sem, shortLabel = "PRIDI", category = "help", icon = "comm_pridi_sem", priority = 110),
-                CommunicationItem("pocakaj", "POĂ„ĹšAKAJ", "PoĂ„Ĺ¤akaj prosim.", R.drawable.comm_pocakaj, shortLabel = "POĂ„ĹšAKAJ", category = "social", icon = "comm_pocakaj", priority = 120)
+                CommunicationItem("pocakaj", "POČAKAJ", "Počakaj prosim.", R.drawable.comm_pocakaj, shortLabel = "POČAKAJ", category = "social", icon = "comm_pocakaj", priority = 120)
             )
         }
     }

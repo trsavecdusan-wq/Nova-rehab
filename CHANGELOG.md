@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-05-08 - v1.0.20 (versionCode 20)
+
+Changed modules:
+- main-ui
+- communication
+- release
+
+Fixed / added:
+- fixed corrupted Slovenian fallback strings on the main patient-facing flow
+- stabilized the main screen top module with visible radio area and patient info without visible speed or km/h
+- kept unsafe on-screen volume buttons hidden until final stable placement is ready
+- improved bottom navigation label fitting so VIDEO, GALERIJA, OGLEDALO and SPROSTI stay readable in one row
+
+Known issues:
+- final confirmation still depends on the next GitHub Actions build and real tablet test
+- this patch intentionally avoids updater, companion, paging architecture, gallery storage logic and other subsystems
 ## 2026-05-08 - v1.0.19 (versionCode 19)
 
 Changed modules:
