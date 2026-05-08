@@ -15,6 +15,7 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.view.GestureDetector
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
@@ -27,6 +28,8 @@ import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -1164,6 +1167,10 @@ class MainActivity : AppCompatActivity() {
         updateGalleryButton()
     }
 
+
+    override fun onPause() {
+        super.onPause()
+    }
     override fun onDestroy() {
         tts?.stop()
         tts?.shutdown()
