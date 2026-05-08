@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -24,8 +27,6 @@ import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -197,7 +198,7 @@ class MainActivity : AppCompatActivity() {
     private fun importApiConfigFromDevice() {
         when (ApiConfigImportManager(this).importIfAvailable()) {
             is ApiConfigImportManager.ImportResult.Imported -> {
-                Toast.makeText(this, "API nastavitve so bile uvožene.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "API nastavitve so bile uvo\u017Eene.", Toast.LENGTH_LONG).show()
             }
             ApiConfigImportManager.ImportResult.Invalid -> {
                 Toast.makeText(this, "API config datoteka ni pravilna.", Toast.LENGTH_LONG).show()
@@ -365,7 +366,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("Nastavi domači naslov")
+            .setTitle("Nastavi doma\u010Di naslov")
             .setView(input)
             .setPositiveButton("Shrani") { _, _ ->
                 val address = input.text.toString().trim()
@@ -375,7 +376,7 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, NavigationActivity::class.java))
                 }
             }
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("Prekli\u010Di", null)
             .show()
     }
 
@@ -727,7 +728,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("Jezik")
             .setView(wrapper)
-            .setNegativeButton("Prekliči", null)
+            .setNegativeButton("Prekli\u010Di", null)
             .create()
 
         languages.forEach { lang ->
@@ -812,12 +813,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun languageChoice(code: String): LanguageChoice {
         return when (code) {
-            "uk" -> LanguageChoice("uk", "\uD83C\uDDFA\uD83C\uDDE6", "Ukrajinščina")
-            "en" -> LanguageChoice("en", "\uD83C\uDDEC\uD83C\uDDE7", "Angleščina")
-            "de" -> LanguageChoice("de", "\uD83C\uDDE9\uD83C\uDDEA", "Nemščina")
-            "hr" -> LanguageChoice("hr", "\uD83C\uDDED\uD83C\uDDF7", "Hrvaščina")
-            "sr" -> LanguageChoice("sr", "\uD83C\uDDF7\uD83C\uDDF8", "Srbščina")
-            else -> LanguageChoice("sl", "\uD83C\uDDF8\uD83C\uDDEE", "Slovenščina")
+            "uk" -> LanguageChoice("uk", "\uD83C\uDDFA\uD83C\uDDE6", "Ukrajin\u0161\u010Dina")
+            "en" -> LanguageChoice("en", "\uD83C\uDDEC\uD83C\uDDE7", "Angle\u0161\u010Dina")
+            "de" -> LanguageChoice("de", "\uD83C\uDDE9\uD83C\uDDEA", "Nem\u0161\u010Dina")
+            "hr" -> LanguageChoice("hr", "\uD83C\uDDED\uD83C\uDDF7", "Hrva\u0161\u010Dina")
+            "sr" -> LanguageChoice("sr", "\uD83C\uDDF7\uD83C\uDDF8", "Srb\u0161\u010Dina")
+            else -> LanguageChoice("sl", "\uD83C\uDDF8\uD83C\uDDEE", "Sloven\u0161\u010Dina")
         }
     }
     private fun setupLanguageDetector() {
@@ -859,6 +860,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         clockHandler.post(clockRunnable!!)
+    }
+    private fun updateDeviceIndicators() {
+        val batteryManager = getSystemService(BATTERY_SERVICE) as? BatteryManager
+        val batteryLevel = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)?.takeIf { it in 0..100 }
+        binding.tvBatteryPercent.text = if (batteryLevel != null) "${batteryLevel}%" else "--%"
+
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val network = connectivityManager?.activeNetwork
+        val capabilities = connectivityManager?.getNetworkCapabilities(network)
+        val online = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        binding.tvInternetIndicator.text = if (online) "NET" else "OFF"
+        binding.tvInternetIndicator.setTextColor(if (online) 0xFF8BE28B.toInt() else 0xFFFFB36B.toInt())
     }
     private fun setupVideoCallButton() {
         binding.btnVideoCall.setOnClickListener {
@@ -906,8 +920,8 @@ class MainActivity : AppCompatActivity() {
         activeIncomingRoomId = request.roomId
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("${request.contactName} kliče")
-            .setMessage("TESTNI KLIC\nSogovornik želi poklicati Lano.")
+            .setTitle("${request.contactName} kli\u010De")
+            .setMessage("TESTNI KLIC\nSogovornik \u017Eeli poklicati Lano.")
             .setPositiveButton("SPREJMI") { _, _ ->
                 sendIncomingCallStatus(request.roomId, "accepted")
                 Toast.makeText(this, "Testni klic sprejet.", Toast.LENGTH_LONG).show()
@@ -1014,8 +1028,8 @@ class MainActivity : AppCompatActivity() {
 
         android.app.AlertDialog.Builder(this)
             .setTitle("Prejeta nova slika od: $senderName")
-            .setMessage("Čas prejema: $time")
-            .setPositiveButton("POKAŽI") { _, _ ->
+            .setMessage("\u010Cas prejema: $time")
+            .setPositiveButton("POKA\u017DI") { _, _ ->
                 mediaGalleryRepository.markAllSeen()
                 updateGalleryButton()
                 openGalleryScreen()
@@ -1028,7 +1042,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             startActivity(Intent(this, GalleryActivity::class.java))
         }.onFailure {
-            Toast.makeText(this, "Galerije ni bilo mogoče odpreti.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Galerije ni bilo mogo\u010De odpreti.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1064,7 +1078,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Administrator")
-            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejšnjo verzijo", "Izhod v Android")) { _, which ->
+            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prej\u0161njo verzijo", "Izhod v Android")) { _, which ->
                 when (which) {
                     0 -> startActivity(Intent(this, SettingsActivity::class.java))
                     1 -> startActivity(Intent(this, StatsActivity::class.java))

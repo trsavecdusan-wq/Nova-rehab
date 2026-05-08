@@ -1,4 +1,17 @@
 
+## 2026-05-08 - v1.0.23 (versionCode 23)
+
+Changed modules:
+- main_screen
+
+Fixed bugs:
+- Added stable battery percentage and internet status indicators to the first tablet screen.
+- Cleaned remaining visible Slovenian UTF-8 issues in the main screen activity.
+- Kept the patient info card free of speed and km/h text.
+- Preserved hidden on-screen volume buttons until exact safe placement is finalized.
+- Kept bottom action labels readable in one line on tablet layout.
+
+
 ## 2026-05-08 - v1.0.22 (versionCode 22)
 
 Changed modules:
