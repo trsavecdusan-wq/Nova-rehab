@@ -51,8 +51,8 @@ jobs:
         run: |
           cat > app-version.json <<'EOF'
           {
-            "versionCode": 16,
-            "versionName": "1.0.16",
+            "versionCode": 17,
+            "versionName": "1.0.17",
             "apkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-debug.apk",
             "companionApkUrl": "https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/companion-debug.apk",
             "message": "Nova verzija aplikacije NovaRehab je na voljo."
@@ -75,7 +75,7 @@ jobs:
             exit 1
           fi
 
-      - name: Preveri package name companion APK-ja
+      - name: Preveri package name APK-jev
         run: |
           AAPT="$ANDROID_HOME/build-tools/34.0.0/aapt"
           if [ ! -x "$AAPT" ]; then
@@ -100,6 +100,7 @@ jobs:
             fi
           }
 
+          check_package output/app-debug.apk com.novarehab.app
           check_package output/companion-debug.apk com.novarehab.companion
 
       - name: Nalozi debug APK artifact

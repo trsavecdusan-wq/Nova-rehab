@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-05-08 - v1.0.17 (versionCode 17)
+
+Changed modules:
+- release
+- build
+
+Fixed / added:
+- restored tablet APK install identity to `com.novarehab.app` so update builds target the existing package name
+- added CI verification for both app and companion APK package names before release upload
+- incremented version metadata to keep update ordering monotonic
+
+Known issues:
+- if the currently installed tablet APK was signed with a different key than the current debug build, Android will still reject update installation until signing is unified
+- final install-over-update confirmation still depends on the next GitHub Actions build and real device test
+
 ## 2026-05-08 - v1.0.16 (versionCode 16)
 
 Changed modules:
