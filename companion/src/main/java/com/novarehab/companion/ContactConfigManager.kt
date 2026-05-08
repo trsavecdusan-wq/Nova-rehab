@@ -50,11 +50,11 @@ class ContactConfigManager(context: Context) {
             CompanionContactConfig(
                 contactId = savedId,
                 contactName = savedName.ifBlank { savedId.uppercase() },
-                roomId = savedRoomId.ifBlank { "novarehab_$savedId" },
+                roomId = savedRoomId,
                 preferredLanguage = savedLanguage.ifBlank { "sl" },
                 patientName = savedPatientName.ifBlank { DEFAULT_PATIENT_NAME }
             )
-        }
+        }.normalize()
 
         return resolved.takeIf(::isValid)
     }
@@ -75,32 +75,33 @@ class ContactConfigManager(context: Context) {
     }
 
     fun save(config: CompanionContactConfig) {
-        require(isValid(config)) { "Neveljavna nastavitev kontakta." }
+        val normalized = config.normalize()
+        require(isValid(normalized)) { "Neveljavna nastavitev kontakta." }
 
         prefs.edit()
-            .putString(KEY_CONTACT_ID, config.contactId)
-            .putString(KEY_CONTACT_NAME, config.contactName)
-            .putString(KEY_ROOM_ID, config.roomId)
-            .putString(KEY_LANGUAGE, config.preferredLanguage)
-            .putString(KEY_PATIENT_NAME, config.patientName.ifBlank { DEFAULT_PATIENT_NAME })
+            .putString(KEY_CONTACT_ID, normalized.contactId)
+            .putString(KEY_CONTACT_NAME, normalized.contactName)
+            .putString(KEY_ROOM_ID, normalized.roomId)
+            .putString(KEY_LANGUAGE, normalized.preferredLanguage)
+            .putString(KEY_PATIENT_NAME, normalized.patientName.ifBlank { DEFAULT_PATIENT_NAME })
             .apply()
     }
 
     fun importFromSharedPayload(raw: String): Result<CompanionContactConfig> {
         return runCatching {
-            val normalized = raw
+            val normalizedPayload = raw
                 .replace("\uFEFF", "")
                 .substringAfter(CONFIG_PREFIX, raw)
                 .trim()
 
-            val json = JSONObject(normalized)
+            val json = JSONObject(normalizedPayload)
             val config = CompanionContactConfig(
                 contactId = json.optString("contact_id").trim(),
                 contactName = json.optString("contact_name").trim(),
                 roomId = json.optString("room_id").trim(),
                 preferredLanguage = json.optString("preferred_language").trim().ifBlank { "sl" },
                 patientName = json.optString("patient_name").trim().ifBlank { DEFAULT_PATIENT_NAME }
-            )
+            ).normalize()
 
             if (!isValid(config)) {
                 throw IllegalArgumentException("Uvožena nastavitev ni veljavna.")
@@ -109,6 +110,21 @@ class ContactConfigManager(context: Context) {
             save(config)
             config
         }
+    }
+
+    private fun CompanionContactConfig.normalize(): CompanionContactConfig {
+        val normalizedId = contactId.trim()
+        val safeRoomId = roomId.trim().ifBlank { "novarehab_${normalizedId.lowercase()}" }
+        val normalizedLanguage = preferredLanguage.trim().lowercase().ifBlank { "sl" }
+        val normalizedName = contactName.trim().ifBlank { normalizedId.uppercase() }
+        val normalizedPatient = patientName.trim().ifBlank { DEFAULT_PATIENT_NAME }
+        return copy(
+            contactId = normalizedId,
+            contactName = normalizedName,
+            roomId = safeRoomId,
+            preferredLanguage = normalizedLanguage,
+            patientName = normalizedPatient
+        )
     }
 
     companion object {
