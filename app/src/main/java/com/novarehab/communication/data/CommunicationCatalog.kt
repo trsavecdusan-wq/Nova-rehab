@@ -35,6 +35,8 @@ class CommunicationCatalog(
         val pageCount = maxOf(1, ceil(sortedItems.size.toDouble() / pageSize).toInt())
         val page1Count = min(pageSize, sortedItems.size)
         val page2Count = if (sortedItems.size > pageSize) min(pageSize, sortedItems.size - pageSize) else 0
+        val visibleMainIcons = sortedItems.size
+        val childrenCount = sortedItems.sumOf { it.children.size }
 
         if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
             Log.d(
