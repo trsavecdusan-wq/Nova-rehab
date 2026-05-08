@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-05-08 - v1.0.21 (versionCode 21)
+
+Changed modules:
+- build
+- release
+- update
+- main-ui
+- communication
+
+Fixed / added:
+- fixed APK build signing stability by signing app and companion debug APKs with one stable repo keystore for update testing
+- converted UpdateManager.kt to clean UTF-8 without BOM and preserved Slovenian characters correctly
+- stabilized the main screen left radio module with visible 2 x 3 station buttons and kept the unsafe on-screen volume buttons hidden
+- kept the patient info module focused on flag, patient name, weekday, date and clock without visible speed or km/h
+- tightened bottom navigation labels so VIDEO, GALERIJA, OGLEDALO and SPROSTI remain readable in one row
+- expanded communication paging diagnostics with visible main icon count and children count without changing paging behavior
+
+Known issues:
+- final acceptance still depends on the next GitHub Actions build and real tablet update test
+- this patch intentionally avoids broad settings, companion, OpenAI, video call and updater architecture changes
 ## 2026-05-08 - v1.0.20 (versionCode 20)
 
 Changed modules:

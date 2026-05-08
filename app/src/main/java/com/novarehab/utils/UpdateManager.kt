@@ -145,7 +145,7 @@ object UpdateManager {
         appContext = activity.applicationContext
         CoroutineScope(Dispatchers.Main).launch {
             val progressDialog = UpdateProgressDialog(activity).apply {
-                show("Prenašanje APK", "Posodobitev se prenaša v napravo.")
+                show("PrenaÅ¡anje APK", "Posodobitev se prenaÅ¡a v napravo.")
             }
 
             val result = withContext(Dispatchers.IO) {
@@ -154,11 +154,11 @@ object UpdateManager {
                         saveCurrentApkBackupIfMissing(activity)
                         val updateApk = downloadUpdateApk(apkUrl) { progress ->
                             progressDialog.update(
-                                title = "Prenašanje APK",
+                                title = "PrenaÅ¡anje APK",
                                 message = if (progress in 0..100) {
                                     "Preneseno $progress %."
                                 } else {
-                                    "Posodobitev se prenaša v napravo."
+                                    "Posodobitev se prenaÅ¡a v napravo."
                                 }
                             )
                         }

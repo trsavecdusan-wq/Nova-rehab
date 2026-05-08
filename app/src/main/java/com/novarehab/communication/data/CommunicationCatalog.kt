@@ -39,7 +39,7 @@ class CommunicationCatalog(
         if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
             Log.d(
                 "NovaRehabPaging",
-                "total_main_icons=${sortedItems.size}, enabled_main_icons=${sortedItems.size}, page_size=$pageSize, page_count=$pageCount, page_1_count=$page1Count, page_2_count=$page2Count"
+                "total_main_icons=${sortedItems.size}, enabled_main_icons=${sortedItems.size}, visible_main_icons=$visibleMainIcons, children_count=$childrenCount, hidden_icons_with_reason=none, page_size=$pageSize, page_count=$pageCount, page_1_count=$page1Count, page_2_count=$page2Count"
             )
         }
         return sortedItems

@@ -229,6 +229,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshRadioButtons() {
         val stations = prefs.getRadioStations()
+        val fallbackStations = listOf("Radio 1", "Radio Center", "ROKS UA", "Kiss FM UA", "Nashe UA", "Glasba")
         val radioButtons = listOf(
             binding.btnRadio1,
             binding.btnRadio2,
@@ -240,7 +241,7 @@ class MainActivity : AppCompatActivity() {
 
         radioButtons.forEachIndexed { index, button ->
             val station = stations.getOrNull(index)
-            button.text = twoLineButtonText(station?.name ?: "P${index + 1}")
+            button.text = twoLineButtonText(station?.name?.takeIf { it.isNotBlank() } ?: fallbackStations.getOrElse(index) { "Radio ${index + 1}" })
             button.maxLines = 2
             button.isSingleLine = false
             button.setOnClickListener {

@@ -47,105 +47,118 @@
                 android:contentDescription="Radio"
                 android:src="@drawable/ic_radio" />
 
-            <androidx.gridlayout.widget.GridLayout
+            <LinearLayout
                 android:id="@+id/radioGrid"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:alignmentMode="alignMargins"
-                android:columnCount="2"
-                android:rowCount="3"
-                android:useDefaultMargins="true">
+                android:orientation="vertical"
+                android:weightSum="3">
 
-                <Button
-                    android:id="@+id/btnRadio1"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_columnWeight="1"
-                    android:layout_rowWeight="1"
-                    android:layout_gravity="fill"
-                    android:backgroundTint="#0F3460"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:padding="4dp"
-                    android:text="RADIO 1"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp" />
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/btnRadio2"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_columnWeight="1"
-                    android:layout_rowWeight="1"
-                    android:layout_gravity="fill"
-                    android:backgroundTint="#0F3460"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:padding="4dp"
-                    android:text="RADIO 2"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp" />
+                    <Button
+                        android:id="@+id/btnRadio1"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:backgroundTint="#0F3460"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:padding="4dp"
+                        android:text="Radio 1"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp" />
 
-                <Button
-                    android:id="@+id/btnRadio3"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_columnWeight="1"
-                    android:layout_rowWeight="1"
-                    android:layout_gravity="fill"
-                    android:backgroundTint="#0F3460"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:padding="4dp"
-                    android:text="RADIO 3"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp" />
+                    <Button
+                        android:id="@+id/btnRadio2"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:backgroundTint="#0F3460"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:padding="4dp"
+                        android:text="Radio Center"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
 
-                <Button
-                    android:id="@+id/btnRadio4"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_columnWeight="1"
-                    android:layout_rowWeight="1"
-                    android:layout_gravity="fill"
-                    android:backgroundTint="#0F3460"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:padding="4dp"
-                    android:text="RADIO 4"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp" />
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
 
-                <Button
-                    android:id="@+id/btnRadio5"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_columnWeight="1"
-                    android:layout_rowWeight="1"
-                    android:layout_gravity="fill"
-                    android:backgroundTint="#0F3460"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:padding="4dp"
-                    android:text="RADIO 5"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp" />
+                    <Button
+                        android:id="@+id/btnRadio3"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:backgroundTint="#0F3460"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:padding="4dp"
+                        android:text="ROKS UA"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp" />
 
-                <Button
-                    android:id="@+id/btnRadio6"
-                    android:layout_width="0dp"
+                    <Button
+                        android:id="@+id/btnRadio4"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:backgroundTint="#0F3460"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:padding="4dp"
+                        android:text="Kiss FM UA"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_columnWeight="1"
-                    android:layout_rowWeight="1"
-                    android:layout_gravity="fill"
-                    android:backgroundTint="#0F3460"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:padding="4dp"
-                    android:text="GLASBA"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp" />
-            </androidx.gridlayout.widget.GridLayout>
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnRadio5"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:backgroundTint="#0F3460"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:padding="4dp"
+                        android:text="Nashe UA"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp" />
+
+                    <Button
+                        android:id="@+id/btnRadio6"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_margin="2dp"
+                        android:backgroundTint="#0F3460"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:padding="4dp"
+                        android:text="Glasba"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -273,11 +286,11 @@
             android:text="VIDEO"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="10sp"
-            app:autoSizeMaxTextSize="12sp"
+            app:autoSizeMinTextSize="9sp"
+            app:autoSizeMaxTextSize="11sp"
             app:autoSizeStepGranularity="1sp" />
 
         <Button
@@ -295,11 +308,11 @@
             android:text="GALERIJA"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="10sp"
-            app:autoSizeMaxTextSize="12sp"
+            app:autoSizeMinTextSize="9sp"
+            app:autoSizeMaxTextSize="11sp"
             app:autoSizeStepGranularity="1sp" />
 
         <Button
@@ -317,11 +330,11 @@
             android:text="OGLEDALO"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="10sp"
-            app:autoSizeMaxTextSize="12sp"
+            app:autoSizeMinTextSize="9sp"
+            app:autoSizeMaxTextSize="11sp"
             app:autoSizeStepGranularity="1sp" />
 
         <Button
@@ -339,11 +352,11 @@
             android:text="SPROSTI"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="10sp"
-            app:autoSizeMaxTextSize="12sp"
+            app:autoSizeMinTextSize="9sp"
+            app:autoSizeMaxTextSize="11sp"
             app:autoSizeStepGranularity="1sp" />
     </LinearLayout>
 

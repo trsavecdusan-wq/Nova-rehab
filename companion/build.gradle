@@ -8,12 +8,21 @@ android {
     compileSdk 34
     buildToolsVersion "34.0.0"
 
+    signingConfigs {
+        novarehabStable {
+            storeFile rootProject.file("signing/novarehab-debug.jks")
+            storePassword "novarehab"
+            keyAlias "novarehabdebug"
+            keyPassword "novarehab"
+        }
+    }
+
     defaultConfig {
         applicationId "com.novarehab.companion"
         minSdk 24
         targetSdk 34
-        versionCode 20
-        versionName "1.0.20"
+        versionCode 21
+        versionName "1.0.21"
         resValue "string", "app_name", "NovaRehab Companion"
         buildConfigField "String", "SIGNALING_BASE_URL", "\"https://novarehab-dfcb9-default-rtdb.europe-west1.firebasedatabase.app\""
         buildConfigField "String", "UPDATE_CHECK_URL", "\"https://github.com/trsavecdusan-wq/Nova-rehab/releases/download/novarehab-companion-latest/app-version.json\""
@@ -37,10 +46,12 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.novarehabStable
         }
 
         debug {
             minifyEnabled false
+            signingConfig signingConfigs.novarehabStable
         }
     }
 
