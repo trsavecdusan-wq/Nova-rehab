@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-05-08 - v1.0.19 (versionCode 19)
+
+Changed modules:
+- main-ui
+- mirror
+- gallery
+- communication
+- release
+
+Fixed / added:
+- fixed main screen top layout so radio grid stays visible and patient module shows flag, name, day, date and time without speed or km/h
+- hid unsafe on-screen volume buttons until stable placement can be guaranteed on the tablet
+- fixed bottom navigation label clipping with one-line readable labels
+- mirror captures now save to Android public gallery through MediaStore under Pictures/NovaRehab
+- added communication icon paging diagnostics for main icon counts and first two page counts
+
+Known issues:
+- final confirmation still depends on the next GitHub Actions build and real tablet test
+- this patch intentionally avoids updater, companion, video call, export/import, USB music and speech changes
 ## 2026-05-08 - v1.0.18 (versionCode 18)
 
 Changed modules:
@@ -302,6 +321,7 @@ Fixed bugs:
 Known issues:
 - Final green build confirmation still depends on GitHub Actions after push.
 - Some older update/backup code paths may still need future cleanup if new release workflows are added.
+
 
 
 

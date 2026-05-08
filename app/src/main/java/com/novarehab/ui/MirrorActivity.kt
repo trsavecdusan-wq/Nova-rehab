@@ -54,7 +54,7 @@ class MirrorActivity : AppCompatActivity() {
                         runCatching {
                             mediaGalleryRepository.saveCameraCapture(file)
                         }.onSuccess { saved ->
-                            if (java.io.File(saved.localPath).exists() && java.io.File(saved.localPath).length() > 0L) {
+                            if (mediaGalleryRepository.isStoredMediaAvailable(saved.localPath)) {
                                 cameraManager.resetToFrontCamera(this, binding.previewView, ::showCameraError)
                                 cancelBackCameraReset()
                                 file.delete()
@@ -170,4 +170,5 @@ class MirrorActivity : AppCompatActivity() {
         backCameraResetRunnable = null
     }
 }
+
 

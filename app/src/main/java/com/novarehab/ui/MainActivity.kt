@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
-import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -198,7 +197,7 @@ class MainActivity : AppCompatActivity() {
     private fun importApiConfigFromDevice() {
         when (ApiConfigImportManager(this).importIfAvailable()) {
             is ApiConfigImportManager.ImportResult.Imported -> {
-                Toast.makeText(this, "API nastavitve so bile uvoÄąÄľene.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "API nastavitve so bile uvoĹľene.", Toast.LENGTH_LONG).show()
             }
             ApiConfigImportManager.ImportResult.Invalid -> {
                 Toast.makeText(this, "API config datoteka ni pravilna.", Toast.LENGTH_LONG).show()
@@ -349,24 +348,13 @@ class MainActivity : AppCompatActivity() {
             speedGestureDetector.onTouchEvent(event)
             true
         }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            startGps()
-        }
+        binding.tvSpeed.visibility = View.GONE
+        binding.tvSpeed.text = ""
     }
 
     private fun startGps() {
-        try {
-            val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                locationManager.requestLocationUpdates(android.location.LocationManager.GPS_PROVIDER, 1000L, 0.5f) { location ->
-                    val kmh = (location.speed * 3.6).toInt()
-                    binding.tvSpeed.text = if (location.accuracy > 10f || !location.hasSpeed()) "0" else kmh.toString()
-                }
-            }
-        } catch (_: Exception) {
-            binding.tvSpeed.text = "0"
-        }
+        binding.tvSpeed.visibility = View.GONE
+        binding.tvSpeed.text = ""
     }
 
     private fun showHomeAddressDialog() {
@@ -817,6 +805,8 @@ class MainActivity : AppCompatActivity() {
         binding.tvLanguageFlag.text = language.flag
         binding.tvPatientName.text = patientName
         binding.tvPatientName.visibility = View.VISIBLE
+        binding.tvSpeed.visibility = View.GONE
+        binding.tvSpeed.text = ""
     }
 
     private fun languageChoice(code: String): LanguageChoice {
@@ -844,16 +834,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupVolumeControls() {
-        val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
-        binding.btnVolUp.setOnClickListener {
-            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0)
-        }
-
-        binding.btnVolDown.setOnClickListener {
-            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0)
-        }
+        binding.btnVolUp.visibility = View.GONE
+        binding.btnVolDown.visibility = View.GONE
     }
+
     private fun setupClock() {
         val dayFormat = SimpleDateFormat("EEEE", Locale("sl"))
         val dateFormat = SimpleDateFormat("d. MMMM", Locale("sl"))
@@ -920,8 +904,8 @@ class MainActivity : AppCompatActivity() {
         activeIncomingRoomId = request.roomId
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("${request.contactName} kliĂ„Ĺ¤e")
-            .setMessage("TESTNI KLIC\nSogovornik ÄąÄľeli poklicati Lano.")
+            .setTitle("${request.contactName} kliÄŤe")
+            .setMessage("TESTNI KLIC\nSogovornik Ĺľeli poklicati Lano.")
             .setPositiveButton("SPREJMI") { _, _ ->
                 sendIncomingCallStatus(request.roomId, "accepted")
                 Toast.makeText(this, "Testni klic sprejet.", Toast.LENGTH_LONG).show()
@@ -946,6 +930,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomActionButtons() {
+        binding.btnVideoCall.text = "VIDEO"
+        binding.btnGallery.text = "GALERIJA"
+        binding.btnMirror.text = "OGLEDALO"
+        binding.btnRelax.text = "SPROSTI"
+
         binding.btnGallery.setOnClickListener {
             mediaGalleryRepository.markAllSeen()
             updateGalleryButton()
@@ -1023,8 +1012,8 @@ class MainActivity : AppCompatActivity() {
 
         android.app.AlertDialog.Builder(this)
             .setTitle("Prejeta nova slika od: $senderName")
-            .setMessage("Ă„Ĺšas prejema: $time")
-            .setPositiveButton("POKAÄąËťI") { _, _ ->
+            .setMessage("ÄŚas prejema: $time")
+            .setPositiveButton("POKAĹ˝I") { _, _ ->
                 mediaGalleryRepository.markAllSeen()
                 updateGalleryButton()
                 openGalleryScreen()
@@ -1037,7 +1026,7 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             startActivity(Intent(this, GalleryActivity::class.java))
         }.onFailure {
-            Toast.makeText(this, "Galerije ni bilo mogoĂ„Ĺ¤e odpreti.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Galerije ni bilo mogoÄŤe odpreti.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -1073,7 +1062,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAdminMenu() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Administrator")
-            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejÄąË‡njo verzijo", "Izhod v Android")) { _, which ->
+            .setItems(arrayOf("Nastavitve", "Statistika", "Obnovi prejĹˇnjo verzijo", "Izhod v Android")) { _, which ->
                 when (which) {
                     0 -> startActivity(Intent(this, SettingsActivity::class.java))
                     1 -> startActivity(Intent(this, StatsActivity::class.java))
@@ -1126,10 +1115,6 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == 100) {
-            if (grantResults.getOrNull(permissions.indexOf(Manifest.permission.ACCESS_FINE_LOCATION)) == PackageManager.PERMISSION_GRANTED) {
-                startGps()
-            }
-
             if (
                 prefs.isAutoLanguageEnabled() &&
                 grantResults.getOrNull(permissions.indexOf(Manifest.permission.RECORD_AUDIO)) == PackageManager.PERMISSION_GRANTED
@@ -1192,3 +1177,4 @@ class MainActivity : AppCompatActivity() {
         val fullName: String
     )
 }
+

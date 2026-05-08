@@ -1,8 +1,12 @@
 package com.novarehab.media_messaging.repository
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -10,6 +14,9 @@ import com.novarehab.core.storage.NovaRehabPaths
 import com.novarehab.media_messaging.model.MediaMessage
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MediaGalleryRepository(context: Context) {
     private val appContext = context.applicationContext
@@ -135,23 +142,20 @@ class MediaGalleryRepository(context: Context) {
     fun delete(messageId: String) {
         val items = loadAll()
         val target = items.firstOrNull { it.messageId == messageId } ?: return
-        File(target.localPath).delete()
+        deleteStoredMedia(target.localPath)
         if (target.thumbnailPath.isNotBlank()) File(target.thumbnailPath).delete()
         writeAll(items.filterNot { it.messageId == messageId })
     }
 
     fun saveCameraCapture(source: File, senderName: String = "Kamera"): MediaMessage {
-        require(source.exists()) { "Začasna slika ne obstaja." }
+        require(source.exists()) { "Zacasna slika ne obstaja." }
 
         val messageId = "camera_${System.currentTimeMillis()}"
         val bytes = source.readBytes()
-        val targetFile = writeImageBytes(
-            fileName = source.name.ifBlank { "$messageId.jpg" },
-            bytes = bytes,
-            targetDir = paths.galleryCameraDir
-        )
-        check(targetFile.exists() && targetFile.length() > 0L) {
-            "Slike ni bilo mogoče shraniti v ${targetFile.absolutePath}."
+        val fileName = SimpleDateFormat("'IMG_'yyyyMMdd_HHmmss'.jpg'", Locale.US).format(Date())
+        val publicUri = savePublicImage(bytes, fileName)
+        check(isStoredMediaAvailable(publicUri.toString())) {
+            "Slike ni bilo mogoce shraniti v javno galerijo."
         }
 
         val thumbFile = File(thumbsDir, "$messageId.jpg")
@@ -165,7 +169,7 @@ class MediaGalleryRepository(context: Context) {
             fileType = "image",
             mimeType = "image/jpeg",
             receivedAt = System.currentTimeMillis(),
-            localPath = targetFile.absolutePath,
+            localPath = publicUri.toString(),
             thumbnailPath = thumbFile.absolutePath,
             messageText = "Mirror capture",
             seen = true
@@ -175,6 +179,26 @@ class MediaGalleryRepository(context: Context) {
             .sortedByDescending { it.receivedAt }
         runCatching { writeAll(updated) }
         return message
+    }
+
+    fun isStoredMediaAvailable(path: String): Boolean {
+        if (path.isBlank()) return false
+        return if (path.startsWith("content://")) {
+            runCatching {
+                appContext.contentResolver.openInputStream(Uri.parse(path))?.use { true } ?: false
+            }.getOrDefault(false)
+        } else {
+            val file = File(path)
+            file.exists() && file.length() > 0L
+        }
+    }
+
+    private fun deleteStoredMedia(path: String) {
+        if (path.startsWith("content://")) {
+            runCatching { appContext.contentResolver.delete(Uri.parse(path), null, null) }
+        } else {
+            File(path).delete()
+        }
     }
 
     private fun writeAll(items: List<MediaMessage>) {
@@ -201,11 +225,41 @@ class MediaGalleryRepository(context: Context) {
         val target = File(targetDir, fileName)
         target.writeBytes(bytes)
         if (!target.exists() || target.length() <= 0L) {
-            throw IllegalStateException("Datoteke ni bilo mogoče zapisati v ${target.absolutePath}.")
+            throw IllegalStateException("Datoteke ni bilo mogoce zapisati v ${target.absolutePath}.")
         }
         return target
     }
+
+    private fun savePublicImage(bytes: ByteArray, fileName: String): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/NovaRehab")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        }
+
+        val uri = appContext.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("Android galerije ni bilo mogoce pripraviti.")
+
+        try {
+            appContext.contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(bytes)
+                output.flush()
+            } ?: throw IllegalStateException("Android galerije ni bilo mogoce odpreti za zapis.")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val readyValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.IS_PENDING, 0)
+                }
+                appContext.contentResolver.update(uri, readyValues, null, null)
+            }
+
+            return uri
+        } catch (error: Exception) {
+            runCatching { appContext.contentResolver.delete(uri, null, null) }
+            throw error
+        }
+    }
 }
-
-
-

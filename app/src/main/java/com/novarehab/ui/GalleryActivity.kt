@@ -67,8 +67,8 @@ class GalleryActivity : AppCompatActivity() {
         binding.tvImageMeta.text =
             "Od: ${item.senderName}\n${android.text.format.DateFormat.format("dd.MM.yyyy HH:mm", item.receivedAt)}"
 
-        val imageFile = File(item.localPath)
-        if (!imageFile.exists()) {
+        val imageUri = mediaUriFor(item.localPath)
+        if (imageUri == null) {
             binding.ivGallery.setImageDrawable(null)
             binding.tvNoImages.visibility = View.VISIBLE
             binding.tvNoImages.text = "Galerija je prazna"
@@ -76,11 +76,11 @@ class GalleryActivity : AppCompatActivity() {
         }
 
         runCatching {
-            Glide.with(this).load(Uri.fromFile(imageFile)).into(binding.ivGallery)
+            Glide.with(this).load(imageUri).into(binding.ivGallery)
         }.onFailure {
             binding.ivGallery.setImageDrawable(null)
             binding.tvNoImages.visibility = View.VISIBLE
-            binding.tvNoImages.text = "Galerije ni bilo mogoče odpreti."
+            binding.tvNoImages.text = "Galerije ni bilo mogoce odpreti."
         }
     }
 
@@ -101,6 +101,7 @@ class GalleryActivity : AppCompatActivity() {
 
         binding.btnClose.setOnClickListener { returnToMain() }
     }
+
     private fun returnToMain() {
         startActivity(
             Intent(this, MainActivity::class.java).apply {
@@ -112,7 +113,17 @@ class GalleryActivity : AppCompatActivity() {
 
     private fun safeItems(): List<MediaMessage> {
         return runCatching {
-            repository.loadAll().filter { it.localPath.isNotBlank() && File(it.localPath).exists() }
+            repository.loadAll().filter { repository.isStoredMediaAvailable(it.localPath) }
         }.getOrDefault(emptyList())
+    }
+
+    private fun mediaUriFor(path: String): Uri? {
+        if (path.isBlank()) return null
+        return if (path.startsWith("content://")) {
+            Uri.parse(path)
+        } else {
+            val file = File(path)
+            if (file.exists()) Uri.fromFile(file) else null
+        }
     }
 }
