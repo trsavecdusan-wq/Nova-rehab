@@ -365,7 +365,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         android.app.AlertDialog.Builder(this)
-            .setTitle("Nastavi domaci naslov")
+            .setTitle("Nastavi domači naslov")
             .setView(input)
             .setPositiveButton("Shrani") { _, _ ->
                 val address = input.text.toString().trim()
@@ -375,7 +375,7 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, NavigationActivity::class.java))
                 }
             }
-            .setNegativeButton("Preklici", null)
+            .setNegativeButton("Prekliči", null)
             .show()
     }
 
@@ -727,7 +727,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = android.app.AlertDialog.Builder(this)
             .setTitle("Jezik")
             .setView(wrapper)
-            .setNegativeButton("Preklici", null)
+            .setNegativeButton("Prekliči", null)
             .create()
 
         languages.forEach { lang ->
@@ -812,12 +812,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun languageChoice(code: String): LanguageChoice {
         return when (code) {
-            "uk" -> LanguageChoice("uk", "\uD83C\uDDFA\uD83C\uDDE6", "Ukrajinscina")
-            "en" -> LanguageChoice("en", "\uD83C\uDDEC\uD83C\uDDE7", "Anglescina")
-            "de" -> LanguageChoice("de", "\uD83C\uDDE9\uD83C\uDDEA", "Nemscina")
-            "hr" -> LanguageChoice("hr", "\uD83C\uDDED\uD83C\uDDF7", "Hrvascina")
-            "sr" -> LanguageChoice("sr", "\uD83C\uDDF7\uD83C\uDDF8", "Srbscina")
-            else -> LanguageChoice("sl", "\uD83C\uDDF8\uD83C\uDDEE", "Slovenscina")
+            "uk" -> LanguageChoice("uk", "\uD83C\uDDFA\uD83C\uDDE6", "Ukrajinščina")
+            "en" -> LanguageChoice("en", "\uD83C\uDDEC\uD83C\uDDE7", "Angleščina")
+            "de" -> LanguageChoice("de", "\uD83C\uDDE9\uD83C\uDDEA", "Nemščina")
+            "hr" -> LanguageChoice("hr", "\uD83C\uDDED\uD83C\uDDF7", "Hrvaščina")
+            "sr" -> LanguageChoice("sr", "\uD83C\uDDF7\uD83C\uDDF8", "Srbščina")
+            else -> LanguageChoice("sl", "\uD83C\uDDF8\uD83C\uDDEE", "Slovenščina")
         }
     }
     private fun setupLanguageDetector() {
@@ -842,7 +842,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupClock() {
         val dayFormat = SimpleDateFormat("EEEE", Locale("sl"))
         val dateFormat = SimpleDateFormat("d. MMMM", Locale("sl"))
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm", Locale("sl", "SI"))
 
         clockRunnable = object : Runnable {
             override fun run() {
@@ -853,7 +853,8 @@ class MainActivity : AppCompatActivity() {
                 }
                 binding.tvPatientDate.text = dateFormat.format(now)
                 binding.tvClock.text = timeFormat.format(now)
-                clockHandler.postDelayed(this, 30000L)
+                val nextMinuteDelay = 60000L - (System.currentTimeMillis() % 60000L)
+                clockHandler.postDelayed(this, nextMinuteDelay.coerceAtLeast(1000L))
             }
         }
 
@@ -950,7 +951,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnRelax.setOnClickListener {
             Toast.makeText(
                 this,
-                "Sprostitev bo dodana v naslednji fazi.",
+                "Sprostitev trenutno ni na voljo.",
                 Toast.LENGTH_LONG
             ).show()
         }

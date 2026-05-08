@@ -9,7 +9,7 @@
     <LinearLayout
         android:id="@+id/topRow"
         android:layout_width="0dp"
-        android:layout_height="220dp"
+        android:layout_height="232dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:layout_marginBottom="8dp"
@@ -72,7 +72,7 @@
                         android:padding="4dp"
                         android:text="Radio 1"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
 
                     <Button
                         android:id="@+id/btnRadio2"
@@ -86,7 +86,7 @@
                         android:padding="4dp"
                         android:text="Radio Center"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -107,7 +107,7 @@
                         android:padding="4dp"
                         android:text="ROKS UA"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
 
                     <Button
                         android:id="@+id/btnRadio4"
@@ -121,7 +121,7 @@
                         android:padding="4dp"
                         android:text="Kiss FM UA"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -142,7 +142,7 @@
                         android:padding="4dp"
                         android:text="Nashe UA"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
 
                     <Button
                         android:id="@+id/btnRadio6"
@@ -156,7 +156,7 @@
                         android:padding="4dp"
                         android:text="Glasba"
                         android:textColor="#FFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -171,71 +171,77 @@
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:paddingStart="10dp"
-            android:paddingTop="8dp"
+            android:paddingTop="10dp"
             android:paddingEnd="10dp"
-            android:paddingBottom="8dp">
+            android:paddingBottom="10dp">
 
             <TextView
                 android:id="@+id/tvLanguageFlag"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
+                android:includeFontPadding="false"
                 android:text="SI"
                 android:textColor="#FFFFFF"
-                android:textSize="22sp" />
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/tvPatientName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
+                android:layout_marginTop="4dp"
                 android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
                 android:maxLines="1"
                 android:text="Ime"
                 android:textColor="#E94560"
                 android:textStyle="bold"
                 app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="14sp"
-                app:autoSizeMaxTextSize="20sp"
+                app:autoSizeMinTextSize="15sp"
+                app:autoSizeMaxTextSize="22sp"
                 app:autoSizeStepGranularity="1sp" />
 
             <TextView
                 android:id="@+id/tvSpeed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
-                android:text="0" />
+                android:text="0"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvPatientDay"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="18dp"
                 android:gravity="center"
+                android:includeFontPadding="false"
                 android:text="Sreda"
                 android:textColor="#FFFFFF"
-                android:textSize="17sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvPatientDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:gravity="center"
+                android:includeFontPadding="false"
                 android:text="8. maj"
                 android:textColor="#B8D8FF"
-                android:textSize="16sp" />
+                android:textSize="17sp" />
 
             <TextView
                 android:id="@+id/tvClock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:gravity="center"
+                android:includeFontPadding="false"
                 android:text="22:45"
                 android:textColor="#FFFFFF"
-                android:textSize="20sp"
+                android:textSize="26sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -265,7 +271,7 @@
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="0dp"
-        android:layout_height="64dp"
+        android:layout_height="68dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -279,18 +285,19 @@
             android:layout_weight="1"
             android:backgroundTint="#1A3A6B"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:singleLine="true"
             android:text="VIDEO"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="9sp"
-            app:autoSizeMaxTextSize="11sp"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeMaxTextSize="12sp"
             app:autoSizeStepGranularity="1sp" />
 
         <Button
@@ -301,18 +308,19 @@
             android:layout_marginStart="4dp"
             android:backgroundTint="#305B2E"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:singleLine="true"
             android:text="GALERIJA"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="9sp"
-            app:autoSizeMaxTextSize="11sp"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeMaxTextSize="12sp"
             app:autoSizeStepGranularity="1sp" />
 
         <Button
@@ -323,18 +331,19 @@
             android:layout_marginStart="4dp"
             android:backgroundTint="#155C47"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:singleLine="true"
             android:text="OGLEDALO"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="9sp"
-            app:autoSizeMaxTextSize="11sp"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeMaxTextSize="12sp"
             app:autoSizeStepGranularity="1sp" />
 
         <Button
@@ -345,18 +354,19 @@
             android:layout_marginStart="4dp"
             android:backgroundTint="#5A3D7A"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:singleLine="true"
             android:text="SPROSTI"
             android:textAllCaps="true"
             android:textColor="#FFFFFF"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="9sp"
-            app:autoSizeMaxTextSize="11sp"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeMaxTextSize="12sp"
             app:autoSizeStepGranularity="1sp" />
     </LinearLayout>
 

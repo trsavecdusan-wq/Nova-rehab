@@ -1,3 +1,16 @@
+
+## 2026-05-08 - v1.0.22 (versionCode 22)
+
+Changed modules:
+- main_screen
+
+Fixed bugs:
+- Stabilized the first tablet screen layout with safer top spacing and clearer patient date/time card.
+- Kept unsafe on-screen volume buttons hidden instead of leaving broken placement.
+- Improved bottom action button label fitting so VIDEO, GALERIJA, OGLEDALO and SPROSTI stay readable in one row.
+- Fixed visible Slovenian UTF-8 text corruption in the main screen activity.
+- Aligned clock refresh with minute boundaries for steadier HH:MM updates.
+
 # Changelog
 
 ## 2026-05-08 - v1.0.21 (versionCode 21)
