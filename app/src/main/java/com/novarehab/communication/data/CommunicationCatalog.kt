@@ -1,8 +1,8 @@
 package com.novarehab.communication.data
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.util.Log
-import com.novarehab.BuildConfig
 import com.novarehab.communication.model.CommunicationItem
 import com.novarehab.learning.LearningProfileManager
 import com.novarehab.utils.PrefsManager
@@ -36,7 +36,7 @@ class CommunicationCatalog(
         val page1Count = min(pageSize, sortedItems.size)
         val page2Count = if (sortedItems.size > pageSize) min(pageSize, sortedItems.size - pageSize) else 0
 
-        if (BuildConfig.DEBUG) {
+        if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
             Log.d(
                 "NovaRehabPaging",
                 "total_main_icons=${sortedItems.size}, enabled_main_icons=${sortedItems.size}, page_size=$pageSize, page_count=$pageCount, page_1_count=$page1Count, page_2_count=$page2Count"
