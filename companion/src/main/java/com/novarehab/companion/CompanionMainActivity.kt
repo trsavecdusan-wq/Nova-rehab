@@ -111,23 +111,29 @@ class CompanionMainActivity : Activity() {
     private fun initializeCompanion(startIntent: Intent?) {
         try {
             if (tryImportSharedConfig(startIntent)) {
-                Toast.makeText(this, "Nastavitev iz tablice je uvoĂ„Ä…Ă„Äľena.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Nastavitev iz tablice je uvožena.", Toast.LENGTH_LONG).show()
             }
 
             val currentConfig = contactConfigManager.getCurrentOrNull()
             if (currentConfig == null) {
-                contactConfigManager.clear()
-                showContactSelector(force = true)
+                val fallbackConfig = contactConfigManager.availableContacts.last()
+                applySelectedContact(fallbackConfig, restartCallManager = false)
+                runCatching { startWaitingForCallSafely() }
+                    .onFailure { error ->
+                        Log.e(TAG, "Napaka pri samodejnem zagonu privzetega kontakta ${fallbackConfig.contactId}", error)
+                        tvStatus.text = CompanionContactText.idleStatus(CompanionConfig.contactName)
+                        setConnectionState("Povezava ne deluje", false)
+                    }
                 return
             }
 
             startCompanionWithConfig(currentConfig, restartCallManager = false)
         } catch (error: Exception) {
             Log.e(TAG, "Napaka pri zagonu Companion aplikacije", error)
-            contactConfigManager.clear()
-            tvStatus.text = "Izberi kontakt"
+            val fallbackConfig = contactConfigManager.availableContacts.last()
+            runCatching { applySelectedContact(fallbackConfig, restartCallManager = false) }
+            tvStatus.text = CompanionContactText.idleStatus(CompanionConfig.contactName)
             setConnectionState("Povezava ne deluje", false)
-            showContactSelector(force = true)
         }
     }
 
@@ -164,10 +170,13 @@ class CompanionMainActivity : Activity() {
                     setConnectionState("Povezava ne deluje", false)
                 }
         } catch (error: Exception) {
-            Log.e(TAG, "Napaka pri aktivaciji kontakta ${config.contactId}", error)
+            Log.e(TAG, "Neveljavna konfiguracija kontakta ${config.contactId}", error)
             contactConfigManager.clear()
-            Toast.makeText(this, "Shranjena nastavitev kontakta ni veljavna. Izberite kontakt znova.", Toast.LENGTH_LONG).show()
-            showContactSelector(force = true)
+            val fallbackConfig = contactConfigManager.availableContacts.last()
+            runCatching { applySelectedContact(fallbackConfig, restartCallManager = false) }
+            Toast.makeText(this, "Shranjena nastavitev kontakta ni veljavna. Uporabljam Dušana.", Toast.LENGTH_LONG).show()
+            tvStatus.text = CompanionContactText.idleStatus(CompanionConfig.contactName)
+            setConnectionState("Povezava ne deluje", false)
         }
     }
 
@@ -191,17 +200,17 @@ class CompanionMainActivity : Activity() {
         val name = CompanionConfig.contactName
         val language = CompanionConfig.preferredLanguageCode.uppercase()
         val patient = CompanionConfig.patientName
-        tvContactInfo.text = "Kontakt: $name  Ä‚ËĂ˘â€šÂ¬Ă‹Â  Pacient: $patient  Ä‚ËĂ˘â€šÂ¬Ă‹Â  Jezik: $language"
+        tvContactInfo.text = "Kontakt: $name\nPacient: $patient\nJezik: $language"
         btnCallContact.text = CompanionContactText.callButtonText(name)
         btnSelectContact.text = "NASTAVITVE KONTAKTA"
     }
 
     private fun showContactSettings() {
         val items = arrayOf(
-            "RoÄ‚â€žÄąÂ¤na izbira kontakta",
+            "Ročna izbira kontakta",
             "Uvozi nastavitev iz tablice",
             "Ponastavi izbiro kontakta",
-            "PrekliÄ‚â€žÄąÂ¤i"
+            "Prekliči"
         )
 
         val dialog = AlertDialog.Builder(this)
@@ -224,7 +233,7 @@ class CompanionMainActivity : Activity() {
         val contacts = contactConfigManager.availableContacts
         val labels = contacts.map { it.contactName }.toTypedArray()
         val preselectedId = contactConfigManager.getCurrentOrNull()?.contactId ?: selectedContactId
-        val selectedIndex = intArrayOf(contacts.indexOfFirst { it.contactId == preselectedId }.takeIf { it >= 0 } ?: 0)
+        val selectedIndex = intArrayOf(contacts.indexOfFirst { it.contactId == preselectedId }.takeIf { it >= 0 } ?: contacts.lastIndex)
 
         selectedContactId = contacts.getOrNull(selectedIndex[0])?.contactId
         selectedContactName = contacts.getOrNull(selectedIndex[0])?.contactName
@@ -240,13 +249,13 @@ class CompanionMainActivity : Activity() {
             .setPositiveButton("Shrani") { dialogInterface, _ ->
                 val alert = dialogInterface as AlertDialog
                 val checkedIndex = alert.listView.checkedItemPosition.takeIf { it >= 0 } ?: selectedIndex[0]
-                val config = contacts.getOrNull(checkedIndex) ?: contacts.first()
+                val config = contacts.getOrNull(checkedIndex) ?: contacts.last()
                 selectedContactId = config.contactId
                 selectedContactName = config.contactName
                 startCompanionWithConfig(config, restartCallManager = true)
                 alert.dismiss()
             }
-            .setNegativeButton(if (force) null else "PrekliÄŤi", null)
+            .setNegativeButton(if (force) null else "Prekliči", null)
             .create()
 
         dialog.show()
@@ -266,7 +275,7 @@ class CompanionMainActivity : Activity() {
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("Uvozi nastavitev iz tablice")
-            .setMessage("Prilepite besedilo, ki ga poĂ„Ä…Ă‹â€ˇlje tablica.")
+            .setMessage("Prilepite besedilo, ki ga pošlje tablica.")
             .setView(input)
             .setPositiveButton("Uvozi") { _, _ ->
                 val payload = input.text?.toString().orEmpty().trim()
@@ -278,14 +287,14 @@ class CompanionMainActivity : Activity() {
                 contactConfigManager.importFromSharedPayload(payload)
                     .onSuccess { config ->
                         startCompanionWithConfig(config, restartCallManager = true)
-                        Toast.makeText(this, "Nastavitev je uvoĂ„Ä…Ă„Äľena.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Nastavitev je uvožena.", Toast.LENGTH_LONG).show()
                     }
                     .onFailure { error ->
-                        Log.e(TAG, "RoÄ‚â€žÄąÂ¤ni uvoz nastavitve ni uspel", error)
+                        Log.e(TAG, "Ročni uvoz nastavitve ni uspel", error)
                         Toast.makeText(this, error.localizedMessage ?: "Uvoz nastavitve ni uspel.", Toast.LENGTH_LONG).show()
                     }
             }
-            .setNegativeButton("PrekliÄ‚â€žÄąÂ¤i", null)
+            .setNegativeButton("Prekliči", null)
             .create()
 
         dialog.show()
@@ -294,15 +303,16 @@ class CompanionMainActivity : Activity() {
 
     private fun resetSelectedContact() {
         contactConfigManager.clear()
-        CompanionConfig.update(contactConfigManager.availableContacts.last())
-        selectedContactId = null
-        selectedContactName = null
+        val fallbackConfig = contactConfigManager.availableContacts.last()
+        CompanionConfig.update(fallbackConfig)
+        selectedContactId = fallbackConfig.contactId
+        selectedContactName = fallbackConfig.contactName
         callManager?.endCall()
         callManager = null
         callState = CompanionCallState.IDLE
-        tvStatus.text = "Izberi kontakt"
+        refreshContactUi()
+        tvStatus.text = CompanionContactText.idleStatus(CompanionConfig.contactName)
         setConnectionState("Povezava ne deluje", false)
-        showContactSelector(force = true)
     }
 
     private fun startWaitingForCallSafely() {
@@ -425,7 +435,7 @@ class CompanionMainActivity : Activity() {
 
         when (callState) {
             CompanionCallState.IDLE -> setConnectionState("Povezava deluje", true)
-            CompanionCallState.RINGING -> setConnectionState(if (outgoingDialing) "Klic poslan" else "Ä‚â€žÄąĹˇakam odgovor", true)
+            CompanionCallState.RINGING -> setConnectionState(if (outgoingDialing) "Klic poslan" else "Čakam odgovor", true)
             CompanionCallState.ACTIVE -> setConnectionState("Sprejeto", true)
             CompanionCallState.BUSY -> setConnectionState("Zasedeno", false)
             CompanionCallState.MISSED -> setConnectionState("Zavrnjeno", false)
@@ -433,10 +443,6 @@ class CompanionMainActivity : Activity() {
 
         btnAcceptCall.visibility = if (callState == CompanionCallState.RINGING) View.VISIBLE else View.GONE
         btnRejectCall.visibility = if (callState == CompanionCallState.RINGING || callState == CompanionCallState.ACTIVE) View.VISIBLE else View.GONE
-        btnRejectCall.text = if (callState == CompanionCallState.ACTIVE) "PREKINI KLIC" else "ZAVRNI KLIC"
-        btnCallContact.visibility = if (callState == CompanionCallState.IDLE) View.VISIBLE else View.GONE
-        btnExit.isEnabled = callState != CompanionCallState.ACTIVE
-        btnExit.alpha = if (btnExit.isEnabled) 1f else 0.55f
     }
 
     private fun updateConnectionStateFromMessage(text: String) {
@@ -446,8 +452,8 @@ class CompanionMainActivity : Activity() {
                 setConnectionState("Povezava ne deluje", false)
             normalized.contains("klic poslan") ->
                 setConnectionState("Klic poslan", true)
-            normalized.contains("Ä‚â€žÄąÂ¤akam") ->
-                setConnectionState("Ä‚â€žÄąĹˇakam odgovor", true)
+            normalized.contains("čakam") || normalized.contains("cak") ->
+                setConnectionState("Čakam odgovor", true)
             normalized.contains("sprejela") || normalized.contains("vzpostavljen") || normalized.contains("povezujem") ->
                 setConnectionState("Sprejeto", true)
             normalized.contains("zavr") ->
@@ -460,16 +466,21 @@ class CompanionMainActivity : Activity() {
 
     private fun setConnectionState(text: String, healthy: Boolean) {
         tvConnectionState.text = text
-        tvConnectionState.setTextColor(if (healthy) 0xFFB8D8FF.toInt() else 0xFFFFC27A.toInt())
+        tvConnectionState.setTextColor(if (healthy) 0xFF9BE7A7.toInt() else 0xFFFF9E9E.toInt())
     }
 
     private fun showBackOptions() {
+        if (callState == CompanionCallState.ACTIVE) {
+            Toast.makeText(this, "Najprej zaključite klic.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val dialog = AlertDialog.Builder(this)
             .setTitle("NovaRehab Companion")
-            .setMessage("Zapri aplikacijo ali pomanjĂ„Ä…Ă‹â€ˇaj?")
-            .setPositiveButton("POMANJĂ„Ä…Ă‚Â AJ") { _, _ -> minimizeCompanion() }
-            .setNegativeButton("ZAPRI") { _, _ -> closeCompanion() }
-            .setNeutralButton("PREKLIÄ‚â€žÄąĹˇI", null)
+            .setMessage("Zapri aplikacijo ali pomanjšaj?")
+            .setPositiveButton("POMANJŠAJ") { _, _ -> minimizeCompanion() }
+            .setNegativeButton("IZHOD") { _, _ -> closeCompanion() }
+            .setNeutralButton("PREKLIČI", null)
             .create()
         dialog.show()
         styleDialog(dialog)
@@ -477,14 +488,14 @@ class CompanionMainActivity : Activity() {
 
     private fun showExitConfirmation() {
         if (callState == CompanionCallState.ACTIVE) {
-            Toast.makeText(this, "Najprej zakljuÄ‚â€žÄąÂ¤ite klic.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Najprej zaključite klic.", Toast.LENGTH_LONG).show()
             return
         }
         val dialog = AlertDialog.Builder(this)
             .setTitle("NovaRehab Companion")
-            .setMessage("Ali Ă„Ä…Ă„Äľelite zapreti NovaRehab Companion?")
+            .setMessage("Ali želite zapreti NovaRehab Companion?")
             .setPositiveButton("ZAPRI") { _, _ -> closeCompanion() }
-            .setNegativeButton("PREKLIÄ‚â€žÄąĹˇI", null)
+            .setNegativeButton("PREKLIČI", null)
             .create()
         dialog.show()
         styleDialog(dialog)
@@ -551,9 +562,9 @@ class CompanionMainActivity : Activity() {
                         Toast.makeText(this, "Slika je bila poslana tablici.", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "PoĂ„Ä…Ă‹â€ˇiljanje slike ni uspelo", e)
+                    Log.e(TAG, "Pošiljanje slike ni uspelo", e)
                     runOnUiThread {
-                        Toast.makeText(this, e.localizedMessage ?: "PoĂ„Ä…Ă‹â€ˇiljanje slike ni uspelo.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, e.localizedMessage ?: "Pošiljanje slike ni uspelo.", Toast.LENGTH_LONG).show()
                     }
                 }
             }.start()

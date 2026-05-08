@@ -3,7 +3,7 @@ package com.novarehab.companion
 object CompanionConfig {
     private var current: CompanionContactConfig = CompanionContactConfig(
         contactId = "c06",
-        contactName = "Dušan",
+        contactName = "Du\u0161an",
         roomId = "novarehab_c06",
         preferredLanguage = "sl",
         patientName = "Lana"

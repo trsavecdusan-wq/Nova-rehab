@@ -18,12 +18,12 @@ class ContactConfigManager(context: Context) {
         context.applicationContext.getSharedPreferences("companion_contact_config", Context.MODE_PRIVATE)
 
     val availableContacts: List<CompanionContactConfig> = listOf(
-        CompanionContactConfig("c01", "Žana", "novarehab_c01", "uk"),
+        CompanionContactConfig("c01", "\u017Dana", "novarehab_c01", "uk"),
         CompanionContactConfig("c02", "Dedek", "novarehab_c02", "uk"),
         CompanionContactConfig("c03", "Inna", "novarehab_c03", "uk"),
         CompanionContactConfig("c04", "Julija", "novarehab_c04", "uk"),
         CompanionContactConfig("c05", "Kuma", "novarehab_c05", "uk"),
-        CompanionContactConfig("c06", "Dušan", "novarehab_c06", "sl")
+        CompanionContactConfig("c06", "Du\u0161an", "novarehab_c06", "sl")
     )
 
     fun getCurrent(): CompanionContactConfig =
@@ -104,7 +104,7 @@ class ContactConfigManager(context: Context) {
             ).normalize()
 
             if (!isValid(config)) {
-                throw IllegalArgumentException("Uvožena nastavitev ni veljavna.")
+                throw IllegalArgumentException("Uvo\u017Eena nastavitev ni veljavna.")
             }
 
             save(config)
