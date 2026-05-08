@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-08 - v1.0.15 (versionCode 15)
+
+Changed modules:
+- settings-ui
+- icon-editor
+- release
+
+Fixed / added:
+- replaced remaining production settings spinners with one shared tablet-safe picker dialog system
+- unified settings selections onto fullscreen dark pickers with large rows and clear selected state
+- removed the last spinner-based language selector from the normal icon editor flow
+- kept main screen labels and patient/date module unchanged in this patch
+- kept communication page sizes consistent without changing paging behavior in this patch
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- this patch intentionally avoids main screen, companion, mirror, gallery, AI and video call work
 ## 2026-05-07 - v1.0.14 (versionCode 14)
 
 Changed modules:

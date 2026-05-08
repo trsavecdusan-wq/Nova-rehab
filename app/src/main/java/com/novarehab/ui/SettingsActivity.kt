@@ -217,7 +217,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun showPickerForButton(button: Button) {
         val state = button.tag as? PickerState ?: return
-        SettingsUiStyler.showFullscreenPicker(
+        TabletPickerDialog.show(
             this,
             state.title,
             state.items,

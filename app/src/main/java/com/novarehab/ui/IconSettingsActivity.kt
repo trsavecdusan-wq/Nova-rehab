@@ -17,7 +17,6 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
@@ -151,12 +150,51 @@ class IconSettingsActivity : AppCompatActivity() {
         }
 
         applyDarkSettingsStyle(scroll)
-        replaceSpinnersWithFullscreenPickers(scroll)
     }
 
     private fun applyDarkSettingsStyle(view: View) {
         SettingsUiStyler.apply(view, resources.displayMetrics.density)
     }
+
+    private data class PickerState(
+        val title: String,
+        val items: List<String>,
+        var selectedIndex: Int = 0
+    )
+
+    private fun createPickerButton(title: String, items: Array<String>): Button {
+        return Button(this).apply {
+            SettingsUiStyler.stylePickerRow(this, resources.displayMetrics.density)
+            isAllCaps = false
+            tag = PickerState(title = title, items = items.toList(), selectedIndex = 0)
+            updatePickerButtonText(this)
+            setOnClickListener { showPickerForButton(this) }
+        }
+    }
+
+    private fun showPickerForButton(button: Button) {
+        val state = button.tag as? PickerState ?: return
+        TabletPickerDialog.show(this, state.title, state.items, state.selectedIndex) { selectedIndex ->
+            state.selectedIndex = selectedIndex
+            updatePickerButtonText(button)
+        }
+    }
+
+    private fun setPickerSelection(button: Button, index: Int) {
+        val state = button.tag as? PickerState ?: return
+        state.selectedIndex = index.coerceIn(0, state.items.lastIndex.coerceAtLeast(0))
+        updatePickerButtonText(button)
+    }
+
+    private fun getPickerSelection(button: Button): Int {
+        return (button.tag as? PickerState)?.selectedIndex ?: 0
+    }
+
+    private fun updatePickerButtonText(button: Button) {
+        val state = button.tag as? PickerState ?: return
+        button.text = state.items.getOrNull(state.selectedIndex).orEmpty().ifBlank { state.title }
+    }
+
     private fun createBackupControls(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -492,10 +530,8 @@ class IconSettingsActivity : AppCompatActivity() {
         }
         styleEditText(etSpeech)
 
-        val langSpinner = Spinner(this).apply {
-            adapter = themedSpinnerAdapter("SL", "UK")
-            styleSpinner(this)
-            setSelection(if ((saved?.language ?: "sl") == "uk") 1 else 0)
+        val langButton = createPickerButton("Jezik ikone", arrayOf("SL", "UK")).apply {
+            setPickerSelection(this, if ((saved?.language ?: "sl") == "uk") 1 else 0)
         }
 
         val enabledSwitch = Switch(this).apply {
@@ -521,7 +557,7 @@ class IconSettingsActivity : AppCompatActivity() {
 
         texts.addView(etTitle)
         texts.addView(etSpeech)
-        texts.addView(langSpinner)
+        texts.addView(langButton)
         texts.addView(enabledSwitch)
         texts.addView(showOnMainSwitch)
         texts.addView(pinnedVideoSwitch)
@@ -581,7 +617,7 @@ class IconSettingsActivity : AppCompatActivity() {
                     id = id,
                     title = etTitle.text.toString().trim(),
                     text = etSpeech.text.toString().trim(),
-                    language = if (langSpinner.selectedItemPosition == 1) "uk" else "sl",
+                    language = if (getPickerSelection(langButton) == 1) "uk" else "sl",
                     imagePath = paths.customIconFile(id).takeIf { it.exists() }?.absolutePath.orEmpty(),
                     enabled = enabledSwitch.isChecked,
                     pinnedMain = saved?.pinnedMain ?: false,
@@ -834,33 +870,22 @@ class IconSettingsActivity : AppCompatActivity() {
         target.copyTo(archiveTarget, overwrite = true)
     }
 
-    private fun replaceSpinnersWithFullscreenPickers(root: View) {
-        if (root is Spinner) {
-            SettingsUiStyler.installFullscreenPickerForSpinner(
-                this,
-                root,
-                derivePickerTitle(root),
-                resources.displayMetrics.density
-            )
-            return
-        }
-
-        if (root is ViewGroup) {
-            for (index in 0 until root.childCount) {
-                replaceSpinnersWithFullscreenPickers(root.getChildAt(index))
+    private fun themedSpinnerAdapter(vararg items: String): ArrayAdapter<String> {
+        return object : ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_list_item_1,
+            items
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                return super.getView(position, convertView, parent).also { view ->
+                    (view as? TextView)?.apply {
+                        setTextColor(0xFFFFFFFF.toInt())
+                        setBackgroundColor(0xFF16213E.toInt())
+                        setPadding(dp(12), dp(12), dp(12), dp(12))
+                    }
+                }
             }
         }
-    }
-
-    private fun derivePickerTitle(spinner: Spinner): String {
-        val parent = spinner.parent as? ViewGroup ?: return "Izberi možnost"
-        val spinnerIndex = parent.indexOfChild(spinner)
-        for (index in spinnerIndex - 1 downTo 0) {
-            val previous = parent.getChildAt(index) as? TextView ?: continue
-            val candidate = previous.text?.toString()?.trim().orEmpty()
-            if (candidate.isNotBlank()) return candidate.removeSuffix(":")
-        }
-        return "Izberi možnost"
     }
 
     private fun dp(value: Int): Int {
@@ -869,42 +894,6 @@ class IconSettingsActivity : AppCompatActivity() {
 
     private fun styleEditText(editText: EditText) {
         SettingsUiStyler.styleEditText(editText, resources.displayMetrics.density)
-    }
-
-    private fun themedSpinnerAdapter(vararg items: String): ArrayAdapter<String> {
-        return object : ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_spinner_item,
-            items
-        ) {
-            init {
-                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                return super.getView(position, convertView, parent).also { styleSpinnerText(it, false) }
-            }
-
-            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-                return super.getDropDownView(position, convertView, parent).also { styleSpinnerText(it, true) }
-            }
-        }
-    }
-
-    private fun styleSpinnerText(view: View, dropdown: Boolean) {
-        val textView = view as? TextView ?: return
-        textView.setTextColor(0xFFFFFFFF.toInt())
-        if (dropdown) {
-            textView.setBackgroundColor(0xFF16213E.toInt())
-            textView.setPadding(dp(12), dp(12), dp(12), dp(12))
-        } else {
-            textView.setBackgroundColor(0x00000000)
-            textView.setPadding(dp(8), dp(10), dp(8), dp(10))
-        }
-    }
-
-    private fun styleSpinner(spinner: Spinner) {
-        SettingsUiStyler.styleSpinner(spinner)
     }
 
     private fun styleAlertDialog(dialog: AlertDialog) {
