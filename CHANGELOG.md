@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-08 - v1.0.16 (versionCode 16)
+
+Changed modules:
+- settings-ui
+- icon-editor
+- main-ui
+- release
+
+Fixed / added:
+- removed remaining Spinner usage from icon settings and switched icon language selection to the shared fullscreen picker flow
+- verified SettingsUiStyler remains on the spinner-free picker architecture introduced in the previous stabilization step
+- verified main screen top layout keeps the current four-zone structure without km/h text changes in this patch
+- preserved communication paging 4 / 9 / 16 / 25 without changing paging behavior in this patch
+- cleaned icon editor UI so normal mode stays focused on editing instead of debug controls
+
+Known issues:
+- final green build still depends on GitHub Actions after push
+- this patch intentionally avoids AI, companion sync, video call, radio browser and media transfer work
 ## 2026-05-08 - v1.0.15 (versionCode 15)
 
 Changed modules:

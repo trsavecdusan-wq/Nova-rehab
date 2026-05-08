@@ -740,7 +740,7 @@ class IconSettingsActivity : AppCompatActivity() {
         val labels = candidates.map { "$it - ${displayNameForIcon(it)}" }.toTypedArray()
         val dialog = AlertDialog.Builder(this)
             .setTitle(if (remove) "Odstrani podikono" else "Dodaj podikono")
-            .setAdapter(themedSpinnerAdapter(*labels)) { _, which ->
+            .setAdapter(themedListAdapter(*labels)) { _, which ->
                 val chosenId = candidates.getOrNull(which) ?: return@setAdapter
                 if (remove) {
                     selectedChildren.remove(chosenId)
@@ -823,7 +823,7 @@ class IconSettingsActivity : AppCompatActivity() {
         val labels = files.map { it.nameWithoutExtension }.toTypedArray()
         val dialog = AlertDialog.Builder(this)
             .setTitle("Izberi sliko iz arhiva")
-            .setAdapter(themedSpinnerAdapter(*labels)) { _, which ->
+            .setAdapter(themedListAdapter(*labels)) { _, which ->
                 val source = files.getOrNull(which) ?: return@setAdapter
                 source.copyTo(paths.customIconFile(iconId), overwrite = true)
                 SettingsBackupManager(this).backupNow()
@@ -870,7 +870,7 @@ class IconSettingsActivity : AppCompatActivity() {
         target.copyTo(archiveTarget, overwrite = true)
     }
 
-    private fun themedSpinnerAdapter(vararg items: String): ArrayAdapter<String> {
+    private fun themedListAdapter(vararg items: String): ArrayAdapter<String> {
         return object : ArrayAdapter<String>(
             this,
             android.R.layout.simple_list_item_1,
