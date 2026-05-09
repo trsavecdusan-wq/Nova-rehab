@@ -17,41 +17,49 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
-            android:id="@+id/btnVolDown"
-            android:layout_width="44dp"
-            android:layout_height="match_parent"
-            android:backgroundTint="#B71C1C"
-            android:gravity="center"
-            android:text="-"
-            android:textColor="#FFFFFF"
-            android:textSize="28sp"
-            android:textStyle="bold" />
-
         <LinearLayout
-            android:id="@+id/radioModule"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:layout_marginEnd="4dp"
-            android:background="#16213E"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:weightSum="1">
 
-            <ImageButton
-                android:id="@+id/btnRadioToggle"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:visibility="gone"
-                android:contentDescription="Radio"
-                android:src="@drawable/ic_radio" />
+            <Button
+                android:id="@+id/btnVolDown"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginBottom="4dp"
+                android:backgroundTint="#B71C1C"
+                android:gravity="center"
+                android:text="-"
+                android:textColor="#FFFFFF"
+                android:textSize="28sp"
+                android:textStyle="bold" />
 
             <LinearLayout
-                android:id="@+id/radioGrid"
+                android:id="@+id/radioModule"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#16213E"
                 android:orientation="vertical"
-                android:weightSum="3">
+                android:padding="6dp">
+
+                <ImageButton
+                    android:id="@+id/btnRadioToggle"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone"
+                    android:contentDescription="Radio"
+                    android:src="@drawable/ic_radio" />
+
+                <LinearLayout
+                    android:id="@+id/radioGrid"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:weightSum="3">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -157,22 +165,41 @@
                         android:textColor="#FFFFFF"
                         android:textSize="12sp" />
                 </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/patientInfoCard"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:background="#16213E"
-            android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:paddingStart="10dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="10dp"
-            android:paddingBottom="10dp">
+            android:weightSum="1">
+
+            <Button
+                android:id="@+id/btnVolUp"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginBottom="4dp"
+                android:backgroundTint="#1B5E20"
+                android:gravity="center"
+                android:text="+"
+                android:textColor="#FFFFFF"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/patientInfoCard"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#16213E"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="10dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="10dp">
 
             <TextView
                 android:id="@+id/tvLanguageFlag"
@@ -260,29 +287,19 @@
                 android:textColor="#B8D8FF"
                 android:textSize="17sp" />
 
-            <TextView
-                android:id="@+id/tvClock"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:text="22:45"
-                android:textColor="#FFFFFF"
-                android:textSize="26sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvClock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="22:45"
+                    android:textColor="#FFFFFF"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
-
-        <Button
-            android:id="@+id/btnVolUp"
-            android:layout_width="44dp"
-            android:layout_height="match_parent"
-            android:backgroundTint="#1B5E20"
-            android:gravity="center"
-            android:text="+"
-            android:textColor="#FFFFFF"
-            android:textSize="28sp"
-            android:textStyle="bold" />
     </LinearLayout>
 
     <androidx.viewpager2.widget.ViewPager2
