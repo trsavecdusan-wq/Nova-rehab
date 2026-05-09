@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -839,11 +840,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupVolumeControls() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         binding.btnVolDown.setOnClickListener {
-            handleHardwareVolumeButton(android.view.KeyEvent.KEYCODE_VOLUME_DOWN)
+            audioManager.adjustStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                AudioManager.ADJUST_LOWER,
+                AudioManager.FLAG_SHOW_UI
+            )
         }
         binding.btnVolUp.setOnClickListener {
-            handleHardwareVolumeButton(android.view.KeyEvent.KEYCODE_VOLUME_UP)
+            audioManager.adjustStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                AudioManager.ADJUST_RAISE,
+                AudioManager.FLAG_SHOW_UI
+            )
         }
     }
 
