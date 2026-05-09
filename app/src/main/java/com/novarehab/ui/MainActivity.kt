@@ -845,14 +845,14 @@ class MainActivity : AppCompatActivity() {
             audioManager.adjustStreamVolume(
                 AudioManager.STREAM_MUSIC,
                 AudioManager.ADJUST_LOWER,
-                AudioManager.FLAG_SHOW_UI
+                0
             )
         }
         binding.btnVolUp.setOnClickListener {
             audioManager.adjustStreamVolume(
                 AudioManager.STREAM_MUSIC,
                 AudioManager.ADJUST_RAISE,
-                AudioManager.FLAG_SHOW_UI
+                0
             )
         }
     }
