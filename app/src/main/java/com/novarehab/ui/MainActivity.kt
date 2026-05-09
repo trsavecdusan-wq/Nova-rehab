@@ -839,6 +839,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupVolumeControls() {
+        binding.btnVolDown.setOnClickListener {
+            handleHardwareVolumeButton(android.view.KeyEvent.KEYCODE_VOLUME_DOWN)
+        }
+        binding.btnVolUp.setOnClickListener {
+            handleHardwareVolumeButton(android.view.KeyEvent.KEYCODE_VOLUME_UP)
+        }
     }
 
     private fun setupClock() {
