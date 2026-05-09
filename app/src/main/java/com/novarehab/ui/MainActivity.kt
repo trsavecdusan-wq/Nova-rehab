@@ -27,7 +27,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.ScrollView
-import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -842,20 +841,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupVolumeControls() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val syncVolumeSlider = {
-            binding.volumeSeekBar.max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            binding.volumeSeekBar.progress = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        }
-
-        syncVolumeSlider()
-
         binding.btnVolDown.setOnClickListener {
             audioManager.adjustStreamVolume(
                 AudioManager.STREAM_MUSIC,
                 AudioManager.ADJUST_LOWER,
                 0
             )
-            syncVolumeSlider()
         }
         binding.btnVolUp.setOnClickListener {
             audioManager.adjustStreamVolume(
@@ -863,21 +854,7 @@ class MainActivity : AppCompatActivity() {
                 AudioManager.ADJUST_RAISE,
                 0
             )
-            syncVolumeSlider()
         }
-        binding.volumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0)
-                }
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                syncVolumeSlider()
-            }
-        })
     }
 
     private fun setupClock() {

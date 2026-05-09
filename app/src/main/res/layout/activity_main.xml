@@ -188,22 +188,6 @@
                 android:textSize="28sp"
                 android:textStyle="bold" />
 
-            <SeekBar
-                android:id="@+id/volumeSeekBar"
-                android:layout_width="match_parent"
-                android:layout_height="28dp"
-                android:layout_marginBottom="4dp"
-                android:maxHeight="12dp"
-                android:minHeight="12dp"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
-                android:progressDrawable="@android:drawable/progress_horizontal"
-                android:splitTrack="false"
-                android:thumbTint="#FFFFFF"
-                android:progressTint="#56D364"
-                android:progressBackgroundTint="#A05A2A"
-                android:secondaryProgressTint="#E3B341" />
-
             <LinearLayout
                 android:id="@+id/patientInfoCard"
                 android:layout_width="match_parent"
