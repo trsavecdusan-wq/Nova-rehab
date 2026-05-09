@@ -839,8 +839,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupVolumeControls() {
-        binding.btnVolUp.visibility = View.GONE
-        binding.btnVolDown.visibility = View.GONE
     }
 
     private fun setupClock() {
